@@ -26,34 +26,40 @@ const Navbar = () => {
   ];
 
   return (
-    <div className="h-full bg-gray-800 text-white w-64 flex flex-col">
-      <div className="p-4">
-        <h1 className="text-xl font-bold">Aplicație</h1>
+    <div className="h-16 bg-[#034a76] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50">
+      <div className="flex items-center">
+        <div className="mr-8 pt-1">
+          <img 
+            src="/logo.png" 
+            alt="Logo" 
+            className="h-12 w-auto"
+          />
+        </div>
+        
+        <nav className="flex">
+          <ul className="flex space-x-4">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <button
+                  onClick={() => navigate(item.path)}
+                  className={`px-4 py-2 rounded hover:bg-[#023557] transition-colors
+                    ${location.pathname === item.path ? 'bg-[#023557]' : ''}`}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </div>
 
-      <nav className="flex-1">
-        <ul className="space-y-2 py-4">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <button
-                onClick={() => navigate(item.path)}
-                className={`w-full text-left px-4 py-2 hover:bg-gray-700 transition-colors
-                  ${location.pathname === item.path ? 'bg-gray-700' : ''}`}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="p-4 border-t border-gray-700">
+      <div className="flex items-center">
         {user ? (
-          <div className="space-y-4">
+          <div className="flex items-center space-x-4">
             <div className="text-sm text-gray-300">{user.email}</div>
             <button
               onClick={handleLogout}
-              className="w-full px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded transition-colors"
+              className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded transition-colors"
             >
               Deconectare
             </button>
@@ -61,7 +67,7 @@ const Navbar = () => {
         ) : (
           <button
             onClick={() => navigate('/login')}
-            className="w-full px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded transition-colors"
           >
             Autentificare
           </button>

@@ -122,7 +122,7 @@ const AdminPage = () => {
         <p className="mt-2 text-gray-600">Nu aveți permisiunea de a accesa această pagină.</p>
         <button 
           onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="mt-4 px-4 py-2 bg-[#034a76] text-white rounded hover:bg-[#023557]"
         >
           Înapoi la Home
         </button>
@@ -133,7 +133,7 @@ const AdminPage = () => {
   const renderUserTable = (users) => (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+        <thead className="bg-[#f5f5f5]">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Nume
@@ -168,7 +168,7 @@ const AdminPage = () => {
               <td className="px-6 py-4 whitespace-nowrap">
                 <button
                   onClick={() => handleDeleteUser(user.id)}
-                  className="text-red-600 hover:text-red-900 ml-4"
+                  className="text-[#034a76] hover:text-[#023557] ml-4"
                 >
                   Șterge
                 </button>
@@ -187,13 +187,13 @@ const AdminPage = () => {
         <div className="space-x-4">
           <button
             onClick={() => setShowMateriiModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="px-4 py-2 bg-[#e3ab23] text-white rounded hover:bg-[#c99415]"
           >
             Administrare Materii
           </button>
           <button
             onClick={() => setShowUserModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-[#034a76] text-white rounded hover:bg-[#023557]"
           >
             + Adaugă Utilizator
           </button>
@@ -201,12 +201,12 @@ const AdminPage = () => {
       </div>
 
       {/* Secțiunea de filtre - mutată deasupra tabelului */}
-      <div className="mb-6 bg-white p-4 rounded-lg shadow">
+      <div className="mb-6 bg-[#f5f5f5] p-4 rounded-lg shadow">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-700">Filtre</h2>
           <button
             onClick={resetFilters}
-            className="text-sm text-blue-600 hover:text-blue-800"
+            className="text-sm text-[#034a76] hover:text-[#023557]"
           >
             Resetează filtrele
           </button>
@@ -220,7 +220,7 @@ const AdminPage = () => {
             <select
               value={filters.tip}
               onChange={(e) => setFilters(prev => ({ ...prev, tip: e.target.value }))}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
             >
               {tipuriUtilizatori.map(tip => (
                 <option key={tip} value={tip}>
@@ -241,7 +241,7 @@ const AdminPage = () => {
                 facultate: e.target.value,
                 specializare: '' // Reset specializare when faculty changes
               }))}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
             >
               <option value="">Toate facultățile</option>
               {facultati.map(fac => (
@@ -257,7 +257,7 @@ const AdminPage = () => {
             <select
               value={filters.specializare}
               onChange={(e) => setFilters(prev => ({ ...prev, specializare: e.target.value }))}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
               disabled={!filters.facultate}
             >
               <option value="">Toate specializările</option>
@@ -274,7 +274,7 @@ const AdminPage = () => {
             <select
               value={filters.an}
               onChange={(e) => setFilters(prev => ({ ...prev, an: e.target.value }))}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
             >
               <option value="">Toți anii</option>
               {ani.map(an => (
