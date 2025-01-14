@@ -6,19 +6,20 @@ import { useNavigate } from 'react-router-dom';
 import { getAuth } from 'firebase/auth';
 import { browserLocalPersistence } from 'firebase/auth';
 
-const AdminUserForm = ({ onClose, onUserCreated }) => {
-  const [formType, setFormType] = useState('student'); // student, profesor, secretar
+const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
+  const [formType, setFormType] = useState(editingUser?.tip || 'student');
   const [formData, setFormData] = useState({
-    email: '',
+    email: editingUser?.email || '',
     password: '',
     confirmPassword: '',
-    nume: '',
-    prenume: '',
-    anNastere: '',
-    specializare: '',
-    an: '',
-    functie: '', // pentru secretari
-    materiiPredate: [] // Array pentru ID-urile materiilor selectate
+    nume: editingUser?.nume || '',
+    prenume: editingUser?.prenume || '',
+    anNastere: editingUser?.anNastere || '',
+    facultate: editingUser?.facultate || '',
+    specializare: editingUser?.specializare || '',
+    an: editingUser?.an || '',
+    functie: editingUser?.functie || '',
+    materiiPredate: editingUser?.materiiPredate || []
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -227,113 +228,227 @@ const AdminUserForm = ({ onClose, onUserCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    setError('');
     setLoading(true);
 
     try {
-      const tempAuth = getAuth();
-      await tempAuth.setPersistence(browserLocalPersistence);
-      
-      const userCredential = await createUserWithEmailAndPassword(
-        tempAuth,
-        formData.email.toLowerCase(),
-        formData.password
-      );
+      if (editingUser) {
+        // Actualizăm datele utilizatorului în Firestore
+        const userRef = doc(db, 'users', editingUser.id);
+        const updateData = {
+          nume: formData.nume,
+          prenume: formData.prenume,
+          tip: formType,
+          anNastere: formData.anNastere,
+          specializare: formData.specializare,
+          an: formData.an,
+          facultate: formData.facultate // Adăugăm și facultatea
+        };
 
-      // Construim datele pentru Firestore
-      const userData = {
-        email: formData.email.toLowerCase(),
-        uid: userCredential.user.uid,
-        nume: formData.nume,
-        prenume: formData.prenume,
-        tip: formType,
-        createdAt: new Date(),
-      };
+        // Adăugăm câmpuri specifice în funcție de tipul utilizatorului
+        if (formType === 'profesor') {
+          // Pentru profesori, actualizăm și materiile predate
+          const materiiComplete = materiiSelectate.map(materieId => {
+            const materie = materiiDisponibile.find(m => m.id === materieId);
+            return {
+              id: materieId,
+              nume: materie.nume,
+              facultate: materie.facultate,
+              specializare: materie.specializare,
+              an: materie.an,
+              credite: materie.credite
+            };
+          });
+          updateData.materiiPredate = materiiComplete;
+          updateData.functie = formData.functie;
 
-      // Adăugăm date specifice pentru student
-      if (formType === 'student') {
-        const numarMatricol = await getNextMatricolNumber(formData.specializare);
-        userData.facultate = formData.facultate;
-        userData.specializare = formData.specializare;
-        userData.an = formData.an;
-        userData.anNastere = formData.anNastere;
-        userData.numarMatricol = numarMatricol;
-      }
-      // Adăugăm date specifice pentru profesor
-      else if (formType === 'profesor') {
-        const materiiComplete = materiiSelectate.map(materieId => {
-          const materie = materiiDisponibile.find(m => m.id === materieId);
-          if (!materie) {
-            console.error(`Materia cu ID-ul ${materieId} nu a fost găsită`);
-            return null;
-          }
-          return {
-            id: materieId,
-            nume: materie.nume,
-            facultate: materie.facultate,
-            specializare: materie.specializare,
-            an: materie.an,
-            credite: materie.credite
-          };
-        }).filter(Boolean);
-        
-        userData.materiiPredate = materiiComplete;
-      }
-      // Adăugăm date specifice pentru secretar
-      else if (formType === 'secretar') {
-        userData.facultate = formData.facultate;
-        userData.functie = formData.functie;
-      }
+          // Actualizăm și referințele din colecția materii
+          const materiiPromises = [];
+          
+          // 1. Mai întâi eliminăm profesorul din toate materiile
+          const materiiSnapshot = await getDocs(collection(db, 'materii'));
+          materiiSnapshot.docs.forEach(async (materieDoc) => {
+            const materieRef = doc(db, 'materii', materieDoc.id);
+            const materieData = materieDoc.data();
+            const profesoriActualizati = (materieData.profesori || [])
+              .filter(prof => prof.id !== editingUser.id);
+            
+            materiiPromises.push(updateDoc(materieRef, {
+              profesori: profesoriActualizati
+            }));
+          });
 
-      // Salvăm utilizatorul în Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), userData);
-
-      // Actualizăm materiile pentru profesor
-      if (formType === 'profesor' && materiiSelectate.length > 0) {
-        for (const materieId of materiiSelectate) {
-          try {
+          // 2. Adăugăm profesorul la materiile selectate
+          materiiSelectate.forEach(async (materieId) => {
             const materieRef = doc(db, 'materii', materieId);
             const materieDoc = await getDoc(materieRef);
             
             if (materieDoc.exists()) {
-              const materieData = materieDoc.data();
-              const profesoriActuali = materieData.profesori || [];
-              
-              if (!profesoriActuali.some(prof => prof.id === userCredential.user.uid)) {
-                await updateDoc(materieRef, {
+              const profesoriActuali = materieDoc.data().profesori || [];
+              if (!profesoriActuali.some(prof => prof.id === editingUser.id)) {
+                materiiPromises.push(updateDoc(materieRef, {
                   profesori: [...profesoriActuali, {
-                    id: userCredential.user.uid,
+                    id: editingUser.id,
                     nume: `${formData.prenume} ${formData.nume}`
                   }]
-                });
+                }));
               }
             }
-          } catch (error) {
-            console.error(`Eroare la actualizarea materiei ${materieId}:`, error);
+          });
+
+          // Așteptăm să se termine toate actualizările materiilor
+          await Promise.all(materiiPromises);
+        } else if (formType === 'student') {
+          // Pentru studenți, actualizăm numărul matricol dacă există
+          if (editingUser.numarMatricol) {
+            updateData.numarMatricol = editingUser.numarMatricol;
+          }
+        } else if (formType === 'secretar') {
+          // Pentru secretari, actualizăm funcția
+          updateData.functie = formData.functie;
+        }
+
+        // Actualizăm documentul utilizatorului
+        await updateDoc(userRef, updateData);
+        setSuccess(true);
+        onUserCreated?.();
+      } else {
+        // Logica existentă pentru crearea unui utilizator nou
+        const tempAuth = getAuth();
+        await tempAuth.setPersistence(browserLocalPersistence);
+        
+        const userCredential = await createUserWithEmailAndPassword(
+          tempAuth,
+          formData.email.toLowerCase(),
+          formData.password
+        );
+
+        // Construim datele pentru Firestore
+        const userData = {
+          email: formData.email.toLowerCase(),
+          uid: userCredential.user.uid,
+          nume: formData.nume,
+          prenume: formData.prenume,
+          tip: formType,
+          createdAt: new Date(),
+        };
+
+        // Adăugăm date specifice pentru student
+        if (formType === 'student') {
+          const numarMatricol = await getNextMatricolNumber(formData.specializare);
+          userData.facultate = formData.facultate;
+          userData.specializare = formData.specializare;
+          userData.an = formData.an;
+          userData.anNastere = formData.anNastere;
+          userData.numarMatricol = numarMatricol;
+        }
+        // Adăugăm date specifice pentru profesor
+        else if (formType === 'profesor') {
+          const materiiComplete = materiiSelectate.map(materieId => {
+            const materie = materiiDisponibile.find(m => m.id === materieId);
+            if (!materie) {
+              console.error(`Materia cu ID-ul ${materieId} nu a fost găsită`);
+              return null;
+            }
+            return {
+              id: materieId,
+              nume: materie.nume,
+              facultate: materie.facultate,
+              specializare: materie.specializare,
+              an: materie.an,
+              credite: materie.credite
+            };
+          }).filter(Boolean);
+          
+          userData.materiiPredate = materiiComplete;
+        }
+        // Adăugăm date specifice pentru secretar
+        else if (formType === 'secretar') {
+          userData.facultate = formData.facultate;
+          userData.functie = formData.functie;
+        }
+
+        // Salvăm utilizatorul în Firestore
+        await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+
+        // Actualizăm materiile pentru profesor
+        if (formType === 'profesor' && materiiSelectate.length > 0) {
+          for (const materieId of materiiSelectate) {
+            try {
+              const materieRef = doc(db, 'materii', materieId);
+              const materieDoc = await getDoc(materieRef);
+              
+              if (materieDoc.exists()) {
+                const materieData = materieDoc.data();
+                const profesoriActuali = materieData.profesori || [];
+                
+                if (!profesoriActuali.some(prof => prof.id === userCredential.user.uid)) {
+                  await updateDoc(materieRef, {
+                    profesori: [...profesoriActuali, {
+                      id: userCredential.user.uid,
+                      nume: `${formData.prenume} ${formData.nume}`
+                    }]
+                  });
+                }
+              }
+            } catch (error) {
+              console.error(`Eroare la actualizarea materiei ${materieId}:`, error);
+            }
           }
         }
+
+        await tempAuth.signOut();
       }
 
-      await tempAuth.signOut();
       setSuccess(true);
       onUserCreated?.();
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  // Încărcăm materiile selectate când se deschide formularul pentru editare
+  useEffect(() => {
+    if (editingUser && formType === 'profesor') {
+      const fetchMateriiProfesor = async () => {
+        try {
+          const materiiSnapshot = await getDocs(collection(db, 'materii'));
+          const materiiList = materiiSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          setMateriiDisponibile(materiiList);
+          
+          // Găsim materiile în care profesorul este asociat
+          const materiiProfesor = materiiList
+            .filter(materie => 
+              (materie.profesori || []).some(prof => prof.id === editingUser.id)
+            )
+            .map(materie => materie.id);
+          
+          setMateriiSelectate(materiiProfesor);
+        } catch (err) {
+          console.error('Eroare la încărcarea materiilor:', err);
+          setError('Eroare la încărcarea materiilor');
+        }
+      };
+
+      fetchMateriiProfesor();
+    }
+  }, [editingUser, formType]);
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-2xl font-bold text-gray-800">Adaugă Utilizator Nou</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-600 hover:text-gray-800"
-          >
+          <h3 className="text-2xl font-bold text-gray-800">
+            {editingUser ? 'Editare Utilizator' : 'Creare Utilizator Nou'}
+          </h3>
+          <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -481,33 +596,32 @@ const AdminUserForm = ({ onClose, onUserCreated }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Parolă
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Confirmă Parola
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
+            {!editingUser && (
+              <>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Parolă</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required={!editingUser}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700">Confirmă Parola</label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required={!editingUser}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </>
+            )}
 
             {formType === 'profesor' && (
               <div className="mt-4">
@@ -548,10 +662,10 @@ const AdminUserForm = ({ onClose, onUserCreated }) => {
             <button
               type="submit"
               disabled={loading}
-              className={`px-4 py-2 rounded-md text-white
-                ${loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+              className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors
+                ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {loading ? 'Se creează...' : 'Creează Utilizator'}
+              {loading ? 'Se procesează...' : (editingUser ? 'Salvează Modificările' : 'Creează Utilizator')}
             </button>
           </div>
         </form>

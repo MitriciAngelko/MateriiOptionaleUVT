@@ -8,7 +8,11 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state) => state.auth.user);
+  
+  // Funcții de verificare a rolurilor bazate pe email
   const isAdmin = user?.email?.endsWith('@admin.com');
+  // Verificăm exact formatul pentru profesori
+  const isProfesor = user?.email?.match(/^[a-z]+\.[a-z]+@e-uvt\.ro$/);
 
   const handleLogout = async () => {
     try {
@@ -22,7 +26,11 @@ const Navbar = () => {
   const navItems = [
     { path: '/home', label: 'Home' },
     { path: '/profile', label: 'Profil' },
-    ...(isAdmin ? [{ path: '/admindb', label: 'Admin Dashboard' }] : []),
+    ...(isProfesor ? [{ path: '/materiile-mele', label: 'Materiile Mele' }] : []),
+    ...(isAdmin ? [
+      { path: '/admin-utilizatori', label: 'Utilizatori' },
+      { path: '/admin-materii', label: 'Administrare Materii' }
+    ] : []),
   ];
 
   return (
