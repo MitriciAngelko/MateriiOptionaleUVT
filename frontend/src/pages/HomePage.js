@@ -1,11 +1,3 @@
-<<<<<<< HEAD
-import React from 'react';
-
-const HomePage = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Conținutul a fost eliminat, lăsând doar containerul pentru layout */}
-=======
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -129,7 +121,6 @@ const HomePage = () => {
           ))}
         </div>
       </div>
->>>>>>> 797394fe (Adaugat Pachete, quality of life stuff)
     </div>
   );
 };

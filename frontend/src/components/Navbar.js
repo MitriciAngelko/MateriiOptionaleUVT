@@ -1,31 +1,20 @@
-<<<<<<< HEAD
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { auth } from '../firebase';
-import { signOut } from 'firebase/auth';
-=======
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { isAdmin, isProfesor, isStudent, isSecretar } from '../utils/userRoles';
->>>>>>> 797394fe (Adaugat Pachete, quality of life stuff)
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state) => state.auth.user);
-<<<<<<< HEAD
   
   // Funcții de verificare a rolurilor bazate pe email
   const isAdmin = user?.email?.endsWith('@admin.com');
   // Verificăm exact formatul pentru profesori
   const isProfesor = user?.email?.match(/^[a-z]+\.[a-z]+@e-uvt\.ro$/);
-=======
   const [userType, setUserType] = useState(null);
   const [roles, setRoles] = useState({
     isAdmin: false,
@@ -72,7 +61,7 @@ const Navbar = () => {
 
     checkRoles();
   }, [user]);
->>>>>>> 797394fe (Adaugat Pachete, quality of life stuff)
+
 
   const handleLogout = async () => {
     try {
@@ -84,7 +73,7 @@ const Navbar = () => {
   };
 
   const navItems = [
-<<<<<<< HEAD
+
     { path: '/home', label: 'Home' },
     { path: '/profile', label: 'Profil' },
     ...(isProfesor ? [{ path: '/materiile-mele', label: 'Materiile Mele' }] : []),
@@ -92,7 +81,7 @@ const Navbar = () => {
       { path: '/admin-utilizatori', label: 'Utilizatori' },
       { path: '/admin-materii', label: 'Administrare Materii' }
     ] : []),
-=======
+
     ...(roles.isAdmin ? [] : [{ path: '/home', label: 'Home' }]),
     ...(roles.isAdmin ? [] : [{ path: '/profile', label: 'Profil' }]),
     ...(roles.isProfesor ? [{ path: '/materiile-mele', label: 'Materiile Mele' }] : []),
@@ -104,7 +93,7 @@ const Navbar = () => {
       { path: '/inscriere-materii', label: 'Înscriere Materii' },
       { path: '/materiile-studentului', label: 'Materiile Mele' }
     ] : [])
->>>>>>> 797394fe (Adaugat Pachete, quality of life stuff)
+
   ];
 
   return (
@@ -134,8 +123,6 @@ const Navbar = () => {
           </ul>
         </nav>
       </div>
-
-<<<<<<< HEAD
       <div className="flex items-center">
         {user ? (
           <div className="flex items-center space-x-4">
@@ -155,7 +142,6 @@ const Navbar = () => {
             Autentificare
           </button>
         )}
-=======
       <div className="flex items-center space-x-4">
         <button
           onClick={handleLogout}
@@ -163,9 +149,10 @@ const Navbar = () => {
         >
           Deconectare
         </button>
->>>>>>> 797394fe (Adaugat Pachete, quality of life stuff)
       </div>
     </div>
+    </div>
+  
   );
 };
 

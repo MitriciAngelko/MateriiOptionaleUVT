@@ -1,24 +1,28 @@
 import React from 'react';
-
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import store from './store';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/admin/AdminPage';
-import AdminMateriiPage from './pages/admin/AdminMateriiPage';
+import ProfilePage from './pages/ProfilePage';
 import AdminRoute from './components/admin/AdminRoute';
 import PrivateRoute from './components/PrivateRoute';
+import AdminMateriiPage from './pages/admin/AdminMateriiPage';
+import MateriileMelePage from './pages/profesor/MateriileMelePage';
 import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import MateriiStudentPage from './pages/student/MateriiStudentPage';
-import MateriileMelePage from './pages/student/MateriileMelePage';
+
 
 function App() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
+
   const user = useSelector((state) => state.auth.user);
   const isAdmin = user?.email?.endsWith('@admin.com');
+
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -26,6 +30,11 @@ function App() {
       <div className={!isLoginPage ? 'pt-16' : ''}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/home" element={<HomePage />} />
+
           
           {/* Redirecționare condiționată pentru ruta principală */}
           <Route 
@@ -48,7 +57,7 @@ function App() {
               )
             } 
           />
-          
+
           {/* Rută protejată pentru profil */}
           <Route
             path="/profile"
@@ -59,7 +68,7 @@ function App() {
             }
           />
           
-          {/* Rută protejată pentru materiile studentului */}
+          {/* Rută protejată pentru materiile profesorului */}
           <Route
             path="/materiile-mele"
             element={

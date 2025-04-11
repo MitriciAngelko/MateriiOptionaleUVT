@@ -15,11 +15,10 @@ const MateriileMelePage = () => {
     'II': [],
     'III': []
   });
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
 
-  // Funcția principală pentru încărcarea datelor cu forțare anti-cache
+  // Funcția principală pentru încărcarea datelor
   const fetchData = useCallback(async () => {
     if (!user?.uid) {
       navigate('/login');
@@ -28,96 +27,90 @@ const MateriileMelePage = () => {
 
     try {
       setLoading(true);
-      console.log('Încărcăm datele pentru utilizatorul:', user.uid, 'la timestamp:', Date.now());
+      console.log('Încărcăm datele pentru utilizatorul:', user.uid);
       
-      // Încarcă direct istoricul academic (sursa principală de adevăr pentru note)
-      // Folosim o tehnică anti-cache adăugând un timestamp la cerere
-      const timestamp = Date.now();
-      const cacheKey = `?refresh=${timestamp}`;
+      // Verifică documentul user pentru a obține detalii
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        setError('Nu s-au găsit informații pentru utilizatorul curent');
+        setLoading(false);
+        return;
+      }
+      
+      // Încarcă istoricul academic
       const istoricRef = doc(db, 'istoricAcademic', user.uid);
-      
-      // Încercăm să obținem datele direct, evitând orice cache
       const istoricDoc = await getDoc(istoricRef);
       
       if (!istoricDoc.exists()) {
-        console.log('Nu s-a găsit istoricul academic pentru utilizatorul curent.');
+        console.log('Istoricul academic nu există. Verificăm ID-ul specific.');
+        
+        // Verifică ID-ul specific menționat
+        const specificId = "em1EkT5eCfRSsDQRRYrkLuEdtmW2";
+        const specificUserDoc = await getDoc(doc(db, 'users', specificId));
+        const specificIstoricDoc = await getDoc(doc(db, 'istoricAcademic', specificId));
+        
+        console.log('Verificare ID specific:');
+        console.log('User există:', specificUserDoc.exists());
+        console.log('Istoric există:', specificIstoricDoc.exists());
+        
+        if (specificIstoricDoc.exists()) {
+          console.log('Date istoric pentru ID specific:', specificIstoricDoc.data());
+        }
+        
         setMateriiInscrise([]);
-        setMateriiByAn({ 'I': [], 'II': [], 'III': [] });
-        setStats({ totalCredite: 0, medieGenerala: 0, crediteTrecute: 0 });
         setLoading(false);
         return;
       }
       
       // Procesează datele istoricului
       const istoricData = istoricDoc.data();
-      console.log('Date istoricul academic obținute:', istoricData);
+      console.log('Date istoric academic:', istoricData);
       
-      if (!istoricData.istoricAnual || !Array.isArray(istoricData.istoricAnual)) {
-        console.log('Istoricul academic nu conține date valide.');
-        setMateriiInscrise([]);
-        setLoading(false);
-        return;
-      }
+      // Extrage toate cursurile din istoricul academic
+      const toateCursurile = [];
       
-      // Extragem toate cursurile din istoricul academic
-      let toateCursurile = [];
-      for (const anAcademic of istoricData.istoricAnual) {
-        if (anAcademic.cursuri && Array.isArray(anAcademic.cursuri)) {
-          for (const curs of anAcademic.cursuri) {
-            // Adăugăm toate informațiile necesare pentru a afișa cursul
-            toateCursurile.push({
-              ...curs,
-              anStudiu: anAcademic.anStudiu || 'I',
-              semestru: anAcademic.semestru || 1
+      if (istoricData.istoricAnual && Array.isArray(istoricData.istoricAnual)) {
+        istoricData.istoricAnual.forEach(anAcademic => {
+          if (anAcademic.cursuri && Array.isArray(anAcademic.cursuri)) {
+            anAcademic.cursuri.forEach(curs => {
+              toateCursurile.push({
+                ...curs,
+                anStudiu: anAcademic.anStudiu || 'I',
+                semestru: anAcademic.semestru || 1
+              });
             });
           }
-        }
+        });
       }
       
-      console.log(`Găsite ${toateCursurile.length} cursuri în istoricul academic`);
-      
-      // Pentru fiecare curs, obține detalii suplimentare din colecția materii dacă e necesar
-      const materiiCompletatePromises = toateCursurile.map(async (curs) => {
-        // Dacă notele sunt zero sau undefined, le tratăm ca neevaluate
-        const nota = typeof curs.nota === 'number' ? curs.nota : 0;
-        
-        try {
-          const materieDoc = await getDoc(doc(db, 'materii', curs.id));
-          if (materieDoc.exists()) {
-            const materieData = materieDoc.data();
-            return {
-              ...curs,
-              nota: nota, // Asigurăm că folosim nota din istoricul academic
-              nume: curs.nume || materieData.nume,
-              credite: curs.credite || materieData.credite || 0,
-              descriere: materieData.descriere || '',
-              facultate: materieData.facultate || curs.facultate || '',
-              specializare: materieData.specializare || curs.specializare || '',
-              profesor: materieData.profesor || curs.profesor || { nume: 'Nealocat' },
-              an: materieData.an || curs.anStudiu || 'I'
-            };
+      // Pentru fiecare curs, obține detalii complete
+      const materiiCompletatePromises = toateCursurile.map(async curs => {
+        if (!curs.descriere || !curs.profesor) {
+          try {
+            const materieDoc = await getDoc(doc(db, 'materii', curs.id));
+            if (materieDoc.exists()) {
+              const materieData = materieDoc.data();
+              return {
+                ...curs,
+                nume: curs.nume || materieData.nume,
+                credite: curs.credite || materieData.credite,
+                descriere: materieData.descriere || '',
+                facultate: materieData.facultate || curs.facultate,
+                specializare: materieData.specializare || curs.specializare,
+                profesor: materieData.profesor || curs.profesor,
+                an: materieData.an || curs.anStudiu || 'I'
+              };
+            }
+          } catch (error) {
+            console.error(`Eroare la obținerea detaliilor pentru materia ${curs.id}:`, error);
           }
-        } catch (error) {
-          console.error(`Eroare la obținerea detaliilor pentru materia ${curs.id}:`, error);
         }
-        
-        // Dacă nu avem detalii suplimentare, returnăm cursul așa cum este
-        return {
-          ...curs,
-          nota: nota,
-          profesor: curs.profesor || { nume: 'Nealocat' }
-        };
+        return curs;
       });
       
-      // Așteptăm toate promisiunile de detalii suplimentare
       const materiiComplete = await Promise.all(materiiCompletatePromises);
       
-      // Verificăm și afișăm notele pentru debug
-      materiiComplete.forEach(materie => {
-        console.log(`Materia "${materie.nume}" are nota: ${materie.nota}`);
-      });
-      
-      // Organizăm materiile pe ani de studiu
+      // Organizează materiile pe ani de studiu
       const byAn = {
         'I': [],
         'II': [],
@@ -133,22 +126,21 @@ const MateriileMelePage = () => {
         }
       });
       
-      // Sortăm alfabetic
+      // Sortează alfabetic materiile din fiecare an
       Object.keys(byAn).forEach(an => {
         byAn[an].sort((a, b) => a.nume.localeCompare(b.nume));
       });
       
-      // Calculăm statisticile
+      // Calculează statisticile
       let totalCredite = 0;
       let sumaProduse = 0;
       let crediteTrecute = 0;
       let materiiPromovate = 0;
       
       materiiComplete.forEach(materie => {
-        const credite = parseInt(materie.credite) || 0;
+        const credite = materie.credite || 0;
         totalCredite += credite;
         
-        // Verificăm dacă nota este >= 5 pentru a considera materia promovată
         if (materie.nota >= 5) {
           sumaProduse += materie.nota * credite;
           crediteTrecute += credite;
@@ -158,7 +150,7 @@ const MateriileMelePage = () => {
       
       const medieGenerala = materiiPromovate > 0 ? (sumaProduse / crediteTrecute).toFixed(2) : 0;
       
-      // Actualizăm starea componentei
+      // Actualizează starea
       setStats({
         totalCredite,
         medieGenerala,
@@ -166,11 +158,11 @@ const MateriileMelePage = () => {
       });
       setMateriiInscrise(materiiComplete);
       setMateriiByAn(byAn);
+      setLoading(false);
       
     } catch (error) {
       console.error('Eroare la încărcarea datelor:', error);
       setError(`Eroare la încărcarea datelor: ${error.message}`);
-    } finally {
       setLoading(false);
     }
   }, [user, navigate]);
@@ -178,42 +170,14 @@ const MateriileMelePage = () => {
   // Încarcă datele la montarea componentei
   useEffect(() => {
     fetchData();
-    
-    // Configurăm și un listener pentru actualizări în timp real
-    if (user?.uid) {
-      const istoricRef = doc(db, 'istoricAcademic', user.uid);
-      const unsubscribe = onSnapshot(istoricRef, (doc) => {
-        if (doc.exists()) {
-          console.log('Istoricul academic a fost actualizat în timp real!');
-          fetchData(); // Reîncărcăm datele pentru a reflecta schimbările
-        }
-      }, (error) => {
-        console.error('Eroare la ascultarea schimbărilor:', error);
-      });
-      
-      // Curățăm listener-ul la demontare
-      return () => unsubscribe();
-    }
-  }, [fetchData, user]);
-  
-  // Setăm un interval de reîmprospătare automată la 30 de secunde
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      console.log('Reîmprospătare automată a datelor...');
-      fetchData();
-    }, 30000); // 30 secunde
-    
-    return () => clearInterval(intervalId);
   }, [fetchData]);
 
   // Funcție pentru reîmprospătarea manuală a datelor
   const handleRefresh = () => {
-    console.log('Reîmprospătare manuală a datelor...');
-    setLastRefresh(Date.now());
     fetchData();
   };
 
-  if (loading && materiiInscrise.length === 0) {
+  if (loading) {
     return <div className="text-center py-8">Se încarcă...</div>;
   }
 
@@ -250,11 +214,6 @@ const MateriileMelePage = () => {
           {error}
         </div>
       )}
-
-      {/* Ultima actualizare */}
-      <div className="text-xs text-gray-500 mb-4 text-right">
-        Ultima actualizare: {new Date(lastRefresh).toLocaleTimeString()}
-      </div>
 
       {/* Statistici */}
       <div className="bg-white border rounded-lg p-4 mb-6 shadow-sm">
@@ -301,7 +260,7 @@ const MateriileMelePage = () => {
                       </thead>
                       <tbody>
                         {materii.map((materie) => (
-                          <tr key={materie.id} className={`hover:bg-gray-50 ${materie.nota >= 5 ? 'bg-green-50' : (materie.nota > 0 ? 'bg-red-50' : '')}`}>
+                          <tr key={materie.id} className="hover:bg-gray-50">
                             <td className="py-2 px-4 border-b text-sm">
                               <div className="font-medium text-gray-900 cursor-pointer" 
                                 onClick={() => setExpandedMaterieId(expandedMaterieId === materie.id ? null : materie.id)}>
@@ -323,7 +282,7 @@ const MateriileMelePage = () => {
                                 materie.nota >= 5 ? 'bg-green-100 text-green-800' : 
                                 materie.nota > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {materie.nota > 0 ? materie.nota : 'Neevaluat'}
+                                {materie.nota > 0 ? materie.nota : 'N/A'}
                               </span>
                             </td>
                           </tr>
