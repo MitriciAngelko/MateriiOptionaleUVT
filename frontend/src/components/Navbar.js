@@ -1,4 +1,4 @@
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -10,12 +10,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useSelector((state) => state.auth.user);
-  
-  // Funcții de verificare a rolurilor bazate pe email
-  const isAdmin = user?.email?.endsWith('@admin.com');
-  // Verificăm exact formatul pentru profesori
-  const isProfesor = user?.email?.match(/^[a-z]+\.[a-z]+@e-uvt\.ro$/);
-  const [userType, setUserType] = useState(null);
   const [roles, setRoles] = useState({
     isAdmin: false,
     isProfesor: false,
@@ -24,77 +18,67 @@ const Navbar = () => {
   });
   
   useEffect(() => {
-    const fetchUserType = async () => {
+    const checkRoles = async () => {
       if (user?.uid) {
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            setUserType(userDoc.data().tip);
-          }
+          const admin = isAdmin(user);
+          const [profesor, student, secretar] = await Promise.all([
+            isProfesor(user.uid),
+            isStudent(user.uid),
+            isSecretar(user.uid)
+          ]);
+
+          setRoles({
+            isAdmin: admin,
+            isProfesor: profesor,
+            isStudent: student,
+            isSecretar: secretar
+          });
         } catch (error) {
-          console.error('Eroare la încărcarea datelor utilizatorului:', error);
+          console.error('Eroare la verificarea rolurilor:', error);
         }
-      }
-    };
-
-    fetchUserType();
-  }, [user]);
-
-  useEffect(() => {
-    const checkRoles = async () => {
-      if (user) {
-        const admin = isAdmin(user);
-        const [profesor, student, secretar] = await Promise.all([
-          isProfesor(user.uid),
-          isStudent(user.uid),
-          isSecretar(user.uid)
-        ]);
-
-        setRoles({
-          isAdmin: admin,
-          isProfesor: profesor,
-          isStudent: student,
-          isSecretar: secretar
-        });
       }
     };
 
     checkRoles();
   }, [user]);
 
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
       navigate('/login');
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('Eroare la deconectare:', error);
     }
   };
 
-  const navItems = [
+  // Generăm elementele de navigare bazate pe roluri
+  const getNavItems = () => {
+    const items = [];
+    
+    // Elemente comune
+    items.push({ path: '/home', label: 'Home' });
+    items.push({ path: '/profile', label: 'Profil' });
+    
+    // Elemente specifice rolurilor
+    if (roles.isProfesor) {
+      items.push({ path: '/materiile-mele', label: 'Materiile Mele' });
+    }
+    
+    if (roles.isAdmin) {
+      items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
+      items.push({ path: '/admin-materii', label: 'Materii' });
+    }
+    
+    if (roles.isStudent) {
+      items.push({ path: '/inscriere-materii', label: 'Înscriere Materii' });
+      items.push({ path: '/materiile-studentului', label: 'Materiile Mele' });
+    }
+    
+    return items;
+  };
 
-    { path: '/home', label: 'Home' },
-    { path: '/profile', label: 'Profil' },
-    ...(isProfesor ? [{ path: '/materiile-mele', label: 'Materiile Mele' }] : []),
-    ...(isAdmin ? [
-      { path: '/admin-utilizatori', label: 'Utilizatori' },
-      { path: '/admin-materii', label: 'Administrare Materii' }
-    ] : []),
-
-    ...(roles.isAdmin ? [] : [{ path: '/home', label: 'Home' }]),
-    ...(roles.isAdmin ? [] : [{ path: '/profile', label: 'Profil' }]),
-    ...(roles.isProfesor ? [{ path: '/materiile-mele', label: 'Materiile Mele' }] : []),
-    ...(roles.isAdmin ? [
-      { path: '/admin-utilizatori', label: 'Utilizatori' },
-      { path: '/admin-materii', label: 'Materii' }
-    ] : []),
-    ...(roles.isStudent ? [
-      { path: '/inscriere-materii', label: 'Înscriere Materii' },
-      { path: '/materiile-studentului', label: 'Materiile Mele' }
-    ] : [])
-
-  ];
+  const navItems = getNavItems();
 
   return (
     <div className="h-16 bg-[#034a76] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50">
@@ -142,17 +126,8 @@ const Navbar = () => {
             Autentificare
           </button>
         )}
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded transition-colors"
-        >
-          Deconectare
-        </button>
       </div>
     </div>
-    </div>
-  
   );
 };
 
