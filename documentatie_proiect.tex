@@ -1,0 +1,175 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[romanian]{babel}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{enumitem}
+
+% Configurare pentru cod
+\lstset{
+    language=JavaScript,
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    numbers=left,
+    numberstyle=\tiny,
+    frame=single,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false
+}
+
+\title{Documentație Tehnică\\Platformă de Management Academic UVT}
+\author{Universitatea de Vest din Timișoara}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introducere}
+\subsection{Scop}
+Platforma de Management Academic UVT este un sistem web dezvoltat pentru a facilita gestionarea activităților academice în cadrul Universității de Vest din Timișoara. Sistemul permite administrarea eficientă a materiilor, utilizatorilor și relațiilor dintre aceștia.
+
+\subsection{Obiective}
+\begin{itemize}
+    \item Gestionarea centralizată a utilizatorilor (profesori, studenți, administratori)
+    \item Administrarea materiilor și asocierea acestora cu profesorii
+    \item Oferirea unei interfețe intuitive pentru vizualizarea și gestionarea informațiilor
+    \item Asigurarea securității și controlului accesului la date
+\end{itemize}
+
+\section{Arhitectura Tehnică}
+\subsection{Stack Tehnologic}
+\begin{itemize}
+    \item \textbf{Frontend:}
+    \begin{itemize}
+        \item React.js pentru interfața utilizator
+        \item Redux pentru managementul stării
+        \item Tailwind CSS pentru stilizare
+        \item React Router pentru navigare
+    \end{itemize}
+    \item \textbf{Backend:}
+    \begin{itemize}
+        \item Firebase Authentication pentru autentificare
+        \item Cloud Firestore pentru baza de date
+    \end{itemize}
+\end{itemize}
+
+\section{Structura Bazei de Date}
+\subsection{Colecții Firestore}
+\subsubsection{Colecția 'users'}
+\begin{itemize}
+    \item \textbf{Câmpuri:}
+    \begin{itemize}
+        \item uid: string (generat de Firebase Auth)
+        \item email: string
+        \item nume: string
+        \item prenume: string
+        \item tip: string (student/profesor/admin)
+        \item facultate: string
+        \item specializare: string
+        \item an: string
+        \item materiiPredate: array (pentru profesori)
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Colecția 'materii'}
+\begin{itemize}
+    \item \textbf{Câmpuri:}
+    \begin{itemize}
+        \item id: string (generat automat)
+        \item nume: string
+        \item facultate: string
+        \item specializare: string
+        \item an: string
+        \item credite: number
+        \item descriere: string
+        \item profesori: array de obiecte \{id, nume\}
+    \end{itemize}
+\end{itemize}
+
+\section{Componente și Funcționalități}
+\subsection{Sistem de Autentificare}
+\begin{itemize}
+    \item Autentificare bazată pe email și parolă
+    \item Diferențiere automată a rolurilor bazată pe domeniul email-ului:
+    \begin{itemize}
+        \item @admin.com - Administrator
+        \item @e-uvt.ro - Profesor
+        \item Alte domenii - Student
+    \end{itemize}
+    \item Protecție rute bazată pe rol
+\end{itemize}
+
+\subsection{Interfață Administrator}
+\begin{itemize}
+    \item Gestionare completă a utilizatorilor:
+    \begin{itemize}
+        \item Creare conturi noi
+        \item Editare informații utilizatori
+        \item Ștergere conturi
+    \end{itemize}
+    \item Administrare materii:
+    \begin{itemize}
+        \item Adăugare materii noi
+        \item Editare detalii materii
+        \item Asociere profesori cu materii
+        \item Filtrare materii după multiple criterii
+    \end{itemize}
+\end{itemize}
+
+\subsection{Interfață Profesor}
+\begin{itemize}
+    \item Vizualizare materii predate
+    \item Acces la detaliile complete ale materiilor
+    \item Vizualizare listă studenți înscriși (în dezvoltare)
+\end{itemize}
+
+\section{Securitate}
+\subsection{Mecanisme de Securitate}
+\begin{itemize}
+    \item Autentificare securizată prin Firebase
+    \item Validare date pe partea de client și server
+    \item Reguli de securitate Firestore
+    \item Protecție CSRF și XSS
+\end{itemize}
+
+\section{Design și UI/UX}
+\subsection{Principii de Design}
+\begin{itemize}
+    \item Interfață responsivă
+    \item Paletă de culori UVT:
+    \begin{itemize}
+        \item Principal: \#034a76
+        \item Secundar: \#023557
+    \end{itemize}
+    \item Layout grid adaptiv
+    \item Componente reutilizabile
+\end{itemize}
+
+\section{Dezvoltări Viitoare}
+\subsection{Funcționalități Planificate}
+\begin{itemize}
+    \item Sistem de înscriere la materii pentru studenți
+    \item Sistem de notificare pentru evenimente importante
+    \item Încărcare și gestionare documente
+    \item Sistem de evaluare și feedback
+    \item Generare rapoarte și statistici
+\end{itemize}
+
+\section{Concluzii}
+Platforma oferă o soluție modernă și scalabilă pentru managementul academic, cu accent pe:
+\begin{itemize}
+    \item Ușurință în utilizare
+    \item Securitate ridicată
+    \item Flexibilitate și extensibilitate
+    \item Performanță și fiabilitate
+\end{itemize}
+
+\end{document} 
