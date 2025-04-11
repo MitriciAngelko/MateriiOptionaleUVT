@@ -89,7 +89,7 @@ const MateriiStudentPage = () => {
         );
 
         // Filtrează materiile care există și le sortează după nume
-        const materiiValide = materiiDetails
+        let materiiValide = materiiDetails
           .filter(materie => materie !== null)
           .sort((a, b) => {
             // Sortăm întâi după obligatoriu, apoi după nume
@@ -99,6 +99,49 @@ const MateriiStudentPage = () => {
             return a.obligatorie ? -1 : 1; // Materiile obligatorii vor fi primele
           });
 
+        // Obține istoricul academic pentru a prelua notele și alte informații
+        const istoricRef = doc(db, 'istoricAcademic', user.uid);
+        const istoricDoc = await getDoc(istoricRef);
+        
+        if (istoricDoc.exists()) {
+          const istoricData = istoricDoc.data();
+          
+          // Creăm un map pentru toate materiile din istoricul academic
+          const materiiDinIstoric = new Map();
+          
+          if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+            istoricData.istoricAnual.forEach(anual => {
+              if (anual.cursuri && anual.cursuri.length > 0) {
+                anual.cursuri.forEach(curs => {
+                  materiiDinIstoric.set(curs.id, {
+                    nota: curs.nota,
+                    status: curs.status,
+                    dataNota: curs.dataNota,
+                    anUniversitar: anual.anUniversitar,
+                    anStudiu: anual.anStudiu,
+                    semestru: anual.semestru
+                  });
+                });
+              }
+            });
+          }
+          
+          // Actualizează detaliile materiilor cu informațiile din istoricul academic
+          materiiValide = materiiValide.map(materie => {
+            const infoIstoric = materiiDinIstoric.get(materie.id);
+            if (infoIstoric) {
+              return {
+                ...materie,
+                nota: infoIstoric.nota,
+                status: infoIstoric.status,
+                dataNota: infoIstoric.dataNota,
+                anUniversitarIstoric: infoIstoric.anUniversitar
+              };
+            }
+            return materie;
+          });
+        }
+        
         setMateriiInscrise(materiiValide);
         
         // Sincronizează materiile cu istoricul academic
@@ -364,6 +407,16 @@ const MateriiStudentPage = () => {
               <div className="flex space-x-2 text-xs mt-2">
                 <span className="bg-gray-100 px-2 py-1 rounded">Anul {selectedMaterie.an}</span>
                 <span className="bg-gray-100 px-2 py-1 rounded">Semestrul {selectedMaterie.semestru}</span>
+                {selectedMaterie.status && (
+                  <span className={`px-2 py-1 rounded ${
+                    selectedMaterie.status === 'promovat' ? 'bg-green-100 text-green-800' : 
+                    selectedMaterie.status === 'nepromovat' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedMaterie.status === 'promovat' ? 'Promovat' : 
+                     selectedMaterie.status === 'nepromovat' ? 'Nepromovat' : 'Neevaluat'}
+                  </span>
+                )}
               </div>
             </div>
             
@@ -393,6 +446,33 @@ const MateriiStudentPage = () => {
                     <h3 className="font-medium text-gray-700">Credite:</h3>
                     <p className="text-gray-600">{selectedMaterie.credite}</p>
                   </div>
+                  {selectedMaterie.nota !== undefined && (
+                    <div>
+                      <h3 className="font-medium text-gray-700">Notă:</h3>
+                      <p className={`font-medium ${selectedMaterie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                        {selectedMaterie.nota || 'Neevaluat'}
+                      </p>
+                    </div>
+                  )}
+                  {selectedMaterie.dataNota && (
+                    <div>
+                      <h3 className="font-medium text-gray-700">Data evaluării:</h3>
+                      <p className="text-gray-600">
+                        {selectedMaterie.dataNota instanceof Date 
+                          ? selectedMaterie.dataNota.toLocaleDateString('ro-RO') 
+                          : typeof selectedMaterie.dataNota === 'object' && selectedMaterie.dataNota.toDate 
+                            ? selectedMaterie.dataNota.toDate().toLocaleDateString('ro-RO')
+                            : 'Necunoscută'
+                        }
+                      </p>
+                    </div>
+                  )}
+                  {selectedMaterie.anUniversitarIstoric && (
+                    <div>
+                      <h3 className="font-medium text-gray-700">An universitar:</h3>
+                      <p className="text-gray-600">{selectedMaterie.anUniversitarIstoric}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
