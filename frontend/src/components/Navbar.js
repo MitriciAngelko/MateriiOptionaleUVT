@@ -68,6 +68,7 @@ const Navbar = () => {
     if (roles.isAdmin) {
       items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
       items.push({ path: '/admin-materii', label: 'Materii' });
+      items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
     }
     
     if (roles.isStudent) {

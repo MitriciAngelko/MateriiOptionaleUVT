@@ -14,6 +14,7 @@ import AdminMateriiPage from './pages/admin/AdminMateriiPage';
 import MateriileMelePage from './pages/profesor/MateriileMelePage';
 import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import MateriiStudentPage from './pages/student/MateriiStudentPage';
+import AdminIstoricAcademicPage from './pages/admin/AdminIstoricAcademicPage';
 
 
 function App() {
@@ -110,6 +111,14 @@ function App() {
                 <MateriiStudentPage />
               </PrivateRoute>
             } 
+          />
+          <Route
+            path="/istoric-academic"
+            element={
+              <AdminRoute>
+                <AdminIstoricAcademicPage />
+              </AdminRoute>
+            }
           />
         </Routes>
       </div>
