@@ -254,25 +254,40 @@ const MateriiStudentPage = () => {
     }
   };
 
-  // Calculează creditele și media pentru un an specific
-  const calculateStats = (an) => {
-    const materiiPromovate = materiiInscrise.filter(materie => 
-      materie.an === an && materie.nota && materie.nota >= 5
-    );
+  // Calculează creditele și media pentru un an și semestru specific
+  const calculateStats = (an, semestru = null) => {
+    let materiiPromovate;
+    
+    if (semestru) {
+      // Calculează pentru un semestru specific
+      materiiPromovate = materiiInscrise.filter(materie => 
+        materie.an === an && 
+        parseInt(materie.semestru) === semestru && 
+        materie.nota && materie.nota >= 5
+      );
+    } else {
+      // Calculează pentru tot anul
+      materiiPromovate = materiiInscrise.filter(materie => 
+        materie.an === an && materie.nota && materie.nota >= 5
+      );
+    }
     
     if (!materiiPromovate.length) return { totalCredite: 0, medie: 0 };
     
-    const totalCredite = materiiPromovate.reduce((sum, materie) => sum + (materie.credite || 0), 0);
+    // Calculează totalul de credite adunând creditele materiilor promovate
+    const totalCredite = materiiPromovate.reduce((sum, materie) => sum + (parseInt(materie.credite) || 0), 0);
     
+    // Calculează suma ponderată (notă * credite) pentru fiecare materie
     const sumaPonderate = materiiPromovate.reduce((sum, materie) => 
-      sum + (materie.nota * (materie.credite || 0)), 0
+      sum + (materie.nota * (parseInt(materie.credite) || 0)), 0
     );
     
-    const medie = sumaPonderate / totalCredite;
+    // Media ponderată = suma ponderată / total credite
+    const medie = totalCredite > 0 ? sumaPonderate / totalCredite : 0;
     
     return {
       totalCredite,
-      medie: Math.round(medie * 100) / 100 // Rotunjește la 2 zecimale
+      medie: medie > 0 ? Math.round(medie * 100) / 100 : 0 // Rotunjește la 2 zecimale
     };
   };
 
@@ -341,36 +356,115 @@ const MateriiStudentPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 text-sm">
-                    {materiiInscrise
-                      .filter(materie => materie.an === activeYear)
-                      .map((materie) => (
-                        <tr 
-                          key={materie.id} 
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => setSelectedMaterie(materie)}
-                        >
-                          <td className="px-2 py-2 truncate font-medium text-gray-900">
-                            {materie.nume}
-                          </td>
-                          <td className="px-2 py-2 text-center text-gray-500">{materie.credite}</td>
-                          <td className="px-2 py-2 text-center">
-                            {materie.nota ? 
-                              <span className={`font-medium ${materie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
-                                {materie.nota}
-                              </span> : 
-                              <span className="text-gray-500">Neevaluat</span>
-                            }
-                          </td>
-                        </tr>
-                      ))}
+                    {(() => {
+                      const materiiAnCurent = materiiInscrise.filter(materie => materie.an === activeYear);
+                      const materiiSem1 = materiiAnCurent.filter(materie => parseInt(materie.semestru) === 1);
+                      const materiiSem2 = materiiAnCurent.filter(materie => parseInt(materie.semestru) === 2);
+                      
+                      return (
+                        <>
+                          {/* Materiile din semestrul 1 */}
+                          {materiiSem1.length > 0 && (
+                            <>
+                              <tr className="bg-gray-100">
+                                <td colSpan="3" className="px-2 py-1 font-medium text-gray-700">
+                                  Semestrul 1
+                                </td>
+                              </tr>
+                              {materiiSem1.map((materie) => (
+                                <tr 
+                                  key={materie.id} 
+                                  className="hover:bg-gray-50 cursor-pointer"
+                                  onClick={() => setSelectedMaterie(materie)}
+                                >
+                                  <td className="px-2 py-2 truncate font-medium text-gray-900">
+                                    {materie.nume}
+                                  </td>
+                                  <td className="px-2 py-2 text-center text-gray-500">{materie.credite}</td>
+                                  <td className="px-2 py-2 text-center">
+                                    {materie.nota ? 
+                                      <span className={`font-medium ${materie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {materie.nota}
+                                      </span> : 
+                                      <span className="text-gray-500">Neevaluat</span>
+                                    }
+                                  </td>
+                                </tr>
+                              ))}
+                              {/* Statistici pentru semestrul 1 */}
+                              <tr className="bg-gray-50 text-xs">
+                                <td colSpan="3" className="px-2 py-1">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      Credite Sem. 1: <span className="font-bold">{calculateStats(activeYear, 1).totalCredite}</span>
+                                    </span>
+                                    <span className="font-medium text-gray-700">
+                                      Medie Sem. 1: <span className="font-bold">{calculateStats(activeYear, 1).medie || 'N/A'}</span>
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </>
+                          )}
+                          
+                          {/* Materiile din semestrul 2 */}
+                          {materiiSem2.length > 0 && (
+                            <>
+                              <tr className="bg-gray-100">
+                                <td colSpan="3" className="px-2 py-1 font-medium text-gray-700">
+                                  Semestrul 2
+                                </td>
+                              </tr>
+                              {materiiSem2.map((materie) => (
+                                <tr 
+                                  key={materie.id} 
+                                  className="hover:bg-gray-50 cursor-pointer"
+                                  onClick={() => setSelectedMaterie(materie)}
+                                >
+                                  <td className="px-2 py-2 truncate font-medium text-gray-900">
+                                    {materie.nume}
+                                  </td>
+                                  <td className="px-2 py-2 text-center text-gray-500">{materie.credite}</td>
+                                  <td className="px-2 py-2 text-center">
+                                    {materie.nota ? 
+                                      <span className={`font-medium ${materie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {materie.nota}
+                                      </span> : 
+                                      <span className="text-gray-500">Neevaluat</span>
+                                    }
+                                  </td>
+                                </tr>
+                              ))}
+                              {/* Statistici pentru semestrul 2 */}
+                              <tr className="bg-gray-50 text-xs">
+                                <td colSpan="3" className="px-2 py-1">
+                                  <div className="flex justify-between">
+                                    <span className="font-medium text-gray-700">
+                                      Credite Sem. 2: <span className="font-bold">{calculateStats(activeYear, 2).totalCredite}</span>
+                                    </span>
+                                    <span className="font-medium text-gray-700">
+                                      Medie Sem. 2: <span className="font-bold">{calculateStats(activeYear, 2).medie || 'N/A'}</span>
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t border-gray-200 text-xs">
+                  <tfoot className="bg-gray-50 border-t-2 border-gray-300 text-xs font-semibold">
                     <tr>
-                      <td className="px-2 py-2 font-medium text-gray-900">
-                        Credite obținute: <span className="font-bold">{calculateStats(activeYear).totalCredite}</span>
-                      </td>
-                      <td colSpan="2" className="px-2 py-2 text-right font-medium text-gray-900">
-                        Medie: <span className="font-bold">{calculateStats(activeYear).medie || 'N/A'}</span>
+                      <td colSpan="3" className="px-2 py-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-900">
+                            Total credite anul {activeYear}: <span className="font-bold">{calculateStats(activeYear).totalCredite}</span>
+                          </span>
+                          <span className="text-gray-900">
+                            Medie anul {activeYear}: <span className="font-bold">{calculateStats(activeYear).medie || 'N/A'}</span>
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   </tfoot>

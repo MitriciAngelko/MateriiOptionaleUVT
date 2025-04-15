@@ -368,74 +368,112 @@ const AdminIstoricAcademicPage = () => {
 
   // Începe editarea unei note existente
   const startEditingNote = (anualIndex, noteIndex) => {
-    const note = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri[noteIndex];
+    const notaData = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri[noteIndex];
+    
     setEditNoteForm({
-      id: note.id,
-      nume: note.nume,
-      credite: note.credite,
-      nota: note.nota,
-      status: note.status,
-      profesor: note.profesor,
-      obligatorie: note.obligatorie || false,
-      anualIndex,
-      noteIndex
+      id: notaData.id,
+      nume: notaData.nume,
+      credite: notaData.credite,
+      nota: notaData.nota,
+      status: notaData.status || 'neevaluat',
+      profesor: notaData.profesor || 'Nespecificat',
+      obligatorie: notaData.obligatorie || false
     });
+    
     setEditingNoteId(`${anualIndex}-${noteIndex}`);
   };
 
-  // Salvează o notă editată
+  // Salvează nota editată
   const handleSaveEditedNote = async () => {
+    if (!selectedStudent || !editingNoteId) return;
+    
     setLoading(true);
     setErrorMessage('');
-    setSuccessMessage('');
     
     try {
-      const { anualIndex, noteIndex, ...noteData } = editNoteForm;
+      const [anualIndex, noteIndex] = editingNoteId.split('-').map(Number);
       
-      // Determină statusul în funcție de notă
-      const status = noteData.nota >= 5 ? 'promovat' : 'nepromovat';
-      noteData.status = status;
-      noteData.dataNota = new Date(); // Actualizăm data notei
-      
-      console.log('Actualizăm nota pentru:', selectedStudent);
-      console.log('Detalii actualizare:', noteData);
-      
-      // Obține referința la documentul de istoric
-      const istoricRef = doc(db, 'istoricAcademic', selectedStudent);
-      
-      // Obține istoricul actual
-      const istoricDoc = await getDoc(istoricRef);
-      
-      if (!istoricDoc.exists()) {
-        throw new Error('Istoricul academic nu a fost găsit');
+      // Verifică dacă indicii sunt valizi
+      if (anualIndex < 0 || noteIndex < 0 || 
+          !selectedStudentData.istoric.istoricAnual[anualIndex] || 
+          !selectedStudentData.istoric.istoricAnual[anualIndex].cursuri[noteIndex]) {
+        throw new Error('Indici invalizi pentru nota editată');
       }
       
-      const istoricData = istoricDoc.data();
+      // Obține nota existentă
+      const existingNote = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri[noteIndex];
       
-      // Actualizează nota în istoricul anual
-      const updatedIstoric = [...istoricData.istoricAnual];
-      updatedIstoric[anualIndex].cursuri[noteIndex] = {
-        ...updatedIstoric[anualIndex].cursuri[noteIndex],
-        ...noteData
+      // Memorăm anul actual pentru a-l păstra
+      const currentActiveYear = activeYear;
+      
+      // Determină statusul pe baza notei
+      let status = 'neevaluat';
+      if (editNoteForm.nota > 0) {
+        status = editNoteForm.nota >= 5 ? 'promovat' : 'nepromovat';
+      }
+      
+      // Actualizează doar nota și statusul, păstrând celelalte câmpuri neschimbate
+      const updatedNote = {
+        ...existingNote,
+        nota: editNoteForm.nota,
+        status: status,
+        dataNota: new Date()
       };
       
-      // Actualizăm direct întregul document pentru a evita probleme de sincronizare
-      await setDoc(istoricRef, {
-        ...istoricData,
-        istoricAnual: updatedIstoric,
-        lastUpdated: new Date() // Adăugăm un timestamp pentru a forța actualizarea
-      });
+      // Actualizează nota în istoric
+      const updatedIstoric = {...selectedStudentData.istoric};
+      updatedIstoric.istoricAnual[anualIndex].cursuri[noteIndex] = updatedNote;
       
-      // Reîncarcă datele studentului
-      await handleSelectStudent(selectedStudent);
+      // Salvează în baza de date
+      const istoricRef = doc(db, 'istoricAcademic', selectedStudent);
+      await updateDoc(istoricRef, updatedIstoric);
       
+      // Resetează starea de editare
       setEditingNoteId(null);
+      
+      // Actualizează datele studentului fără a reseta anul activ
+      try {
+        // Obține datele studentului
+        const studentDoc = await getDoc(doc(db, 'users', selectedStudent));
+        
+        if (!studentDoc.exists()) {
+          throw new Error('Studentul nu a fost găsit');
+        }
+        
+        const studentData = {
+          id: studentDoc.id,
+          ...studentDoc.data()
+        };
+        
+        // Verifică dacă există istoric academic pentru student
+        const istoricRef = doc(db, 'istoricAcademic', selectedStudent);
+        const istoricDoc = await getDoc(istoricRef);
+        
+        let istoricData = null;
+        
+        if (istoricDoc.exists()) {
+          istoricData = istoricDoc.data();
+        }
+        
+        // Actualizează datele studentului în state
+        setSelectedStudentData({
+          ...studentData,
+          istoric: istoricData
+        });
+        
+        // Restaurăm anul activ
+        setActiveYear(currentActiveYear);
+        
+      } catch (error) {
+        console.error('Eroare la reîncărcarea datelor studentului:', error);
+      }
+      
+      setLoading(false);
       setSuccessMessage('Nota a fost actualizată cu succes!');
       
     } catch (error) {
       console.error('Eroare la actualizarea notei:', error);
       setErrorMessage('Eroare la actualizarea notei: ' + error.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -557,12 +595,24 @@ const AdminIstoricAcademicPage = () => {
 
   // Obține toate cursurile pentru afișare într-un tabel unic
   const getAllCursuri = () => {
-    const allCursuri = [];
     const istoricFiltrat = getFilteredIstoricAnual();
     
+    // Grupează cursurile pe semestre
+    const cursuriBySemestru = {};
+    
     for (const anual of istoricFiltrat) {
+      const semesterId = `${anual.anUniversitar}-${anual.semestru}`;
+      if (!cursuriBySemestru[semesterId]) {
+        cursuriBySemestru[semesterId] = {
+          anStudiu: anual.anStudiu,
+          semestru: anual.semestru,
+          anUniversitar: anual.anUniversitar,
+          cursuri: []
+        };
+      }
+      
       for (const curs of anual.cursuri) {
-        allCursuri.push({
+        cursuriBySemestru[semesterId].cursuri.push({
           ...curs,
           anStudiu: anual.anStudiu,
           semestru: anual.semestru,
@@ -571,7 +621,13 @@ const AdminIstoricAcademicPage = () => {
       }
     }
     
-    return allCursuri;
+    // Sortează semestrele după an universitar și semestru
+    return Object.values(cursuriBySemestru).sort((a, b) => {
+      if (a.anUniversitar !== b.anUniversitar) {
+        return a.anUniversitar.localeCompare(b.anUniversitar);
+      }
+      return a.semestru - b.semestru;
+    });
   };
 
   if (!hasAccess) {
@@ -713,137 +769,127 @@ const AdminIstoricAcademicPage = () => {
                 </div>
               </div>
               
-              {/* Istoric în tabel unic */}
+              {/* Istoric în tabel grupat pe semestre */}
               <div className="overflow-x-auto">
                 {selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
-                  <table className="min-w-full mt-2">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materie</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credite</th>
-                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Notă</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acțiuni</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {getAllCursuri().map((curs, courseIndex) => {
-                        // Găsim indexul anual și al notei pentru această notă
-                        const anualIndex = selectedStudentData.istoric.istoricAnual.findIndex(a => 
-                          a.anStudiu === curs.anStudiu && a.semestru === curs.semestru && a.anUniversitar === curs.anUniversitar
-                        );
-                        
-                        const noteIndex = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri.findIndex(c => 
-                          c.id === curs.id
-                        );
-                        
-                        const isEditing = editingNoteId === `${anualIndex}-${noteIndex}`;
-                        
-                        return (
-                          <tr key={courseIndex} className={curs.nota >= 5 ? "bg-green-50" : (curs.nota === 0 ? "bg-gray-50" : "bg-red-50")}>
-                            {isEditing ? (
-                              <>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="text"
-                                    className="w-full px-2 py-1 border rounded"
-                                    value={editNoteForm.nume}
-                                    onChange={(e) => setEditNoteForm({...editNoteForm, nume: e.target.value})}
-                                    required
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="30"
-                                    className="w-full px-2 py-1 border rounded"
-                                    value={editNoteForm.credite}
-                                    onChange={(e) => setEditNoteForm({...editNoteForm, credite: parseInt(e.target.value)})}
-                                    required
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    max="10"
-                                    className="w-full px-2 py-1 border rounded"
-                                    value={editNoteForm.nota}
-                                    onChange={(e) => setEditNoteForm({...editNoteForm, nota: parseInt(e.target.value)})}
-                                    required
-                                  />
-                                </td>
-                                <td className="px-4 py-2">
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={handleSaveEditedNote}
-                                      className="text-green-600 hover:text-green-800"
-                                      title="Salvează"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                      </svg>
-                                    </button>
-                                    <button
-                                      onClick={() => setEditingNoteId(null)}
-                                      className="text-gray-600 hover:text-gray-800"
-                                      title="Anulează"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-4 py-2">
-                                  <div className="flex items-center">
-                                    <span className="font-medium">{curs.nume}</span>
-                                    <span className="ml-2 text-xs text-gray-500">
-                                      (An {curs.anStudiu}, Sem {curs.semestru})
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-2">{curs.credite}</td>
-                                <td className="px-4 py-2 text-center font-medium">
-                                  {curs.nota === 0 ? 
-                                    <span className="text-gray-500">Neevaluat</span> : 
-                                    <span className={curs.nota >= 5 ? "text-green-600" : "text-red-600"}>
-                                      {curs.nota}
-                                    </span>
-                                  }
-                                </td>
-                                <td className="px-4 py-2">
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => startEditingNote(anualIndex, noteIndex)}
-                                      className="text-blue-600 hover:text-blue-800"
-                                      title="Editează"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                      </svg>
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteNote(anualIndex, noteIndex)}
-                                      className="text-red-600 hover:text-red-800"
-                                      title="Șterge"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  <div>
+                    {getAllCursuri().map((semestru, semestruIndex) => (
+                      <div key={semestruIndex} className="mb-8">
+                        <h3 className="text-lg font-semibold mb-2">
+                          Anul {semestru.anStudiu}, Semestrul {semestru.semestru} ({semestru.anUniversitar})
+                        </h3>
+                        <table className="min-w-full">
+                          <thead>
+                            <tr className="bg-gray-50">
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Materie</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credite</th>
+                              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Notă</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acțiuni</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {semestru.cursuri.map((curs, courseIndex) => {
+                              // Găsim indexul anual și al notei pentru această notă
+                              const anualIndex = selectedStudentData.istoric.istoricAnual.findIndex(a => 
+                                a.anStudiu === curs.anStudiu && a.semestru === curs.semestru && a.anUniversitar === curs.anUniversitar
+                              );
+                              
+                              const noteIndex = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri.findIndex(c => 
+                                c.id === curs.id
+                              );
+                              
+                              const isEditing = editingNoteId === `${anualIndex}-${noteIndex}`;
+                              
+                              return (
+                                <tr key={courseIndex} className={curs.nota >= 5 ? "bg-green-50" : (curs.nota === 0 ? "bg-gray-50" : "bg-red-50")}>
+                                  {isEditing ? (
+                                    <>
+                                      <td className="px-4 py-2">
+                                        {curs.nume}
+                                      </td>
+                                      <td className="px-4 py-2">
+                                        {curs.credite}
+                                      </td>
+                                      <td className="px-4 py-2">
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          max="10"
+                                          className="w-full px-2 py-1 border rounded"
+                                          value={editNoteForm.nota}
+                                          onChange={(e) => setEditNoteForm({...editNoteForm, nota: parseInt(e.target.value)})}
+                                          required
+                                        />
+                                      </td>
+                                      <td className="px-4 py-2">
+                                        <div className="flex space-x-2">
+                                          <button
+                                            onClick={handleSaveEditedNote}
+                                            className="text-green-600 hover:text-green-800"
+                                            title="Salvează"
+                                          >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                          </button>
+                                          <button
+                                            onClick={() => setEditingNoteId(null)}
+                                            className="text-gray-600 hover:text-gray-800"
+                                            title="Anulează"
+                                          >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td className="px-4 py-2">
+                                        <span className="font-medium">{curs.nume}</span>
+                                      </td>
+                                      <td className="px-4 py-2">{curs.credite}</td>
+                                      <td className="px-4 py-2 text-center font-medium">
+                                        {curs.nota === 0 ? 
+                                          <span className="text-gray-500">Neevaluat</span> : 
+                                          <span className={curs.nota >= 5 ? "text-green-600" : "text-red-600"}>
+                                            {curs.nota}
+                                          </span>
+                                        }
+                                      </td>
+                                      <td className="px-4 py-2">
+                                        <div className="flex space-x-2">
+                                          <button
+                                            onClick={() => startEditingNote(anualIndex, noteIndex)}
+                                            className="text-blue-600 hover:text-blue-800"
+                                            title="Editează"
+                                          >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteNote(anualIndex, noteIndex)}
+                                            className="text-red-600 hover:text-red-800"
+                                            title="Șterge"
+                                          >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </>
+                                  )}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-gray-500">Nu există date pentru anul {activeYear} în istoricul academic</p>
