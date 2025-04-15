@@ -335,7 +335,7 @@ const MateriiStudentPage = () => {
                 <table className="w-full table-fixed">
                   <thead className="bg-gray-50 text-xs">
                     <tr>
-                      <th className="w-[55%] px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Materie</th>
+                      <th className="w-[25%] px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Materie</th>
                       <th className="w-[15%] px-2 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">Credite</th>
                       <th className="w-[30%] px-2 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">Notă</th>
                     </tr>

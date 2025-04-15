@@ -16,6 +16,7 @@ const Navbar = () => {
     isStudent: false,
     isSecretar: false
   });
+  const [userData, setUserData] = useState(null);
   
   useEffect(() => {
     const checkRoles = async () => {
@@ -34,6 +35,12 @@ const Navbar = () => {
             isStudent: student,
             isSecretar: secretar
           });
+
+          // Obține datele utilizatorului pentru inițiale
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
         } catch (error) {
           console.error('Eroare la verificarea rolurilor:', error);
         }
@@ -52,13 +59,16 @@ const Navbar = () => {
     }
   };
 
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   // Generăm elementele de navigare bazate pe roluri
   const getNavItems = () => {
     const items = [];
     
     // Elemente comune
     items.push({ path: '/home', label: 'Home' });
-    items.push({ path: '/profile', label: 'Profil' });
     
     // Elemente specifice rolurilor
     if (roles.isProfesor) {
@@ -80,6 +90,12 @@ const Navbar = () => {
   };
 
   const navItems = getNavItems();
+
+  // Obține inițialele utilizatorului
+  const getInitials = () => {
+    if (!userData?.prenume || !userData?.nume) return '?';
+    return `${userData.prenume.charAt(0)}${userData.nume.charAt(0)}`.toUpperCase();
+  };
 
   return (
     <div className="h-16 bg-[#034a76] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50">
@@ -108,17 +124,26 @@ const Navbar = () => {
           </ul>
         </nav>
       </div>
-      <div className="flex items-center">
+      <div className="flex items-center space-x-4">
         {user ? (
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-300">{user.email}</div>
+          <>
+            <button
+              onClick={handleProfileClick}
+              className="w-10 h-10 rounded-full bg-white text-[#034a76] flex items-center justify-center font-bold text-lg hover:bg-gray-100 transition-colors"
+              title="Profil"
+            >
+              {getInitials()}
+            </button>
             <button
               onClick={handleLogout}
-              className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 rounded transition-colors"
+              className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-colors"
+              title="Deconectare"
             >
-              Deconectare
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
-          </div>
+          </>
         ) : (
           <button
             onClick={() => navigate('/login')}
