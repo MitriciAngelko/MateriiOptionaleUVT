@@ -265,6 +265,12 @@ const MateriileMelePage = () => {
                               <div className="font-medium text-gray-900 cursor-pointer" 
                                 onClick={() => setExpandedMaterieId(expandedMaterieId === materie.id ? null : materie.id)}>
                                 {materie.nume}
+                                {materie.status === 'nepromovat' || (materie.nota > 0 && materie.nota < 5) ? 
+                                  <span className="ml-2 text-xs font-normal text-red-600">(Nepromovat)</span> : 
+                                  materie.status === 'promovat' || materie.nota >= 5 ?
+                                  <span className="ml-2 text-xs font-normal text-green-600">(Promovat)</span> : 
+                                  null
+                                }
                               </div>
                               {expandedMaterieId === materie.id && (
                                 <div className="mt-2 text-xs text-gray-600">
@@ -300,4 +306,4 @@ const MateriileMelePage = () => {
   );
 };
 
-export default MateriileMelePage; 
+export default MateriileMelePage;

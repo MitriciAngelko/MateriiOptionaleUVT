@@ -42,6 +42,7 @@ const MateriiStudentPage = () => {
         setActiveYear(userData.an || 'I');
 
         // Obține toate materiile obligatorii pentru facultatea și specializarea studentului
+        // Vom filtra materiile obligatorii pentru anul curent al studentului și anii anteriori
         const materiiObligatoriiSnapshot = await getDocs(
           query(
             collection(db, 'materii'),
@@ -51,10 +52,22 @@ const MateriiStudentPage = () => {
           )
         );
 
-        const materiiObligatorii = materiiObligatoriiSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const materiiObligatorii = materiiObligatoriiSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(materie => {
+            // Includem doar materiile obligatorii pentru anii anteriori și anul curent
+            const materieAn = materie.an || 'I';
+            const studentAn = userData.an || 'I';
+            
+            // Convertim anul roman în număr pentru comparație
+            const materieAnNumeric = materieAn === 'I' ? 1 : materieAn === 'II' ? 2 : 3;
+            const studentAnNumeric = studentAn === 'I' ? 1 : studentAn === 'II' ? 2 : 3;
+            
+            return materieAnNumeric <= studentAnNumeric;
+          });
 
         // Adaugă materiile obligatorii la lista de materii înscrise (dacă nu există deja)
         const materiiObligatoriiIds = materiiObligatorii.map(m => m.id);
@@ -199,8 +212,158 @@ const MateriiStudentPage = () => {
       const month = currentDate.getMonth(); // 0-11
       const anUniversitar = month < 9 ? 
         `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
-        `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
+        `${year}-${year+1}`;
         
+      // Găsim toate materiile promovate din istoricul academic
+      const materiiPromovate = new Set();
+      const materiiNepromovate = new Set(); // Adăugăm set pentru materii nepromovate
+      const materiiNeevaluate = new Set(); // Adăugăm set pentru materii neevaluate
+      if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+        istoricData.istoricAnual.forEach(anual => {
+          if (anual.cursuri && anual.cursuri.length > 0) {
+            anual.cursuri.forEach(curs => {
+              if (curs.status === 'promovat' || curs.nota >= 5) {
+                materiiPromovate.add(curs.id);
+              } else if (curs.nota > 0 && curs.nota < 5) {
+                materiiNepromovate.add(curs.id);
+              } else if (curs.nota === 0 || curs.status === 'neevaluat') {
+                materiiNeevaluate.add(curs.id);
+              }
+            });
+          }
+        });
+      }
+      
+      // Obținem lista actuală de materii înscrise a studentului
+      const userRef = doc(db, 'users', user.uid);
+      const userData = (await getDoc(userRef)).data();
+      const materiiInscriseCurente = userData.materiiInscrise || [];
+      const anStudent = userData.an || 'I'; // Anul în care se află studentul
+      
+      // Verificăm dacă lipsește studentul din lista de studentiInscrisi a vreunei materii
+      const studentData = (await getDoc(doc(db, 'users', user.uid))).data();
+      
+      // Verificăm fiecare materie la care studentul este înscris
+      for (const materieId of materiiInscriseCurente) {
+        if (!materiiPromovate.has(materieId)) {
+          try {
+            const materieRef = doc(db, 'materii', materieId);
+            const materieDoc = await getDoc(materieRef);
+            
+            if (materieDoc.exists()) {
+              const materieData = materieDoc.data();
+              const studentiInscrisi = materieData.studentiInscrisi || [];
+              const anMaterie = materieData.an || 'I';
+              
+              // Convertim anii în numere pentru comparație
+              const anStudentNumeric = anStudent === 'I' ? 1 : anStudent === 'II' ? 2 : 3;
+              const anMaterieNumeric = anMaterie === 'I' ? 1 : anMaterie === 'II' ? 2 : 3;
+              
+              // Verificăm dacă studentul este din an mai mare sau an mai mic decât materia
+              const esteDinAnMaiMare = anStudentNumeric > anMaterieNumeric;
+              const esteDinAnMaiMic = anStudentNumeric < anMaterieNumeric;
+              
+              // Verificăm dacă studentul este în lista de studenți înscriși
+              const esteInscris = studentiInscrisi.some(student => student.id === user.uid);
+              
+              // Adăugăm studentul doar dacă:
+              // 1. Nu este deja înscris
+              // 2. ȘI Nu este din an mai mic decât materia (pentru a preveni înscrierea la materii din ani viitori)
+              // 3. ȘI (Nu este din an mai mare SAU are materia nepromovată/neevaluată)
+              if (!esteInscris && !esteDinAnMaiMic && 
+                  (!esteDinAnMaiMare || materiiNepromovate.has(materieId) || materiiNeevaluate.has(materieId))) {
+                await updateDoc(materieRef, {
+                  studentiInscrisi: arrayUnion({
+                    id: user.uid,
+                    nume: studentData.nume || studentData.displayName || 'Student',
+                    numarMatricol: studentData?.numarMatricol || 'N/A'
+                  })
+                });
+              } else if (esteInscris && esteDinAnMaiMic) {
+                // Dacă studentul este deja înscris la o materie din an viitor, îl scoatem din lista
+                const studentiInscrisiFiltrati = studentiInscrisi.filter(student => student.id !== user.uid);
+                
+                if (studentiInscrisi.length !== studentiInscrisiFiltrati.length) {
+                  await updateDoc(materieRef, {
+                    studentiInscrisi: studentiInscrisiFiltrati
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Eroare la actualizarea studenților înscriși pentru materia ${materieId}:`, error);
+          }
+        }
+      }
+      
+      // Filtrăm materiile din lista de materii înscrise pentru a exclude materiile din ani viitori
+      // și pentru a păstra materiile nepromovate
+      const materiiInscriseFiltrate = [];
+      
+      for (const materieId of materiiInscriseCurente) {
+        try {
+          const materieDoc = await getDoc(doc(db, 'materii', materieId));
+          
+          if (materieDoc.exists()) {
+            const materieData = materieDoc.data();
+            const anMaterie = materieData.an || 'I';
+            
+            // Convertim anii în numere pentru comparație
+            const anStudentNumeric = anStudent === 'I' ? 1 : anStudent === 'II' ? 2 : 3;
+            const anMaterieNumeric = anMaterie === 'I' ? 1 : anMaterie === 'II' ? 2 : 3;
+            
+            // Verificăm dacă materia este din an viitor față de studentul actual
+            const esteDinAnViitor = anMaterieNumeric > anStudentNumeric;
+            
+            // Adăugăm materia în lista filtrată doar dacă:
+            // 1. Nu este din an viitor
+            // 2. ȘI (Nu este promovată SAU este nepromovată/neevaluată)
+            if (!esteDinAnViitor && 
+                (!materiiPromovate.has(materieId) || 
+                 materiiNepromovate.has(materieId) || 
+                 materiiNeevaluate.has(materieId))) {
+              materiiInscriseFiltrate.push(materieId);
+            }
+          }
+        } catch (error) {
+          console.error(`Eroare la verificarea materiei ${materieId}:`, error);
+        }
+      }
+      
+      // Actualizăm lista de materii înscrise în baza de date
+      if (JSON.stringify(materiiInscriseCurente.sort()) !== JSON.stringify(materiiInscriseFiltrate.sort())) {
+        await updateDoc(userRef, {
+          materiiInscrise: materiiInscriseFiltrate
+        });
+        
+        // Actualizăm și lista de studenți înscriși din fiecare materie promovată
+        // Dar doar pentru cele care nu sunt nepromovate
+        const materiiDeAnulat = [...materiiPromovate].filter(id => !materiiNepromovate.has(id));
+        for (const materieId of materiiDeAnulat) {
+          try {
+            const materieRef = doc(db, 'materii', materieId);
+            const materieDoc = await getDoc(materieRef);
+            
+            if (materieDoc.exists()) {
+              const materieData = materieDoc.data();
+              const studentiInscrisi = materieData.studentiInscrisi || [];
+              
+              // Filtrăm studentul curent din lista de studenți înscriși
+              const studentiInscrisiFiltrati = studentiInscrisi.filter(student => student.id !== user.uid);
+              
+              // Actualizăm doar dacă s-a schimbat ceva
+              if (studentiInscrisi.length !== studentiInscrisiFiltrati.length) {
+                await updateDoc(materieRef, {
+                  studentiInscrisi: studentiInscrisiFiltrati
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Eroare la actualizarea studenților înscriși pentru materia ${materieId}:`, error);
+          }
+        }
+      }
+
       // Pentru fiecare materie, verifică dacă există în istoricul academic
       for (const materie of materii) {
         // Verifică dacă materia există deja în istoric

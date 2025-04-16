@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import DeleteIcon from '../../components/icons/DeleteIcon';
 import MaterieDetailsModal from '../../components/student/MaterieDetailsModal';
@@ -204,27 +204,125 @@ const AdminMateriiPage = () => {
   const MaterieModal = ({ materie, onClose }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedMaterie, setEditedMaterie] = useState({...materie});
+    const [studentiAftati, setStudentiAfisati] = useState([]);
+    
+    useEffect(() => {
+      // Filtrăm studenții care au promovat materia și nu trebuie afișați
+      const filtreazaStudentiInscrisi = async () => {
+        if (!materie.studentiInscrisi || materie.studentiInscrisi.length === 0) {
+          setStudentiAfisati([]);
+          return;
+        }
+        
+        const studentiAfisati = [];
+        
+        for (const student of materie.studentiInscrisi) {
+          try {
+            // Verificăm anul studentului
+            const userRef = doc(db, 'users', student.id);
+            const userDoc = await getDoc(userRef);
+            
+            if (!userDoc.exists()) {
+              continue; // Sărim peste studenții care nu există
+            }
+            
+            const userData = userDoc.data();
+            const anStudent = userData.an || 'I';
+            const anMaterie = materie.an || 'I';
+            
+            // Convertim anul roman în număr pentru comparație
+            const anStudentNumeric = anStudent === 'I' ? 1 : anStudent === 'II' ? 2 : 3;
+            const anMaterieNumeric = anMaterie === 'I' ? 1 : anMaterie === 'II' ? 2 : 3;
+            
+            // Verificăm dacă studentul este dintr-un an mai mic decât materia (an viitor pentru student)
+            const esteDinAnMaiMic = anStudentNumeric < anMaterieNumeric;
+            
+            // Dacă studentul este dintr-un an mai mic decât materia, îl sărim
+            if (esteDinAnMaiMic) {
+              continue;
+            }
+                          
+            // Verificăm dacă studentul este dintr-un an mai mare decât materia
+            const esteDinAnMaiMare = anStudentNumeric > anMaterieNumeric;
+            
+            // Verificăm istoricul academic al studentului
+            const istoricRef = doc(db, 'istoricAcademic', student.id);
+            const istoricDoc = await getDoc(istoricRef);
+            
+            let esteCursulPromovat = false;
+            let esteNepromovat = false;
+            let esteNeevaluat = false;
+            
+            if (istoricDoc.exists()) {
+              const istoricData = istoricDoc.data();
+              
+              if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+                for (const anAcademic of istoricData.istoricAnual) {
+                  if (anAcademic.cursuri && anAcademic.cursuri.length > 0) {
+                    const curs = anAcademic.cursuri.find(c => c.id === materie.id);
+                    if (curs) {
+                      if (curs.status === 'promovat' || curs.nota >= 5) {
+                        // Studentul a promovat cursul
+                        esteCursulPromovat = true;
+                        break;
+                      } else if (curs.nota > 0 && curs.nota < 5) {
+                        // Studentul nu a promovat cursul (are notă sub 5)
+                        esteNepromovat = true;
+                      } else if (curs.nota === 0 || curs.status === 'neevaluat') {
+                        // Studentul nu a fost evaluat încă
+                        esteNeevaluat = true;
+                      }
+                    }
+                  }
+                }
+              }
+            } else {
+              // Dacă nu are istoric academic, îl considerăm neevaluat
+              esteNeevaluat = true;
+            }
+            
+            // Adăugăm studentul în lista afișată dacă:
+            // 1. Nu a promovat cursul (inclusiv cei cu note sub 5)
+            // 2. ȘI nu este dintr-un an mai mic decât materia (adică să nu fie din an viitor)
+            // 3. ȘI (este nepromovat SAU este neevaluat SAU nu este dintr-un an mai mare)
+            if (!esteCursulPromovat && !esteDinAnMaiMic && (esteNepromovat || esteNeevaluat || !esteDinAnMaiMare)) {
+              studentiAfisati.push(student);
+            }
+          } catch (error) {
+            console.error(`Eroare la verificarea istoricului pentru studentul ${student.id}:`, error);
+          }
+        }
+        
+        setStudentiAfisati(studentiAfisati);
+      };
+      
+      filtreazaStudentiInscrisi();
+    }, [materie]);
 
     const handleEdit = () => {
       setIsEditing(true);
     };
-
+    
     const handleSave = async () => {
       try {
         const materieRef = doc(db, 'materii', materie.id);
         await updateDoc(materieRef, editedMaterie);
-        fetchMaterii();
+        
+        setMaterii(prevMaterii => 
+          prevMaterii.map(m => 
+            m.id === materie.id ? {...m, ...editedMaterie} : m
+          )
+        );
+        
         setIsEditing(false);
-        onClose();
       } catch (error) {
         console.error('Eroare la actualizarea materiei:', error);
-        setError('A apărut o eroare la actualizarea materiei');
       }
     };
-
+    
     const handleCancel = () => {
-      setIsEditing(false);
       setEditedMaterie({...materie});
+      setIsEditing(false);
     };
 
     return (
@@ -415,11 +513,11 @@ const AdminMateriiPage = () => {
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-medium text-gray-700 mb-3">
-                  Studenți Înscriși ({materie.studentiInscrisi?.length || 0}/{materie.locuriDisponibile || 0})
+                  Studenți Înscriși ({studentiAftati?.length || 0}/{materie.locuriDisponibile || 0})
                 </h3>
-                {materie.studentiInscrisi?.length > 0 ? (
+                {studentiAftati?.length > 0 ? (
                   <ul className="space-y-2">
-                    {materie.studentiInscrisi.map((student) => (
+                    {studentiAftati.map((student) => (
                       <li key={student.id} className="text-gray-600">
                         {student.nume} | {student.nrMatricol || student.numarMatricol || 'N/A'}
                       </li>

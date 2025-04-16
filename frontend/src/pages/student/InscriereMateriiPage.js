@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, doc, updateDoc, getDoc, arrayUnion, 
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import MaterieModal from '../../components/student/MaterieModal';
+import { isStudent } from '../../utils/userRoles';
 
 const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDetails, id }) => {
   return (
@@ -46,6 +47,7 @@ const InscriereMateriiPage = () => {
   const [dragPachet, setDragPachet] = useState(null);
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
 
   // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
   const adaugaToateMateriile = (pachetId) => {
@@ -98,45 +100,114 @@ const InscriereMateriiPage = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchPachete = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
       if (!user?.uid) {
         navigate('/login');
         return;
       }
-
-      try {
-        // Obține pachetele și materiile înscrise ale studentului
-        const [pacheteSnapshot, userDoc] = await Promise.all([
-          getDocs(collection(db, 'pachete')),
-          getDoc(doc(db, 'users', user.uid))
-        ]);
-
-        const materiiInscrise = userDoc.data().materiiInscrise || [];
-        const preferinteExistente = userDoc.data().preferinteMateriiOptionale || {};
-        
-        // Procesează pachetele și marchează materiile deja alese
-        const pacheteList = pacheteSnapshot.docs.map(doc => {
-          const pachet = { id: doc.id, ...doc.data() };
-          // Pentru fiecare pachet, verifică dacă studentul are o materie aleasă din acest pachet
-          const materieAleasa = pachet.materii.find(m => materiiInscrise.includes(m.id));
-          return {
-            ...pachet,
-            materieAleasa: materieAleasa?.id || null
-          };
-        });
-
-        setPachete(pacheteList);
-        setPreferinte(preferinteExistente);
-        setLoading(false);
-      } catch (error) {
-        console.error('Eroare la încărcarea datelor:', error);
-        setError('A apărut o eroare la încărcarea datelor');
-        setLoading(false);
+      
+      // Verifică dacă utilizatorul este student
+      const studentStatus = await isStudent(user.uid);
+      if (!studentStatus) {
+        navigate('/');
+        return;
       }
-    };
+      
+      // Obține datele studentului pentru a determina facultatea, specializarea și anul
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      if (!userData) {
+        throw new Error('Nu s-au putut găsi datele studentului');
+      }
+      
+      // Salvează datele studentului în state pentru a fi folosite mai târziu
+      setUserData(userData);
+      
+      // Obține istoricul academic al studentului pentru a verifica materiile promovate
+      const istoricRef = doc(db, 'istoricAcademic', user.uid);
+      const istoricDoc = await getDoc(istoricRef);
+      const materiiPromovate = new Set();
+      
+      if (istoricDoc.exists()) {
+        const istoricData = istoricDoc.data();
+        if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+          istoricData.istoricAnual.forEach(anual => {
+            if (anual.cursuri && anual.cursuri.length > 0) {
+              anual.cursuri.forEach(curs => {
+                if (curs.status === 'promovat') {
+                  materiiPromovate.add(curs.id);
+                }
+              });
+            }
+          });
+        }
+      }
+      
+      // Obține pachetele pentru facultatea, specializarea și anul studentului
+      const pacheteQuery = query(
+        collection(db, 'pachete'),
+        where('facultate', '==', userData.facultate),
+        where('specializare', '==', userData.specializare),
+        where('an', '==', userData.an)
+      );
+      
+      const pacheteSnapshot = await getDocs(pacheteQuery);
+      
+      // Verifică dacă există pachete pentru această combinație
+      if (pacheteSnapshot.empty) {
+        setError(`Nu există pachete disponibile pentru ${userData.facultate}, specializarea ${userData.specializare}, anul ${userData.an}`);
+        setLoading(false);
+        return;
+      }
+      
+      // Obține lista de materii înscrise ale studentului
+      const materiiInscrise = userData.materiiInscrise || [];
+      
+      // Construiește obiectele pentru pachete
+      const pacheteData = [];
+      
+      for (const pachetDoc of pacheteSnapshot.docs) {
+        const pachetData = { id: pachetDoc.id, ...pachetDoc.data() };
+        
+        // Verifică dacă studentul a ales deja o materie din acest pachet
+        const materieAleasa = materiiInscrise.find(materieId => {
+          const materie = pachetData.materii.find(m => m.id === materieId);
+          return materie !== undefined;
+        });
+        
+        if (materieAleasa) {
+          pachetData.materieAleasa = materieAleasa;
+        }
+        
+        // Filtrează materiile promovate
+        pachetData.materii = pachetData.materii.filter(materie => !materiiPromovate.has(materie.id));
+        
+        // Adaugă pachetul la lista doar dacă are materii disponibile sau dacă studentul a ales deja o materie
+        if (pachetData.materii.length > 0 || materieAleasa) {
+          pacheteData.push(pachetData);
+        }
+      }
+      
+      // Sortează pachetele după data de început
+      pacheteData.sort((a, b) => new Date(a.dataStart) - new Date(b.dataStart));
+      
+      // Actualizează state-ul
+      setPachete(pacheteData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Eroare la încărcarea pachetelor:', error);
+      setError('A apărut o eroare la încărcarea pachetelor');
+      setLoading(false);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    fetchPachete();
   }, [user, navigate]);
 
   // Verifică dacă avem pachete și adaugă materiile la preferințe dacă e nevoie
@@ -208,7 +279,7 @@ const InscriereMateriiPage = () => {
     }
   };
 
-  const handleMaterieClick = async (materieId) => {
+  const handleMaterieView = async (materieId) => {
     try {
       const materieRef = doc(db, 'materii', materieId);
       const materieDoc = await getDoc(materieRef);
@@ -262,7 +333,10 @@ const InscriereMateriiPage = () => {
           profesorInfo: profesorInfo,
           pachetId: pachetulMateriei?.id
         });
-        setSelectedMaterie(materieId);
+        setSelectedMaterie({
+          id: materieId,
+          pachetId: pachetulMateriei?.id
+        });
       }
     } catch (error) {
       console.error('Eroare la încărcarea detaliilor materiei:', error);
@@ -270,36 +344,79 @@ const InscriereMateriiPage = () => {
     }
   };
 
-  const handleInscriere = async (materieId, pachetId) => {
-    if (!pachetId) {
-      setError('Eroare: Nu s-a putut identifica pachetul materiei');
-      return;
-    }
-
-    setLoading(true);
+  const handleMaterieClick = async (materieId) => {
     try {
-      const userRef = doc(db, 'users', user.uid);
-      const materieRef = doc(db, 'materii', materieId);
-      const userDoc = await getDoc(userRef);
-      const materieDoc = await getDoc(materieRef);
-      const materieData = materieDoc.data();
-      const userData = userDoc.data();
-
-      // Verifică dacă mai sunt locuri disponibile
-      if (!materieData.obligatorie && materieData.studentiInscrisi?.length >= materieData.locuriDisponibile) {
-        setError('Nu mai sunt locuri disponibile la această materie');
+      setLoading(true);
+      
+      if (!user) {
+        navigate('/login');
         return;
       }
-
-      const materiiInscrise = userDoc.data().materiiInscrise || [];
-      const pachet = pachete.find(p => p.id === pachetId);
       
+      const pachetId = selectedMaterie.pachetId;
+      
+      // Verifică dacă pachetul există
+      const pachet = pachete.find(p => p.id === pachetId);
       if (!pachet) {
         throw new Error('Pachetul nu a fost găsit');
       }
-
-      // Găsește materia veche din acest pachet (dacă există)
-      const materieVecheId = pachet.materieAleasa;
+      
+      // Verifică istoricul academic pentru a vedea dacă materia a fost promovată
+      const istoricRef = doc(db, 'istoricAcademic', user.uid);
+      const istoricDoc = await getDoc(istoricRef);
+      
+      if (istoricDoc.exists()) {
+        const istoricData = istoricDoc.data();
+        if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+          // Verificăm dacă materia există în istoric și este promovată
+          const materiePromovata = istoricData.istoricAnual.some(anual => 
+            anual.cursuri && anual.cursuri.some(curs => 
+              curs.id === materieId && curs.status === 'promovat'
+            )
+          );
+          
+          if (materiePromovata) {
+            setError("Nu vă puteți înscrie la această materie deoarece ați promovat-o deja.");
+            setLoading(false);
+            return;
+          }
+        }
+      }
+      
+      // Verifică dacă studentul a ales deja o materie din acest pachet
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      const materiiInscrise = userData.materiiInscrise || [];
+      
+      // Găsește materia veche (dacă există)
+      let materieVecheId = null;
+      
+      // Verificăm pentru fiecare materie din pachet dacă studentul este înscris la ea
+      for (const materie of pachet.materii) {
+        if (materiiInscrise.includes(materie.id)) {
+          materieVecheId = materie.id;
+          break;
+        }
+      }
+      
+      // Obține detaliile materiei la care se înscrie studentul
+      const materieRef = doc(db, 'materii', materieId);
+      const materieDoc = await getDoc(materieRef);
+      
+      if (!materieDoc.exists()) {
+        throw new Error('Materia nu a fost găsită');
+      }
+      
+      const materieData = materieDoc.data();
+      
+      // Verifică dacă mai sunt locuri disponibile
+      const locuriDisponibile = materieData.locuriDisponibile || 0;
+      const studentiInscrisi = materieData.studentiInscrisi || [];
+      
+      if (studentiInscrisi.length >= locuriDisponibile && !studentiInscrisi.some(s => s.id === user.uid)) {
+        throw new Error('Nu mai sunt locuri disponibile pentru această materie');
+      }
       
       // Dacă există o materie veche, dezînscrie studentul de la ea
       if (materieVecheId) {
@@ -536,7 +653,7 @@ const InscriereMateriiPage = () => {
                           onDragStart={(e) => handleDragStart(e, materieId, pachet.id)}
                           onDragOver={handleDragOver}
                           onDrop={(e) => handleDrop(e, materieId, pachet.id)}
-                          onViewDetails={handleMaterieClick}
+                          onViewDetails={handleMaterieView}
                         />
                       );
                     })}
@@ -548,78 +665,82 @@ const InscriereMateriiPage = () => {
         })}
       </div>
 
-      {/* Modal pentru detalii materie */}
-      {selectedMaterie && materieDetails && (
+      {/* Modale pentru detaliile materiei */}
+      {materieDetails && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setSelectedMaterie(null);
               setMaterieDetails(null);
+              setSelectedMaterie(null);
             }
           }}
         >
-          <div className="bg-[#f5f5f5] rounded-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
-            <div className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-bold text-[#034a76]">{materieDetails.nume}</h2>
-                <button 
-                  onClick={() => {
-                    setSelectedMaterie(null);
-                    setMaterieDetails(null);
-                  }}
-                  className="text-[#034a76]/70 hover:text-[#034a76]"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 bg-[#034a76]/10 p-3 rounded-lg">
-                  <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Facultate:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.facultate}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Specializare:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.specializare}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Profesor:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.profesorNume}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Credite:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.credite}</p>
-                  </div>
-                </div>
-
+          <div className="bg-white rounded-lg max-w-2xl w-full overflow-y-auto p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-[#034a76]">{materieDetails.nume}</h2>
+              <button 
+                onClick={() => {
+                  setMaterieDetails(null);
+                  setSelectedMaterie(null);
+                }}
+                className="text-[#034a76] hover:text-[#023557]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 bg-[#034a76]/10 p-3 rounded-lg">
                 <div>
-                  <h3 className="text-sm font-medium text-[#034a76] mb-1">Descriere:</h3>
-                  <div className="max-h-32 overflow-y-auto bg-[#034a76]/10 p-3 rounded-lg">
-                    <p className="text-sm text-[#034a76]/80 whitespace-pre-wrap">
-                      {materieDetails.descriere || 'Nicio descriere disponibilă.'}
-                    </p>
-                  </div>
+                  <h3 className="text-sm font-medium text-[#034a76]">Facultate:</h3>
+                  <p className="text-sm text-[#034a76]/80">{materieDetails.facultate}</p>
                 </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[#034a76]">Specializare:</h3>
+                  <p className="text-sm text-[#034a76]/80">{materieDetails.specializare}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[#034a76]">Profesor:</h3>
+                  <p className="text-sm text-[#034a76]/80">{materieDetails.profesorNume}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-[#034a76]">Credite:</h3>
+                  <p className="text-sm text-[#034a76]/80">{materieDetails.credite}</p>
+                </div>
+              </div>
 
-                <div className="bg-[#e3ab23]/20 p-3 rounded-lg border border-[#e3ab23]/30">
-                  <h3 className="text-sm font-medium text-[#034a76] mb-1">Locuri disponibile:</h3>
-                  <p className="text-sm text-[#034a76]">
-                    {materieDetails.locuriDisponibile - (materieDetails.studentiInscrisi?.length || 0)} / {materieDetails.locuriDisponibile}
+              <div>
+                <h3 className="text-sm font-medium text-[#034a76] mb-1">Descriere:</h3>
+                <div className="max-h-32 overflow-y-auto bg-[#034a76]/10 p-3 rounded-lg">
+                  <p className="text-sm text-[#034a76]/80 whitespace-pre-wrap">
+                    {materieDetails.descriere || 'Nicio descriere disponibilă.'}
                   </p>
                 </div>
-                
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => handleInscriere(materieDetails.id, materieDetails.pachetId)}
-                    className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
-                  >
-                    Înscrie-te la această materie
-                  </button>
+              </div>
+
+              <div className="bg-[#e3ab23]/20 p-3 rounded-lg border border-[#e3ab23]/30">
+                <h3 className="text-sm font-medium text-[#034a76] mb-1">Locuri disponibile:</h3>
+                <p className="text-sm text-[#034a76]">
+                  {materieDetails.locuriDisponibile - (materieDetails.studentiInscrisi?.length || 0)} / {materieDetails.locuriDisponibile}
+                </p>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">
+                  {error}
                 </div>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => handleMaterieClick(materieDetails.id)}
+                  className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
+                >
+                  {loading ? "Se procesează..." : "Înscrie-te la această materie"}
+                </button>
               </div>
             </div>
           </div>
