@@ -161,7 +161,7 @@ const AdminPage = () => {
         <p className="mt-2 text-gray-600">Nu aveți permisiunea de a accesa această pagină.</p>
         <button 
           onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-[#034a76] text-white rounded hover:bg-[#023557]"
+          className="mt-4 px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557]"
         >
           Înapoi la Home
         </button>
@@ -171,37 +171,37 @@ const AdminPage = () => {
 
   const renderUserTable = (users) => (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white rounded-lg overflow-hidden shadow-lg">
-        <thead className="bg-[#f5f5f5]">
+      <table className="min-w-full bg-[#f5f5f5] rounded-lg overflow-hidden shadow-lg border border-[#034a76]/20">
+        <thead className="bg-[#034a76] text-[#f5f5f5]">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
               Nume
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
               Email
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
               Tip
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
               Acțiuni
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-[#034a76]/10">
           {users.map(user => (
             <tr 
               key={user.id} 
-              className="hover:bg-gray-50 cursor-pointer"
+              className="hover:bg-[#e3ab23]/10 cursor-pointer transition-colors"
               onClick={() => setSelectedUser(user)}
             >
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-6 py-4 whitespace-nowrap text-[#034a76]">
                 {user.nume} {user.prenume}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-6 py-4 whitespace-nowrap text-[#034a76]/80">
                 {user.email}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap capitalize">
+              <td className="px-6 py-4 whitespace-nowrap capitalize text-[#034a76]">
                 {user.tip}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -211,7 +211,7 @@ const AdminPage = () => {
                     setEditingUser(user);
                     setShowUserModal(true);
                   }}
-                  className="text-indigo-600 hover:text-indigo-900 mr-4"
+                  className="text-[#034a76] hover:text-[#023557] mr-4"
                 >
                   Editează
                 </button>
@@ -233,9 +233,9 @@ const AdminPage = () => {
   );
 
   const renderFilters = () => (
-    <div className="mb-6 bg-[#f5f5f5] p-4 rounded-lg shadow">
+    <div className="mb-6 bg-[#f5f5f5] p-4 rounded-lg shadow border border-[#034a76]/20">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-700">Filtre</h2>
+        <h2 className="text-lg font-semibold text-[#034a76]">Filtre</h2>
         <button
           onClick={resetFilters}
           className="text-sm text-[#034a76] hover:text-[#023557]"
@@ -246,7 +246,7 @@ const AdminPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-[#034a76] mb-1">
             Tip Utilizator
           </label>
           <select
@@ -260,7 +260,7 @@ const AdminPage = () => {
                 materie: ''
               });
             }}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+            className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
           >
             {tipuriUtilizatori.map(tip => (
               <option key={tip} value={tip}>
@@ -273,11 +273,11 @@ const AdminPage = () => {
         {filters.tip === 'student' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Facultate</label>
+              <label className="block text-sm font-medium text-[#034a76] mb-1">Facultate</label>
               <select
                 value={filters.facultate}
                 onChange={(e) => setFilters(prev => ({ ...prev, facultate: e.target.value, specializare: '' }))}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
               >
                 <option value="">Toate facultățile</option>
                 {facultati.map(fac => (
@@ -287,11 +287,11 @@ const AdminPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Specializare</label>
+              <label className="block text-sm font-medium text-[#034a76] mb-1">Specializare</label>
               <select
                 value={filters.specializare}
                 onChange={(e) => setFilters(prev => ({ ...prev, specializare: e.target.value }))}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                 disabled={!filters.facultate}
               >
                 <option value="">Toate specializările</option>
@@ -302,11 +302,11 @@ const AdminPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">An</label>
+              <label className="block text-sm font-medium text-[#034a76] mb-1">An</label>
               <select
                 value={filters.an}
                 onChange={(e) => setFilters(prev => ({ ...prev, an: e.target.value }))}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
               >
                 <option value="">Toți anii</option>
                 {ani.map(an => (
@@ -319,11 +319,11 @@ const AdminPage = () => {
 
         {filters.tip === 'profesor' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Materie Predată</label>
+            <label className="block text-sm font-medium text-[#034a76] mb-1">Materie Predată</label>
             <select
               value={filters.materie}
               onChange={(e) => setFilters(prev => ({ ...prev, materie: e.target.value }))}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+              className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
             >
               <option value="">Toate materiile</option>
               {materiiList.map(materie => (
@@ -341,13 +341,13 @@ const AdminPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Administrare Utilizatori</h1>
+        <h1 className="text-3xl font-bold text-[#034a76]">Administrare Utilizatori</h1>
         <button
           onClick={() => {
             setEditingUser(null);
             setShowUserModal(true);
           }}
-          className="px-4 py-2 bg-[#034a76] text-white rounded hover:bg-[#023557]"
+          className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
         >
           + Adaugă Utilizator
         </button>

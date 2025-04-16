@@ -12,17 +12,17 @@ const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDe
       onDragStart={(e) => onDragStart(e, id)}
       onDragOver={(e) => onDragOver(e)}
       onDrop={(e) => onDrop(e, id)}
-      className="flex items-center justify-between bg-white p-3 rounded-md border border-gray-200 mb-2 cursor-move hover:border-blue-300 shadow-sm"
+      className="flex items-center justify-between bg-[#f5f5f5] p-3 rounded-md border border-[#034a76]/20 mb-2 cursor-move hover:border-[#e3ab23] shadow-sm"
     >
       <div className="flex items-center">
-        <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">
+        <span className="bg-[#034a76] text-[#f5f5f5] rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">
           {index + 1}
         </span>
-        <span className="text-sm">{materie.nume}</span>
+        <span className="text-sm text-[#034a76]">{materie.nume}</span>
       </div>
       <button
         onClick={() => onViewDetails(materie.id)}
-        className="p-1 rounded text-gray-400 hover:text-blue-500 hover:bg-blue-100"
+        className="p-1 rounded text-[#034a76]/70 hover:text-[#034a76] hover:bg-[#e3ab23]/20"
         title="Vezi detalii"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,7 +458,7 @@ const InscriereMateriiPage = () => {
   return (
     <div className="container mx-auto px-4 py-8 relative">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Înscriere la Materii</h1>
+        <h1 className="text-2xl font-bold text-[#034a76]">Înscriere la Materii</h1>
       </div>
       
       {error && (
@@ -473,7 +473,7 @@ const InscriereMateriiPage = () => {
         </div>
       )}
       
-      <p className="text-gray-600 mb-6">
+      <p className="text-[#034a76]/80 mb-6">
         Ține apăsat pe o materie și trage-o pentru a schimba ordinea preferințelor. Prima materie din listă are cea mai mare prioritate.
         Apasă pe iconița de verificare din colțul dreapta sus al fiecărui pachet pentru a salva preferințele.
       </p>
@@ -485,11 +485,11 @@ const InscriereMateriiPage = () => {
           const isLoading = loadingPachete[pachet.id] || false;
           
           return (
-            <div key={pachet.id} className="border rounded-lg bg-white shadow-sm overflow-hidden">
-              <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
+            <div key={pachet.id} className="border border-[#034a76]/20 rounded-lg bg-[#f5f5f5] shadow-sm overflow-hidden">
+              <div className="bg-[#034a76] p-4 border-b flex justify-between items-center">
                 <div>
-                  <h2 className="text-lg font-semibold">{pachet.nume}</h2>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <h2 className="text-lg font-semibold text-[#f5f5f5]">{pachet.nume}</h2>
+                  <div className="text-xs text-[#f5f5f5]/90 mt-1">
                     {pachet.facultate && <span className="mr-2">Facultate: {pachet.facultate}</span>}
                     {pachet.specializare && <span className="mr-2">Specializare: {pachet.specializare}</span>}
                     {pachet.an && <span>An: {pachet.an}</span>}
@@ -498,7 +498,7 @@ const InscriereMateriiPage = () => {
                 <button
                   onClick={() => salveazaPreferintePachet(pachet.id)}
                   disabled={isLoading}
-                  className={`p-2 rounded-full ${isLoading ? 'bg-gray-200' : 'bg-[#034a76] hover:bg-[#023557]'} text-white`}
+                  className={`p-2 rounded-full ${isLoading ? 'bg-gray-200' : 'bg-[#e3ab23] hover:bg-[#c49520]'} text-[#034a76]`}
                   title="Salvează preferințele pentru acest pachet"
                 >
                   {isLoading ? (
@@ -515,10 +515,10 @@ const InscriereMateriiPage = () => {
               </div>
               
               <div className="p-4">
-                <h3 className="font-medium text-sm text-gray-700 mb-3">Materiile tale, ordonate după preferință:</h3>
+                <h3 className="font-medium text-sm text-[#034a76] mb-3">Materiile tale, ordonate după preferință:</h3>
                 
                 {preferintePachet.length === 0 ? (
-                  <div className="text-sm text-gray-500 italic p-2 text-center">
+                  <div className="text-sm text-[#034a76]/70 italic p-2 text-center">
                     Se încarcă materiile...
                   </div>
                 ) : (
@@ -559,16 +559,16 @@ const InscriereMateriiPage = () => {
             }
           }}
         >
-          <div className="bg-white rounded-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
+          <div className="bg-[#f5f5f5] rounded-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
             <div className="p-4">
               <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-bold text-gray-800">{materieDetails.nume}</h2>
+                <h2 className="text-xl font-bold text-[#034a76]">{materieDetails.nume}</h2>
                 <button 
                   onClick={() => {
                     setSelectedMaterie(null);
                     setMaterieDetails(null);
                   }}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-[#034a76]/70 hover:text-[#034a76]"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -577,39 +577,48 @@ const InscriereMateriiPage = () => {
               </div>
               
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-lg">
+                <div className="grid grid-cols-2 gap-3 bg-[#034a76]/10 p-3 rounded-lg">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Facultate:</h3>
-                    <p className="text-sm text-gray-600">{materieDetails.facultate}</p>
+                    <h3 className="text-sm font-medium text-[#034a76]">Facultate:</h3>
+                    <p className="text-sm text-[#034a76]/80">{materieDetails.facultate}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Specializare:</h3>
-                    <p className="text-sm text-gray-600">{materieDetails.specializare}</p>
+                    <h3 className="text-sm font-medium text-[#034a76]">Specializare:</h3>
+                    <p className="text-sm text-[#034a76]/80">{materieDetails.specializare}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Profesor:</h3>
-                    <p className="text-sm text-gray-600">{materieDetails.profesorNume}</p>
+                    <h3 className="text-sm font-medium text-[#034a76]">Profesor:</h3>
+                    <p className="text-sm text-[#034a76]/80">{materieDetails.profesorNume}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-gray-700">Credite:</h3>
-                    <p className="text-sm text-gray-600">{materieDetails.credite}</p>
+                    <h3 className="text-sm font-medium text-[#034a76]">Credite:</h3>
+                    <p className="text-sm text-[#034a76]/80">{materieDetails.credite}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Descriere:</h3>
-                  <div className="max-h-32 overflow-y-auto bg-gray-50 p-3 rounded-lg">
-                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                  <h3 className="text-sm font-medium text-[#034a76] mb-1">Descriere:</h3>
+                  <div className="max-h-32 overflow-y-auto bg-[#034a76]/10 p-3 rounded-lg">
+                    <p className="text-sm text-[#034a76]/80 whitespace-pre-wrap">
                       {materieDetails.descriere || 'Nicio descriere disponibilă.'}
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Locuri disponibile:</h3>
-                  <p className="text-sm text-gray-600">
+                <div className="bg-[#e3ab23]/20 p-3 rounded-lg border border-[#e3ab23]/30">
+                  <h3 className="text-sm font-medium text-[#034a76] mb-1">Locuri disponibile:</h3>
+                  <p className="text-sm text-[#034a76]">
                     {materieDetails.locuriDisponibile - (materieDetails.studentiInscrisi?.length || 0)} / {materieDetails.locuriDisponibile}
                   </p>
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => handleInscriere(materieDetails.id, materieDetails.pachetId)}
+                    className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
+                  >
+                    Înscrie-te la această materie
+                  </button>
                 </div>
               </div>
             </div>
