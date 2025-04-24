@@ -4,7 +4,6 @@ import { Provider, useSelector } from 'react-redux';
 import store from './store';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/admin/AdminPage';
 import ProfilePage from './pages/ProfilePage';
@@ -15,6 +14,7 @@ import MateriileMelePage from './pages/profesor/MateriileMelePage';
 import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import MateriiStudentPage from './pages/student/MateriiStudentPage';
 import AdminIstoricAcademicPage from './pages/admin/AdminIstoricAcademicPage';
+import AlocareAutomataPage from './pages/admin/AlocareAutomataPage';
 
 
 function App() {
@@ -32,7 +32,6 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
 
-          <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<HomePage />} />
           <Route path="/home" element={<HomePage />} />
 
@@ -119,6 +118,10 @@ function App() {
                 <AdminIstoricAcademicPage />
               </AdminRoute>
             }
+          />
+          <Route
+            path="/alocare-automata"
+            element={<AdminRoute><AlocareAutomataPage /></AdminRoute>}
           />
         </Routes>
       </div>

@@ -79,6 +79,7 @@ const Navbar = () => {
       items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
       items.push({ path: '/admin-materii', label: 'Materii' });
       items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
+      items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
     }
     
     if (roles.isStudent) {

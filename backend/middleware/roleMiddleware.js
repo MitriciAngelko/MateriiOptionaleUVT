@@ -1,6 +1,11 @@
 const admin = require('../config/firebase');
 
-const checkRole = (requiredRole) => {
+/**
+ * Middleware pentru verificarea rolului utilizatorului
+ * @param {string|string[]} requiredRoles - Rolul sau rolurile necesare
+ * @returns {Function} - Middleware de verificare a rolului
+ */
+const checkRole = (requiredRoles) => {
   return async (req, res, next) => {
     try {
       const token = req.headers.authorization?.split('Bearer ')[1];
@@ -19,13 +24,19 @@ const checkRole = (requiredRole) => {
       }
 
       const userData = userDoc.data();
-      if (userData.role !== requiredRole) {
+      const userRole = userData.role;
+      
+      // Dacă requiredRoles este un array, verificăm dacă rolul utilizatorului este în array
+      // Altfel, verificăm dacă rolul utilizatorului este egal cu requiredRoles
+      const roles = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
+      
+      if (!roles.includes(userRole)) {
         return res.status(403).json({ message: 'Insufficient permissions' });
       }
 
       req.user = {
         ...req.user,
-        role: userData.role
+        role: userRole
       };
       
       next();
@@ -35,4 +46,22 @@ const checkRole = (requiredRole) => {
   };
 };
 
-module.exports = { checkRole };
+// Middleware pentru rolul de administrator
+const isAdmin = checkRole('admin');
+
+// Middleware pentru rolul de student
+const isStudent = checkRole('student');
+
+// Middleware pentru rolul de profesor
+const isProfessor = checkRole('professor');
+
+// Middleware pentru rolul de admin sau profesor
+const isAdminOrProfessor = checkRole(['admin', 'professor']);
+
+module.exports = { 
+  checkRole, 
+  isAdmin, 
+  isStudent, 
+  isProfessor, 
+  isAdminOrProfessor 
+};

@@ -28,6 +28,7 @@ const AdminMateriiPage = () => {
     specializare: '',
     an: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedMaterie, setSelectedMaterie] = useState(null);
   const [pachete, setPachete] = useState([]);
   const [showPachetModal, setShowPachetModal] = useState(false);
@@ -127,13 +128,24 @@ const AdminMateriiPage = () => {
       specializare: '',
       an: ''
     });
+    setSearchTerm('');
   };
 
   const getFilteredMaterii = () => {
+    // Funcție helper pentru eliminarea diacriticelor
+    const removeDiacritics = (str) => {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    };
+
     return materii.filter(materie => {
       if (filters.facultate && materie.facultate !== filters.facultate) return false;
       if (filters.specializare && materie.specializare !== filters.specializare) return false;
       if (filters.an && materie.an !== filters.an) return false;
+      if (searchTerm) {
+        const normalizedSearchTerm = removeDiacritics(searchTerm.toLowerCase());
+        const normalizedMaterieName = removeDiacritics(materie.nume.toLowerCase());
+        if (!normalizedMaterieName.includes(normalizedSearchTerm)) return false;
+      }
       return true;
     });
   };
@@ -943,6 +955,39 @@ const AdminMateriiPage = () => {
 
               <div className="bg-[#f5f5f5] p-6 rounded-lg shadow-md border border-[#034a76]/20">
                 <h2 className="text-xl font-semibold mb-4 text-[#034a76]">Materii Existente</h2>
+                
+                <div className="mb-4">
+                  <div className="flex">
+                    <input
+                      type="text"
+                      placeholder="Caută după numele materiei..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-grow rounded-l-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                    />
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="bg-[#034a76] text-white px-4 py-2 rounded-r-md hover:bg-[#023557] transition-colors flex items-center"
+                    >
+                      {searchTerm ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Șterge
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                          Caută
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2" style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: '#034a76 #f5f5f5'

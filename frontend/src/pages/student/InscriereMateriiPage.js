@@ -48,6 +48,7 @@ const InscriereMateriiPage = () => {
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
+  const [statusInscrieri, setStatusInscrieri] = useState({}); // Status înscrieri pentru fiecare pachet
 
   // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
   const adaugaToateMateriile = (pachetId) => {
@@ -170,6 +171,7 @@ const InscriereMateriiPage = () => {
       
       // Construiește obiectele pentru pachete
       const pacheteData = [];
+      const statusUpdates = {};
       
       for (const pachetDoc of pacheteSnapshot.docs) {
         const pachetData = { id: pachetDoc.id, ...pachetDoc.data() };
@@ -187,6 +189,29 @@ const InscriereMateriiPage = () => {
         // Filtrează materiile promovate
         pachetData.materii = pachetData.materii.filter(materie => !materiiPromovate.has(materie.id));
         
+        // Determină starea procesului de înscriere
+        const dataStart = pachetData.dataStart ? new Date(pachetData.dataStart) : null;
+        const dataFinal = pachetData.dataFinal ? new Date(pachetData.dataFinal) : null;
+        const acum = new Date();
+        
+        let status = 'inactiv';
+        if (dataStart && dataFinal) {
+          if (acum < dataStart) {
+            status = 'urmează';
+          } else if (acum >= dataStart && acum <= dataFinal) {
+            status = 'activ';
+          } else {
+            status = 'încheiat';
+          }
+        }
+        
+        statusUpdates[pachetDoc.id] = {
+          status,
+          dataStart: dataStart ? dataStart.toISOString() : null,
+          dataFinal: dataFinal ? dataFinal.toISOString() : null,
+          active: status === 'activ'
+        };
+        
         // Adaugă pachetul la lista doar dacă are materii disponibile sau dacă studentul a ales deja o materie
         if (pachetData.materii.length > 0 || materieAleasa) {
           pacheteData.push(pachetData);
@@ -198,6 +223,7 @@ const InscriereMateriiPage = () => {
       
       // Actualizează state-ul
       setPachete(pacheteData);
+      setStatusInscrieri(statusUpdates);
       setLoading(false);
     } catch (error) {
       console.error('Eroare la încărcarea pachetelor:', error);
@@ -568,6 +594,45 @@ const InscriereMateriiPage = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Nespecificată';
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ro-RO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'activ':
+        return 'bg-green-500 text-white';
+      case 'urmează':
+        return 'bg-blue-500 text-white';
+      case 'încheiat':
+        return 'bg-red-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'activ':
+        return 'Înscrieri active';
+      case 'urmează':
+        return 'Înscrieri viitoare';
+      case 'încheiat':
+        return 'Înscrieri închise';
+      default:
+        return 'Inactiv';
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Se încarcă...</div>;
   }
@@ -600,6 +665,7 @@ const InscriereMateriiPage = () => {
           // Asigură-te că toate materiile sunt în lista de preferințe
           const preferintePachet = preferinte[pachet.id] || [];
           const isLoading = loadingPachete[pachet.id] || false;
+          const statusData = statusInscrieri[pachet.id] || { status: 'inactiv', active: false };
           
           return (
             <div key={pachet.id} className="border border-[#034a76]/20 rounded-lg bg-[#f5f5f5] shadow-sm overflow-hidden">
@@ -614,9 +680,9 @@ const InscriereMateriiPage = () => {
                 </div>
                 <button
                   onClick={() => salveazaPreferintePachet(pachet.id)}
-                  disabled={isLoading}
-                  className={`p-2 rounded-full ${isLoading ? 'bg-gray-200' : 'bg-[#e3ab23] hover:bg-[#c49520]'} text-[#034a76]`}
-                  title="Salvează preferințele pentru acest pachet"
+                  disabled={isLoading || !statusData.active}
+                  className={`p-2 rounded-full ${isLoading ? 'bg-gray-200' : statusData.active ? 'bg-[#e3ab23] hover:bg-[#c49520]' : 'bg-gray-400'} text-[#034a76]`}
+                  title={statusData.active ? "Salvează preferințele pentru acest pachet" : "Înscrierile nu sunt active"}
                 >
                   {isLoading ? (
                     <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -629,6 +695,18 @@ const InscriereMateriiPage = () => {
                     </svg>
                   )}
                 </button>
+              </div>
+              
+              {/* Afișează statusul înscrierii */}
+              <div className={`px-4 py-2 ${getStatusClass(statusData.status)}`}>
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">{getStatusText(statusData.status)}</span>
+                  <span className="text-sm">
+                    {statusData.status === 'activ' ? 'Se închide: ' + formatDate(statusData.dataFinal) :
+                     statusData.status === 'urmează' ? 'Începe: ' + formatDate(statusData.dataStart) :
+                     'Închis'}
+                  </span>
+                </div>
               </div>
               
               <div className="p-4">
@@ -660,6 +738,16 @@ const InscriereMateriiPage = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Afișează informații despre alocarea automată dacă înscrierea s-a încheiat */}
+              {statusData.status === 'încheiat' && (
+                <div className="p-4 border-t border-[#034a76]/20 bg-gray-100">
+                  <p className="text-sm text-[#034a76]/80">
+                    <strong>Notă:</strong> Perioada de înscriere pentru acest pachet s-a încheiat. 
+                    Materiile vor fi alocate automat în funcție de preferințele studenților și de mediile acestora.
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}

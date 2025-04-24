@@ -21,6 +21,7 @@ const AdminMateriiPage = () => {
     specializare: '',
     an: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const facultati = [
     "Facultatea de Matematică și Informatică",
@@ -93,6 +94,7 @@ const AdminMateriiPage = () => {
       specializare: '',
       an: ''
     });
+    setSearchTerm('');
   };
 
   const getFilteredMaterii = () => {
@@ -100,6 +102,7 @@ const AdminMateriiPage = () => {
       if (filters.facultate && materie.facultate !== filters.facultate) return false;
       if (filters.specializare && materie.specializare !== filters.specializare) return false;
       if (filters.an && materie.an !== filters.an) return false;
+      if (searchTerm && !materie.nume.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       return true;
     });
   };
@@ -283,6 +286,44 @@ const AdminMateriiPage = () => {
 
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <h2 className="text-xl font-semibold mb-4">Materii Existente</h2>
+              
+              <div className="mb-4">
+                <div className="flex">
+                  <input
+                    type="text"
+                    placeholder="Caută după nume..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="flex-grow rounded-l-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => {
+                      if (searchTerm) {
+                        setSearchTerm('');
+                      }
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 transition-colors flex items-center"
+                  >
+                    {searchTerm ? (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Șterge
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Caută
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">Introdu numele materiei pentru a o găsi rapid</p>
+              </div>
+              
               <div className="space-y-4">
                 {getFilteredMaterii().map((materie) => (
                   <div key={materie.id} className="border rounded-lg overflow-hidden">
