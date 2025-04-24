@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -360,7 +360,13 @@ const AlocareAutomataPage = () => {
           if (materieIndex !== -1 && materii[materieIndex].locuriRamase > 0) {
             // Am găsit un loc disponibil la o materie preferată
             materii[materieIndex].locuriRamase--;
-            materii[materieIndex].studentiInscrisi.push(student.id);
+            // Adăugăm studentul ca obiect complet, nu doar ID-ul
+            materii[materieIndex].studentiInscrisi.push({
+              id: student.id,
+              nume: student.nume,
+              prenume: student.prenume, 
+              numarMatricol: student.numarMatricol
+            });
             
             // Adăugăm la lista de studenți alocați
             studentiAlocati.push({
@@ -368,7 +374,7 @@ const AlocareAutomataPage = () => {
               nume: student.nume,
               prenume: student.prenume,
               media: student.media,
-              numarMatricol: student.numarMatricol || student.id,
+              numarMatricol: student.numarMatricol ,
               materieAlocata: materieId,
               numeMaterieAlocata: materii[materieIndex].nume,
               pozitiePrioritate: student.preferinte.indexOf(materieId) + 1
@@ -396,7 +402,6 @@ const AlocareAutomataPage = () => {
       console.log('Studenți nealocați:', studentiNealocati.length);
       
       // Setează un mesaj de încărcare temporar
-      setSuccessMessage('Se salvează rezultatele alocării...');
       
       // 5. Salvăm rezultatele în Firestore
       // Actualizăm pachetul cu materiile actualizate și listele de studenți
@@ -408,6 +413,14 @@ const AlocareAutomataPage = () => {
         studentiNealocati: studentiNealocati.length,
         totalMaterii: materii.length
       });
+      
+      // Actualizăm și documentele individuale ale materiilor
+      for (const materie of materii) {
+        const materieRef = doc(db, 'materii', materie.id);
+        await updateDoc(materieRef, {
+          studentiInscrisi: materie.studentiInscrisi
+        });
+      }
       
       // Actualizăm documentele utilizatorilor cu informații despre alocarea materiei
       let procesatiCount = 0;
@@ -475,9 +488,79 @@ const AlocareAutomataPage = () => {
             await updateDoc(doc(db, 'istoricAcademic', istoricDocs.docs[0].id), istoricData);
           }
           
+          // Adăugăm și în structura corectă a istoricului academic (documentul cu ID-ul studentului)
+          // Obținem sau creăm istoricul academic al studentului
+          const istoricStudentRef = doc(db, 'istoricAcademic', student.id);
+          const istoricStudentDoc = await getDoc(istoricStudentRef);
+          
+          let istoricStudentData;
+          if (istoricStudentDoc.exists()) {
+            istoricStudentData = istoricStudentDoc.data();
+          } else {
+            // Creează un istoric gol dacă nu există
+            istoricStudentData = {
+              studentId: student.id,
+              nume: student.nume || '',
+              prenume: student.prenume || '',
+              specializare: pachete.find(p => p.id === selectedPachet)?.specializare || '',
+              facultate: pachete.find(p => p.id === selectedPachet)?.facultate || '',
+              istoricAnual: []
+            };
+          }
+          
+          // Căutăm materia pentru a obține informații suplimentare
+          let materieInfo = materii.find(m => m.id === student.materieAlocata);
+          const anStudiu = materieInfo?.an || 'I';
+          const semestruMaterie = materieInfo?.semestru || semestru;
+          const credite = materieInfo?.credite || 0;
+          
+          // Creează nota pentru materie
+          const newNote = {
+            id: student.materieAlocata,
+            nume: student.numeMaterieAlocata,
+            credite: credite,
+            nota: 0, // Nota 0 - neevaluată încă
+            dataNota: new Date(),
+            profesor: materieInfo?.profesor?.nume || 'Nespecificat',
+            obligatorie: materieInfo?.obligatorie || false,
+            status: 'neevaluat'
+          };
+          
+          // Verifică dacă există deja un istoric pentru anul și semestrul specificat
+          const anualIndex = istoricStudentData.istoricAnual.findIndex(
+            item => item.anUniversitar === anUniversitar && 
+                  item.anStudiu === anStudiu &&
+                  item.semestru === parseInt(semestruMaterie)
+          );
+          
+          if (anualIndex >= 0) {
+            // Verifică dacă materia există deja în acest an
+            const materieExistenta = istoricStudentData.istoricAnual[anualIndex].cursuri.some(
+              curs => curs.id === student.materieAlocata
+            );
+            
+            if (!materieExistenta) {
+              // Adaugă nota la un istoric existent
+              istoricStudentData.istoricAnual[anualIndex].cursuri.push(newNote);
+            }
+          } else {
+            // Creează un nou istoric anual
+            const newAnualRecord = {
+              anUniversitar: anUniversitar,
+              anStudiu: anStudiu,
+              semestru: parseInt(semestruMaterie),
+              cursuri: [newNote]
+            };
+            
+            istoricStudentData.istoricAnual.push(newAnualRecord);
+          }
+          
+          // Salvăm istoricul academic actualizat
+          await setDoc(istoricStudentRef, istoricStudentData);
+          
           // Actualizăm contorul și mesajul de progres
           procesatiCount++;
-          setSuccessMessage(`Se salvează rezultatele... ${Math.round((procesatiCount / totalStudenti) * 100)}%`);
+          // setSuccessMessage(`Se salvează rezultatele... ${Math.round((procesatiCount / totalStudenti) * 100)}%`);
         }
       }
       
@@ -491,7 +574,7 @@ const AlocareAutomataPage = () => {
           
           // Actualizăm contorul și mesajul de progres
           procesatiCount++;
-          setSuccessMessage(`Se salvează rezultatele... ${Math.round((procesatiCount / totalStudenti) * 100)}%`);
+          // setSuccessMessage(`Se salvează rezultatele... ${Math.round((procesatiCount / totalStudenti) * 100)}%`);
         }
       }
       
@@ -661,29 +744,6 @@ const AlocareAutomataPage = () => {
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="mt-3 flex space-x-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSetarePerioadaInscriere(pachet.id);
-                      }}
-                      className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
-                    >
-                      Setare perioadă
-                    </button>
-                    
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectPachet(pachet.id);
-                        setActiveTab('info');
-                      }}
-                      className="px-2 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 transition-colors"
-                    >
-                      Procesare alocare
-                    </button>
-                  </div>
                 </div>
               ))
             )}
@@ -753,22 +813,6 @@ const AlocareAutomataPage = () => {
                         Procesul de alocare automată va distribui studenții la materiile opționale în funcție de preferințele
                         acestora și de mediile lor academice. Studenții cu medii mai mari vor avea prioritate.
                       </p>
-                      
-                      <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                        <div className="flex">
-                          <div className="flex-shrink-0">
-                            <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm text-yellow-700">
-                              <strong>Atenție:</strong> Această acțiune va înscrie automat studenții la materiile opționale în funcție de preferințele lor și de mediile academice.
-                              Procesul nu poate fi anulat.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
                       
                       <button
                         onClick={handleAlocareAutomata}

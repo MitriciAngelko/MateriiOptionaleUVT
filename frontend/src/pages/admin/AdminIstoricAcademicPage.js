@@ -669,26 +669,26 @@ const AdminIstoricAcademicPage = () => {
             <div className="mb-4">
               <input
                 type="text"
-                placeholder="Caută după nume sau prenume"
+                placeholder="Caută"
                 className="w-full px-4 py-2 border border-[#034a76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
               />
             </div>
             
-            {loading ? (
+            {/* {loading ? (
               <div className="text-center py-4">Se încarcă...</div>
-            ) : (
+            ) : ( */}
               <div className="max-h-[600px] overflow-y-auto">
                 {filteredStudents.length === 0 ? (
                   <p className="text-center text-[#034a76]/70">Nu există studenți</p>
                 ) : (
-                  <ul className="divide-y divide-[#034a76]/10">
+                  <ul className="divide-y divide-[#e3ab23]/10">
                     {filteredStudents.map((student) => (
                       <li 
                         key={student.id}
-                        className={`py-3 px-2 cursor-pointer hover:bg-[#e3ab23]/10 rounded ${
-                          selectedStudent === student.id ? 'bg-[#034a76]/10 border-l-4 border-[#034a76]' : ''
+                        className={`py-3 px-2 cursor-pointer hover:bg-[#034a76]/10 rounded ${
+                          selectedStudent === student.id ? 'bg-[#e3ab23]/10 border-l-4 border-[#e3ab23]' : ''
                         }`}
                         onClick={() => handleSelectStudent(student.id)}
                       >
@@ -701,7 +701,7 @@ const AdminIstoricAcademicPage = () => {
                   </ul>
                 )}
               </div>
-            )}
+            {/* )} */}
           </div>
         </div>
         
@@ -712,13 +712,7 @@ const AdminIstoricAcademicPage = () => {
                 <h2 className="text-xl font-semibold text-[#034a76]">
                   Istoric Academic: {selectedStudentData.nume} {selectedStudentData.prenume}
                 </h2>
-                <button
-                  onClick={() => setShowAddNoteForm(true)}
-                  className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
-                >
-                  Adaugă Notă
-                </button>
-              </div>
+        </div>
               
               {/* Detalii student */}
               <div className="bg-[#034a76]/5 p-4 rounded-md mb-6 border border-[#034a76]/10">

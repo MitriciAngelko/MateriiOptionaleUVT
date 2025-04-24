@@ -17,6 +17,7 @@ const Navbar = () => {
     isSecretar: false
   });
   const [userData, setUserData] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   useEffect(() => {
     const checkRoles = async () => {
@@ -109,7 +110,18 @@ const Navbar = () => {
           />
         </div>
         
-        <nav className="flex">
+        {/* Buton hamburger pentru mobile */}
+        <button 
+          className="md:hidden"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+          </svg>
+        </button>
+        
+        {/* Meniu de navigare pentru desktop */}
+        <nav className="hidden md:flex">
           <ul className="flex space-x-4">
             {navItems.map((item) => (
               <li key={item.path}>
@@ -154,6 +166,28 @@ const Navbar = () => {
           </button>
         )}
       </div>
+      
+      {/* Meniu mobile dropdown */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-[#034a76] border-t border-[#023557] z-50">
+          <ul className="py-2">
+            {navItems.map((item) => (
+              <li key={item.path}>
+                <button
+                  onClick={() => {
+                    navigate(item.path);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-6 py-3 hover:bg-[#023557] transition-colors
+                    ${location.pathname === item.path ? 'bg-[#023557]' : ''}`}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
