@@ -7,9 +7,10 @@ import { useNavigate } from 'react-router-dom';
 
 const AlocareAutomataPage = () => {
   const [pachete, setPachete] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedPachet, setSelectedPachet] = useState(null);
+  const [selectedPachetData, setSelectedPachetData] = useState(null);
   const [processingPachet, setProcessingPachet] = useState(null);
   const [rezultateAlocare, setRezultateAlocare] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -20,12 +21,94 @@ const AlocareAutomataPage = () => {
   const [perioadaEndTime, setPerioadaEndTime] = useState('');
   const [activeTab, setActiveTab] = useState('info'); // 'info' sau 'perioadaInscriere'
   const [pachetPerioadaId, setPachetPerioadaId] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPachete();
   }, [user]);
+
+  const handleSearch = () => {
+    console.log("Căutare după:", searchTerm);
+    // Căutarea se face direct în frontend deoarece avem deja toate pachetele încărcate
+  };
+
+  // Filtrarea pachetelor în funcție de termenul de căutare
+  const filteredPachete = pachete.filter(pachet => {
+    if (!searchTerm.trim()) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (pachet.nume && pachet.nume.toLowerCase().includes(searchLower)) ||
+      (pachet.facultate && pachet.facultate.toLowerCase().includes(searchLower)) ||
+      (pachet.specializare && pachet.specializare.toLowerCase().includes(searchLower))
+    );
+  });
+
+  // Funcție pentru a verifica și actualiza materiile
+  const verificaSiActualizeazaMateriile = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('Verificare și actualizare automată a materiilor...');
+      
+      // Obținem toate materiile din baza de date
+      const materiiSnapshot = await getDocs(collection(db, 'materii'));
+      console.log(`Total materii: ${materiiSnapshot.size}`);
+      
+      // Verificăm fiecare materie
+      let materiiActualizate = 0;
+      for (const materieDoc of materiiSnapshot.docs) {
+        const materieData = materieDoc.data();
+        const materieId = materieDoc.id;
+        
+        // Verificăm dacă materia are deja câmpul codificat
+        if (!materieData.codificat) {
+          console.log(`Materia "${materieData.nume}" (${materieId}) nu are câmpul codificat.`);
+          
+          // Generăm un cod unic pentru materie
+          const codUnic = generateUniqueId(16);
+          
+          // Actualizăm materia cu noul cod
+          await updateDoc(doc(db, 'materii', materieId), {
+            codificat: codUnic
+          });
+          
+          console.log(`Materia "${materieData.nume}" a fost actualizată cu codul: ${codUnic}`);
+          materiiActualizate++;
+        } else {
+          console.log(`Materia "${materieData.nume}" are deja cod: ${materieData.codificat}`);
+        }
+      }
+      
+      if (materiiActualizate > 0) {
+        setSuccessMessage(`${materiiActualizate} materii au fost actualizate cu coduri unice.`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+      } else {
+        setSuccessMessage('Toate materiile au deja coduri unice. Nu au fost necesare actualizări.');
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Eroare la verificarea și actualizarea materiilor:', error);
+      setError('A apărut o eroare la verificarea și actualizarea materiilor');
+      setLoading(false);
+    }
+  };
+  
+  // Funcție pentru generarea unui ID unic
+  const generateUniqueId = (length) => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
 
   const fetchPachete = async () => {
     try {
@@ -96,166 +179,164 @@ const AlocareAutomataPage = () => {
     }
   };
 
-  const handleSelectPachet = (pachetId) => {
-    setSelectedPachet(pachetId);
-    setRezultateAlocare(null);
-    setActiveTab('info');
-    
-    // Pregatește datele pentru formularul de setare perioadă
-    const pachet = pachete.find(p => p.id === pachetId);
-    if (pachet) {
-      // Formatează datele pentru inputurile de date și timp
-      if (pachet.dataStart) {
-        const startDate = new Date(pachet.dataStart);
-        setPerioadaStartDate(formatDateForDateInput(startDate));
-        setPerioadaStartTime(formatTimeForTimeInput(startDate));
-      } else {
-        setPerioadaStartDate('');
-        setPerioadaStartTime('');
-      }
-      
-      if (pachet.dataFinal) {
-        const endDate = new Date(pachet.dataFinal);
-        setPerioadaEndDate(formatDateForDateInput(endDate));
-        setPerioadaEndTime(formatTimeForTimeInput(endDate));
-      } else {
-        setPerioadaEndDate('');
-        setPerioadaEndTime('');
-      }
-      
-      setPachetPerioadaId(pachetId);
-    }
+  const handleSelectPachet = (pachet) => {
+    setSelectedPachet(pachet.id);
+    setSelectedPachetData(pachet);
+    console.log("Pachet selectat:", pachet);
   };
 
   const handleAlocareAutomata = async () => {
-    if (!selectedPachet) {
-      setError('Selectați un pachet pentru a procesa alocarea automată');
-      return;
-    }
-    
     try {
       setProcessingPachet(selectedPachet);
+      setRezultateAlocare(null);
       setError(null);
       
-      // Obținem datele pachetului
-      const pachetRef = doc(db, 'pachete', selectedPachet);
-      const pachetDoc = await getDoc(pachetRef);
-      
+      // 1. Obține toate materiile din pachet
+      const pachetDoc = await getDoc(doc(db, 'pachete', selectedPachet));
       if (!pachetDoc.exists()) {
-        setError('Pachetul selectat nu există');
-        setProcessingPachet(null);
-        return;
+        throw new Error('Pachetul selectat nu există');
       }
       
       const pachetData = pachetDoc.data();
-      console.log('Date pachet:', pachetData);
+      const materii = pachetData.materii || [];
       
-      // 1. Obținem materiile direct din documentul pachetului
-      let materii = [];
-      
-      // Verificăm dacă pachetul are câmpul "materii" cu lista de materii
-      if (pachetData.materii && pachetData.materii.length > 0) {
-        materii = pachetData.materii.map(materie => ({
-          id: materie.id,
-          nume: materie.nume || 'Necunoscută',
-          locuriDisponibile: materie.locuriDisponibile || 30,
-          locuriRamase: materie.locuriDisponibile || 30,
-          studentiInscrisi: []
-        }));
-      } else {
-        // Alternativ, verificăm dacă pachetul are materiile în structura prezentată în screenshot
-        if (pachetData.materiiOptionale) {
-          const materiiOptionale = pachetData.materiiOptionale;
-          materii = Object.keys(materiiOptionale).map(index => {
-            const materieInfo = materiiOptionale[index];
-            return {
-              id: materieInfo.id,
-              nume: materieInfo.nume || 'Necunoscută',
-              locuriDisponibile: materieInfo.locuriDisponibile || 30,
-              locuriRamase: materieInfo.locuriDisponibile || 30,
-              studentiInscrisi: []
-            };
-          });
-        }
-      }
-      
+      // Verifică dacă există materii în pachet
       if (materii.length === 0) {
-        setError('Nu există materii definite pentru acest pachet. Verificați structura datelor în Firestore.');
-        setProcessingPachet(null);
-        return;
+        throw new Error('Pachetul nu conține materii');
       }
       
-      console.log('Materii găsite:', materii);
+      console.log('=== ÎNCEPE PROCESUL DE ALOCARE AUTOMATĂ ===');
+      console.log(`Pachet: ${pachetData.nume}`);
+      console.log(`Materii în pachet: ${materii.length}`);
+      console.log('Lista materiilor:', materii.map(m => `${m.nume} (ID: ${m.id})`));
       
-      // 2. Obținem toți studenții care au preferințe pentru acest pachet
+      // Adaugă câmpul locuriRamase pentru fiecare materie (în cazul în care nu există)
+      materii.forEach(materie => {
+        materie.locuriRamase = materie.locuriDisponibile || 0;
+        materie.studentiInscrisi = materie.studentiInscrisi || [];
+        console.log(`Materia: ${materie.nume}, Locuri disponibile: ${materie.locuriRamase}`);
+      });
+      
+      // 2. Obține toți studenții care au preferințe pentru acest pachet
+      console.log('Obținere studenți cu preferințe pentru pachetul:', selectedPachet);
+      
+      // Verificăm întâi metoda 1: studenți care au preferinteMateriiOptionale direct
+      const usersSnapshot1 = await getDocs(
+        query(collection(db, 'users'), where('role', '==', 'student'))
+      );
+      
+      // Creează o listă de studenți care au preferințe pentru acest pachet
       const studenti = [];
-      const usersSnapshot = await getDocs(collection(db, 'users'));
       
-      console.log('Număr total utilizatori:', usersSnapshot.size);
+      console.log(`Număr total de studenți: ${usersSnapshot1.size}`);
       
-      usersSnapshot.forEach(doc => {
-        const userData = doc.data();
-        console.log(`Verificare utilizator ${doc.id}:`, userData);
+      // Verifică diverse formate de stocare a preferințelor
+      usersSnapshot1.forEach((userDoc) => {
+        const userData = userDoc.data();
+        console.log(`Verificare student: ${userData.nume} ${userData.prenume} (${userDoc.id})`);
         
-        let arePreferinte = false;
-        let preferinte = [];
+        let preferinteGasite = false;
+        let preferinteLista = [];
         
-        // Verificăm diferite posibile structuri pentru preferințe
-        // Structura 1: preferinteMateriiOptionale[pachetId] ca array
+        // Verifică formatul principal: preferinteMateriiOptionale[pachetId]
         if (userData.preferinteMateriiOptionale && 
             userData.preferinteMateriiOptionale[selectedPachet] && 
-            Array.isArray(userData.preferinteMateriiOptionale[selectedPachet]) && 
             userData.preferinteMateriiOptionale[selectedPachet].length > 0) {
           
-          preferinte = userData.preferinteMateriiOptionale[selectedPachet];
-          arePreferinte = true;
-          console.log(`Utilizator ${doc.id} are preferințe în format array:`, preferinte);
-        } 
-        // Structura 2: preferințe direct în userData.preferinte
-        else if (userData.preferinte && 
-                Array.isArray(userData.preferinte) && 
-                userData.preferinte.length > 0) {
-          
-          preferinte = userData.preferinte;
-          arePreferinte = true;
-          console.log(`Utilizator ${doc.id} are preferințe în câmpul preferinte:`, preferinte);
+          preferinteLista = userData.preferinteMateriiOptionale[selectedPachet];
+          preferinteGasite = true;
+          console.log(`- Are preferințe în preferinteMateriiOptionale[${selectedPachet}]:`, preferinteLista);
         }
-        // Structura 3: prefPachet = selectedPachet și ID-uri în prefMaterii
+        // Verifică formatul alternativ: preferințe ca array direct
+        else if (userData.preferinte && Array.isArray(userData.preferinte) && userData.preferinte.length > 0) {
+          preferinteLista = userData.preferinte;
+          preferinteGasite = true;
+          console.log(`- Are preferințe în câmpul preferinte:`, preferinteLista);
+        }
+        // Verifică alt format: prefPachet și prefMaterii
         else if (userData.prefPachet === selectedPachet && 
                 userData.prefMaterii && 
                 Array.isArray(userData.prefMaterii) && 
                 userData.prefMaterii.length > 0) {
           
-          preferinte = userData.prefMaterii;
-          arePreferinte = true;
-          console.log(`Utilizator ${doc.id} are preferințe în câmpul prefMaterii:`, preferinte);
+          preferinteLista = userData.prefMaterii;
+          preferinteGasite = true;
+          console.log(`- Are preferințe în prefMaterii pentru pachetul ${selectedPachet}:`, preferinteLista);
+        }
+        // Verifică dacă există preferințe într-un obiect general
+        else if (userData.preferinte && 
+                typeof userData.preferinte === 'object' && 
+                userData.preferinte[selectedPachet] && 
+                Array.isArray(userData.preferinte[selectedPachet]) && 
+                userData.preferinte[selectedPachet].length > 0) {
+          
+          preferinteLista = userData.preferinte[selectedPachet];
+          preferinteGasite = true;
+          console.log(`- Are preferințe în preferinte[${selectedPachet}]:`, preferinteLista);
+        }
+        else {
+          console.log(`- Nu are preferințe pentru acest pachet`);
         }
         
-        if (arePreferinte) {
+        // Dacă studentul are preferințe, îl adăugăm la lista
+        if (preferinteGasite) {
+          // Obține media studentului
+          const media = userData.media || 0;
+          
           studenti.push({
-            id: doc.id,
-            nume: userData.nume || 'Necunoscut',
-            prenume: userData.prenume || 'Necunoscut',
-            media: userData.media || 0,
-            preferinte: preferinte
+            id: userDoc.id,
+            nume: userData.nume || '',
+            prenume: userData.prenume || '',
+            numarMatricol: userData.numarMatricol || '',
+            email: userData.email || '',
+            media: media,
+            preferinte: preferinteLista
           });
         }
       });
       
-      console.log('Studenți cu preferințe găsiți:', studenti.length);
-      
+      console.log(`Studenți cu preferințe: ${studenti.length}`);
       if (studenti.length === 0) {
-        setError('Nu există studenți înscriși pentru acest pachet. Studenții trebuie să-și exprime preferințele înainte de a efectua alocarea automată.');
-        setProcessingPachet(null);
-        return;
+        // Încercăm să afișăm mai multe detalii despre problemă în loc să aruncăm o eroare
+        console.error('Nu s-au găsit studenți cu preferințe pentru acest pachet.');
+        console.error('ID pachet verificat:', selectedPachet);
+        
+        // Verificăm dacă există alte pachete cu preferințe
+        const prefPachete = new Set();
+        usersSnapshot1.forEach(doc => {
+          const userData = doc.data();
+          if (userData.preferinteMateriiOptionale) {
+            Object.keys(userData.preferinteMateriiOptionale).forEach(pachetId => {
+              prefPachete.add(pachetId);
+            });
+          }
+        });
+        
+        console.error('Pachete cu preferințe găsite:', Array.from(prefPachete));
+        
+        // Continuăm cu o listă goală în loc să aruncăm o eroare
+        console.warn('Continuăm procesul de alocare cu o listă goală de studenți');
       }
       
-      // Continuăm cu alocarea folosind studenții găsiți
-      processAllocation(materii, studenti);
+      // Procesează alocarea automată
+      await processAllocation(materii, studenti);
       
+      // Actualizează datele pachetului selectat
+      const pachetDocActualizat = await getDoc(doc(db, 'pachete', selectedPachet));
+      if (pachetDocActualizat.exists()) {
+        setSelectedPachetData(pachetDocActualizat.data());
+      }
+      
+      console.log('=== PROCES DE ALOCARE FINALIZAT CU SUCCES ===');
     } catch (error) {
       console.error('Eroare la procesarea alocării automate:', error);
       setError('A apărut o eroare la procesarea alocării automate: ' + error.message);
+      
+      // Adaugă mai multe detalii despre eroare
+      console.error('Detalii suplimentare despre eroare:');
+      console.error('Pachet ID:', selectedPachet);
+      console.error('Pachet Data:', selectedPachetData);
+    } finally {
       setProcessingPachet(null);
     }
   };
@@ -342,46 +423,219 @@ const AlocareAutomataPage = () => {
 
   const processAllocation = async (materii, studenti) => {
     try {
+      // Obține informații despre anul pachetului
+      const pachetDoc = await getDoc(doc(db, 'pachete', selectedPachet));
+      const pachetData = pachetDoc.data();
+      const anPachet = pachetData.anDeStudiu || 'I';
+      
+      console.log(`Pachet pentru anul de studiu: ${anPachet}`);
+      console.log(`ID Pachet: ${selectedPachet}`);
+      console.log('Materii în pachet:', materii.map(m => `${m.nume} (ID: ${m.id})`));
+      
+      // Obținem maparea dintre ID-urile materiilor codificate și cele reale
+      // Preluăm toate documentele de materii pentru a găsi maparea corectă
+      console.log('Obținem toate materiile pentru mapare ID-uri...');
+      const materiiSnapshot = await getDocs(collection(db, 'materii'));
+      const mapareIduri = {};
+      
+      materiiSnapshot.forEach(doc => {
+        const materieData = doc.data();
+        mapareIduri[materieData.codificat || ''] = doc.id;
+        console.log(`Mapare: ${materieData.codificat || 'necunoscut'} -> ${doc.id}`);
+      });
+      
+      console.log('Mapare ID-uri materii:', mapareIduri);
+      
+      // Calculăm media relevantă pentru fiecare student în funcție de anul său
+      const anCurent = new Date().getFullYear();
+      const anUniversitarCurent = `${anCurent}-${anCurent + 1}`;
+      
+      // Decodificăm preferințele materiilor pentru fiecare student
+      for (const student of studenti) {
+        console.log(`\nStudent: ${student.nume} ${student.prenume} (ID: ${student.id})`);
+        console.log('Preferințe originale:', student.preferinte);
+        
+        // Convertim ID-urile codificate în ID-uri reale
+        const preferinteDecodificate = [];
+        for (const preferintaCodificata of student.preferinte) {
+          const preferintaReala = mapareIduri[preferintaCodificata];
+          if (preferintaReala) {
+            preferinteDecodificate.push(preferintaReala);
+            console.log(`Preferință decodificată: ${preferintaCodificata} -> ${preferintaReala}`);
+          } else {
+            console.log(`! Preferință necunoscută: ${preferintaCodificata} - nu poate fi mapată la o materie reală`);
+          }
+        }
+        
+        // Actualizăm preferințele studentului cu ID-urile reale
+        student.preferinteOriginale = [...student.preferinte]; // Salvăm preferințele originale
+        student.preferinte = preferinteDecodificate;
+        console.log('Preferințe decodificate:', student.preferinte);
+        
+        // Determinăm anul de studiu al studentului
+        const anStudent = student.anStudiu || anPachet;
+        
+        // Pentru studenții din anul I, folosim media din semestrul 1 al anului I
+        if (anStudent === 'I') {
+          // Încercăm să obținem media semestrului 1 din anul I
+          const userDoc = await getDoc(doc(db, 'users', student.id));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            student.mediaOriginala = student.media; // Salvăm media originală
+            student.media = userData.mediaSemestru1AnI || student.media;
+            student.anStudiu = anStudent;
+            console.log(`Student ${student.nume} ${student.prenume} în anul I - media semestrului 1: ${student.media}`);
+          }
+        } 
+        // Pentru studenții din anii II și III, folosim media totală din anul anterior
+        else {
+          // Încercăm să obținem istoricul academic al studentului
+          const istoricQuery = query(
+            collection(db, 'istoricAcademic'),
+            where('studentId', '==', student.id)
+          );
+          
+          const istoricDocs = await getDocs(istoricQuery);
+          const anAnterior = anStudent === 'II' ? 'I' : 'II';
+          let mediaAnAnterior = 0;
+          
+          if (!istoricDocs.empty) {
+            // Parcurgem toate intrările din istoricul academic
+            let sumaNoteAnAnterior = 0;
+            let numarNoteAnAnterior = 0;
+            
+            istoricDocs.forEach(doc => {
+              const istoricData = doc.data();
+              if (istoricData.anStudiu === anAnterior) {
+                sumaNoteAnAnterior += istoricData.nota || 0;
+                numarNoteAnAnterior++;
+              }
+            });
+            
+            if (numarNoteAnAnterior > 0) {
+              mediaAnAnterior = sumaNoteAnAnterior / numarNoteAnAnterior;
+            }
+          }
+          
+          // Dacă am găsit o medie validă pentru anul anterior, o folosim
+          if (mediaAnAnterior > 0) {
+            student.mediaOriginala = student.media; // Salvăm media originală
+            student.media = mediaAnAnterior;
+          }
+          
+          student.anStudiu = anStudent;
+          console.log(`Student ${student.nume} ${student.prenume} în anul ${anStudent} - media anului ${anAnterior}: ${student.media}`);
+        }
+      }
+
       // 3. Sortăm studenții după medie (descrescător)
       studenti.sort((a, b) => b.media - a.media);
-      console.log('Studenți sortați după medie:', studenti);
+      console.log('Studenți sortați după media relevantă:', studenti.map(s => `${s.nume} ${s.prenume} (An: ${s.anStudiu || anPachet}, Media: ${s.media})`));
+      
+      // Verificăm dacă avem studenți cu preferințe valide
+      const studentiCuPreferinteValide = studenti.filter(s => s.preferinte && s.preferinte.length > 0);
+      console.log(`Studenți cu preferințe valide după decodificare: ${studentiCuPreferinteValide.length}/${studenti.length}`);
+      
+      if (studentiCuPreferinteValide.length === 0) {
+        console.warn('AVERTISMENT: După decodificare, niciun student nu are preferințe valide!');
+        console.warn('Verificați dacă ID-urile materiilor din preferințele studenților corespund cu ID-urile materiilor din pachet.');
+      }
       
       // 4. Alocăm studenții la materii, în ordinea mediilor și conform preferințelor lor
       const studentiAlocati = [];
       const studentiNealocati = [];
+      const statisticiPreferinte = {};
       
+      // Inițializăm statisticile pentru fiecare materie
+      for (const materie of materii) {
+        materie.studentiInscrisi = materie.studentiInscrisi || [];
+        statisticiPreferinte[materie.id] = {
+          nume: materie.nume || '',
+          preferinta1: 0,
+          preferinta2: 0,
+          preferinta3: 0,
+          preferinta4: 0,
+          preferinta5: 0,
+          altaPreferinta: 0
+        };
+      }
+      
+      console.log('=== ÎNCEPE ALOCAREA STUDENȚILOR ===');
+      
+      // Parcurgem studenții în ordinea mediilor (de la cea mai mare la cea mai mică)
       for (const student of studenti) {
+        // Sărim peste studenții fără preferințe valide
+        if (!student.preferinte || student.preferinte.length === 0) {
+          console.log(`Studentul ${student.nume} ${student.prenume} nu are preferințe valide - este omis din procesul de alocare.`);
+          studentiNealocati.push({
+            ...student,
+            motivNealocare: 'Preferințe invalide sau lipsa de preferințe'
+          });
+          continue;
+        }
+        
         let alocat = false;
         
+        console.log(`\nProcesare student: ${student.nume} ${student.prenume} (An: ${student.anStudiu || anPachet}, Media: ${student.media})`);
+        console.log(`  Preferințe: ${student.preferinte.map((p, i) => {
+          const materie = materii.find(m => m.id === p);
+          return `#${i+1}: ${materie?.nume || p}`;
+        }).join(', ')}`);
+        
+        // Parcurgem preferințele studentului în ordine
         for (const materieId of student.preferinte) {
           // Găsim materia în lista noastră
           const materieIndex = materii.findIndex(m => m.id === materieId);
           
-          if (materieIndex !== -1 && materii[materieIndex].locuriRamase > 0) {
-            // Am găsit un loc disponibil la o materie preferată
-            materii[materieIndex].locuriRamase--;
-            // Adăugăm studentul ca obiect complet, nu doar ID-ul
-            materii[materieIndex].studentiInscrisi.push({
-              id: student.id,
-              nume: student.nume,
-              prenume: student.prenume, 
-              numarMatricol: student.numarMatricol
-            });
+          if (materieIndex !== -1) {
+            console.log(`  Verificare materie: ${materii[materieIndex].nume} (Locuri rămase: ${materii[materieIndex].locuriRamase})`);
             
-            // Adăugăm la lista de studenți alocați
-            studentiAlocati.push({
-              id: student.id,
-              nume: student.nume,
-              prenume: student.prenume,
-              media: student.media,
-              numarMatricol: student.numarMatricol ,
-              materieAlocata: materieId,
-              numeMaterieAlocata: materii[materieIndex].nume,
-              pozitiePrioritate: student.preferinte.indexOf(materieId) + 1
-            });
-            
-            alocat = true;
-            break; // Trecem la următorul student
+            if (materii[materieIndex].locuriRamase > 0) {
+              // Am găsit un loc disponibil la o materie preferată
+              materii[materieIndex].locuriRamase--;
+              
+              // Adăugăm studentul ca obiect complet, nu doar ID-ul
+              materii[materieIndex].studentiInscrisi.push({
+                id: student.id,
+                nume: student.nume,
+                prenume: student.prenume, 
+                numarMatricol: student.numarMatricol,
+                anStudiu: student.anStudiu || anPachet
+              });
+              
+              // Determinăm poziția preferinței
+              const pozitiePrioritate = student.preferinte.indexOf(materieId) + 1;
+              
+              // Actualizăm statisticile
+              if (pozitiePrioritate <= 5) {
+                statisticiPreferinte[materieId][`preferinta${pozitiePrioritate}`]++;
+              } else {
+                statisticiPreferinte[materieId].altaPreferinta++;
+              }
+              
+              // Adăugăm la lista de studenți alocați
+              studentiAlocati.push({
+                id: student.id,
+                nume: student.nume,
+                prenume: student.prenume,
+                media: student.media,
+                anStudiu: student.anStudiu || anPachet,
+                numarMatricol: student.numarMatricol,
+                materieAlocata: materieId,
+                numeMaterieAlocata: materii[materieIndex].nume,
+                pozitiePrioritate: pozitiePrioritate,
+                preferintaOriginala: student.preferinteOriginale[student.preferinte.indexOf(materieId)]
+              });
+              
+              console.log(`  ✅ Student ALOCAT la materia ${materii[materieIndex].nume} (preferința #${pozitiePrioritate})`);
+              
+              alocat = true;
+              break; // Trecem la următorul student
+            } else {
+              console.log(`  ❌ Materia ${materii[materieIndex].nume} nu mai are locuri disponibile`);
+            }
+          } else {
+            console.log(`  ⚠️ Materia cu ID-ul ${materieId} nu există în pachet`);
           }
         }
         
@@ -392,18 +646,35 @@ const AlocareAutomataPage = () => {
             nume: student.nume,
             prenume: student.prenume,
             media: student.media,
+            anStudiu: student.anStudiu || anPachet,
             numarMatricol: student.numarMatricol || student.id,
-            preferinte: student.preferinte
+            preferinte: student.preferinte,
+            motivNealocare: 'Toate materiile preferate sunt pline'
           });
+          console.log(`  ❌ Student NEALOCAT: nicio materie preferată nu are locuri disponibile`);
         }
       }
       
-      console.log('Studenți alocați:', studentiAlocati.length);
-      console.log('Studenți nealocați:', studentiNealocati.length);
+      console.log('\n=== REZULTATE ALOCARE ===');
+      console.log(`Studenți alocați: ${studentiAlocati.length}`);
+      console.log(`Studenți nealocați: ${studentiNealocati.length}`);
       
-      // Setează un mesaj de încărcare temporar
+      // Afișăm statisticile de alocare pe preferințe
+      console.log('\n=== STATISTICI ALOCARE PE PREFERINȚE ===');
+      for (const [materieId, stats] of Object.entries(statisticiPreferinte)) {
+        const total = 
+          (stats.preferinta1 || 0) + 
+          (stats.preferinta2 || 0) + 
+          (stats.preferinta3 || 0) + 
+          (stats.preferinta4 || 0) + 
+          (stats.preferinta5 || 0) + 
+          (stats.altaPreferinta || 0);
+        
+        console.log(`${stats.nume}: Total ${total} studenți alocați (Pref#1: ${stats.preferinta1}, Pref#2: ${stats.preferinta2}, Pref#3: ${stats.preferinta3}, Pref#4: ${stats.preferinta4}, Pref#5: ${stats.preferinta5}, Altă pref: ${stats.altaPreferinta})`);
+      }
       
       // 5. Salvăm rezultatele în Firestore
+      console.log('\n=== SALVARE REZULTATE ÎN BAZA DE DATE ===');
       // Actualizăm pachetul cu materiile actualizate și listele de studenți
       await updateDoc(doc(db, 'pachete', selectedPachet), {
         materii: materii,
@@ -411,7 +682,8 @@ const AlocareAutomataPage = () => {
         dataUltimaAlocare: new Date().toISOString(),
         studentiAlocati: studentiAlocati.length,
         studentiNealocati: studentiNealocati.length,
-        totalMaterii: materii.length
+        totalMaterii: materii.length,
+        statisticiPreferinte: statisticiPreferinte
       });
       
       // Actualizăm și documentele individuale ale materiilor
@@ -429,6 +701,9 @@ const AlocareAutomataPage = () => {
       // Procesăm studenții alocați
       for (const student of studentiAlocati) {
         if (!student.id.startsWith('student')) { // Evităm actualizarea studenților de test
+          console.log(`Actualizare student alocat: ${student.nume} ${student.prenume} (ID: ${student.id})`);
+          console.log(`- Materie alocată: ${student.numeMaterieAlocata} (ID: ${student.materieAlocata})`);
+          
           // Obținem documentul utilizatorului pentru a verifica array-ul materiiInscrise actual
           const userDoc = await getDoc(doc(db, 'users', student.id));
           const userData = userDoc.data();
@@ -440,6 +715,15 @@ const AlocareAutomataPage = () => {
           if (!materiiInscrise.includes(student.materieAlocata)) {
             // Adăugăm noua materie la array-ul materiiInscrise
             materiiInscrise.push(student.materieAlocata);
+            console.log(`- Adăugat materia ${student.materieAlocata} la materiiInscrise`);
+          }
+          
+          // Actualizăm preferințele studentului cu ID-urile reale, păstrând ordinea preferințelor
+          // aceasta este important pentru a putea reface alocarea corect ulterior
+          if (userData.preferinteMateriiOptionale && userData.preferinteMateriiOptionale[selectedPachet]) {
+            console.log(`- Actualizăm preferințele materiilor pentru pachetul ${selectedPachet}`);
+            console.log(`  Preferințe originale: ${userData.preferinteMateriiOptionale[selectedPachet].join(', ')}`);
+            console.log(`  Preferințe decodificate: ${student.preferinte.join(', ')}`);
           }
           
           // Actualizăm profilul utilizatorului
@@ -683,22 +967,37 @@ const AlocareAutomataPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-[#034a76]">Administrare Înscrieri Materii</h1>
+      <h1 className="text-2xl font-bold mb-6">Alocare Automată Pachete</h1>
+      
+      {/* Search Input and Button */}
+      <div className="flex mb-4">
+        <input
+          type="text"
+          className="flex-grow p-2 border rounded-l"
+          placeholder="Caută după nume, specializare sau facultate..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <button 
+          className="bg-blue-500 text-white px-4 py-2 rounded-r"
+          onClick={handleSearch}
+        >
+          Caută
+        </button>
       </div>
       
-      {error && (
-        <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-md">
-          {error}
-        </div>
-      )}
-      
       {successMessage && (
-        <div className="mb-6 p-4 bg-green-100 border border-green-300 text-green-700 rounded-md">
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
           {successMessage}
         </div>
       )}
       
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="col-span-1 bg-white rounded-lg shadow overflow-hidden">
           <div className="bg-[#034a76] text-white p-4">
@@ -706,16 +1005,16 @@ const AlocareAutomataPage = () => {
           </div>
           
           <div className="divide-y">
-            {pachete.length === 0 ? (
+            {filteredPachete.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 Nu există pachete disponibile
               </div>
             ) : (
-              pachete.map(pachet => (
+              filteredPachete.map(pachet => (
                 <div 
                   key={pachet.id} 
                   className={`p-4 cursor-pointer hover:bg-gray-50 ${selectedPachet === pachet.id ? 'bg-gray-100' : ''}`}
-                  onClick={() => handleSelectPachet(pachet.id)}
+                  onClick={() => handleSelectPachet(pachet)}
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -743,6 +1042,19 @@ const AlocareAutomataPage = () => {
                         <span>{formatDate(pachet.dataStart)} - {formatDate(pachet.dataFinal)}</span>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="mt-2 flex space-x-2">
+                    <button
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPachetData(pachet);
+                        setIsDetailsModalOpen(true);
+                      }}
+                    >
+                      Vezi detalii
+                    </button>
                   </div>
                 </div>
               ))
@@ -852,7 +1164,8 @@ const AlocareAutomataPage = () => {
                                       <div className="font-medium">{student.nume} {student.prenume}</div>
                                       <div className="text-gray-600">Materie: {student.numeMaterieAlocata}</div>
                                       <div className="text-gray-600">Poziție preferință: {student.pozitiePrioritate}</div>
-                                      <div className="text-gray-600">Media: {student.media}</div>
+                                      <div className="text-gray-600">An studiu: {student.anStudiu || 'N/A'}</div>
+                                      <div className="text-gray-600">Media: {student.media.toFixed(2)}</div>
                                     </li>
                                   ))}
                                 </ul>
@@ -870,7 +1183,8 @@ const AlocareAutomataPage = () => {
                                   {rezultateAlocare.studentiNealocati.map(student => (
                                     <li key={student.id} className="text-sm border-b border-red-100 pb-2">
                                       <div className="font-medium">{student.nume} {student.prenume}</div>
-                                      <div className="text-gray-600">Media: {student.media}</div>
+                                      <div className="text-gray-600">An studiu: {student.anStudiu || 'N/A'}</div>
+                                      <div className="text-gray-600">Media: {student.media.toFixed(2)}</div>
                                       <div className="text-gray-600">
                                         Preferințe: {student.preferinte.map((p, idx) => `#${idx+1}`).join(', ')}
                                       </div>
@@ -907,6 +1221,67 @@ const AlocareAutomataPage = () => {
                                 </table>
                               </div>
                             )}
+                          </div>
+                        </div>
+
+                        {/* Adaugă statisticile de alocare pe materii și preferințe */}
+                        <div className="mt-6">
+                          <h4 className="text-md font-medium text-[#034a76] mb-2">Statistici alocare pe preferințe</h4>
+                          <div className="bg-purple-50 p-4 rounded-md">
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-purple-200">
+                                <thead>
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-medium text-purple-800 uppercase tracking-wider">Materie</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #1</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #2</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #3</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #4</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #5</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Altă pref.</th>
+                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-purple-100">
+                                  {selectedPachetData?.statisticiPreferinte ? 
+                                    Object.entries(selectedPachetData.statisticiPreferinte).map(([materieId, stats]) => {
+                                      const total = 
+                                        (stats.preferinta1 || 0) + 
+                                        (stats.preferinta2 || 0) + 
+                                        (stats.preferinta3 || 0) + 
+                                        (stats.preferinta4 || 0) + 
+                                        (stats.preferinta5 || 0) + 
+                                        (stats.altaPreferinta || 0);
+                                      
+                                      return (
+                                        <tr key={materieId}>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{stats.nume}</td>
+                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta1 || 0}</td>
+                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta2 || 0}</td>
+                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta3 || 0}</td>
+                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta4 || 0}</td>
+                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta5 || 0}</td>
+                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.altaPreferinta || 0}</td>
+                                          <td className="px-3 py-2 text-center text-sm font-medium text-purple-800">{total}</td>
+                                        </tr>
+                                      );
+                                    })
+                                  : (
+                                    <tr>
+                                      <td colSpan="8" className="px-3 py-4 text-center text-sm text-gray-500">
+                                        Nu există statistici disponibile. Procesați alocarea pentru a genera statistici.
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            <div className="mt-4 text-sm text-gray-600">
+                              <p><strong>Legendă:</strong></p>
+                              <p><span className="font-medium">Pref. #N</span> - Numărul de studenți pentru care materia a fost a N-a opțiune din preferințe</p>
+                              <p><span className="font-medium">Total</span> - Numărul total de studenți alocați la materie</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -963,23 +1338,6 @@ const AlocareAutomataPage = () => {
                       </div>
                     </div>
                     
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                      <div className="flex">
-                        <div className="flex-shrink-0">
-                          <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm text-yellow-700">
-                            <strong>Notă:</strong> După ce salvați perioada de înscriere, studenții vor putea să își selecteze opțiunile
-                            doar în perioada specificată. Asigurați-vă că perioada este suficient de lungă pentru a permite tuturor
-                            studenților să participe.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    
                     <div className="flex justify-end">
                       <button
                         onClick={handleSavePerioadaInscriere}
@@ -995,6 +1353,64 @@ const AlocareAutomataPage = () => {
           )}
         </div>
       </div>
+
+      {/* Modal de detalii pentru pachetul selectat */}
+      {isDetailsModalOpen && selectedPachetData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">Detalii Pachet: {selectedPachetData.nume}</h2>
+            <div className="mb-4">
+              <p><strong>Facultate:</strong> {selectedPachetData.facultate}</p>
+              <p><strong>Specializare:</strong> {selectedPachetData.specializare}</p>
+              <p><strong>An:</strong> {selectedPachetData.an}</p>
+              <p><strong>Semestru:</strong> {selectedPachetData.semestru}</p>
+              <p><strong>Status înscriere:</strong> <span className={`px-2 py-1 text-xs rounded border ${getStatusClass(selectedPachetData.statusInscriere)}`}>{getStatusText(selectedPachetData.statusInscriere)}</span></p>
+              <p><strong>Perioada de înscriere:</strong> {formatDate(selectedPachetData.dataStart)} - {formatDate(selectedPachetData.dataFinal)}</p>
+            </div>
+            
+            {selectedPachetData.materii && selectedPachetData.materii.length > 0 ? (
+              <div className="mb-4">
+                <h3 className="font-bold mb-2">Materii disponibile:</h3>
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nume</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profesor</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Locuri Disponibile</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Studenți Înscriși</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {selectedPachetData.materii.map((materie, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">{materie.nume}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{materie.profesor?.nume || 'Nespecificat'}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">{materie.locuriDisponibile || 0}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                          {materie.studentiInscrisi ? materie.studentiInscrisi.length : 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="mb-4 text-gray-500">
+                Acest pachet nu conține materii.
+              </div>
+            )}
+            
+            <div className="flex justify-end mt-4">
+              <button 
+                className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded"
+                onClick={() => setIsDetailsModalOpen(false)}
+              >
+                Închide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
