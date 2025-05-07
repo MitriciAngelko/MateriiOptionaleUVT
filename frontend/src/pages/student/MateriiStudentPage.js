@@ -12,6 +12,7 @@ const MateriiStudentPage = () => {
   const [error, setError] = useState(null);
   const [selectedMaterie, setSelectedMaterie] = useState(null);
   const [activeYear, setActiveYear] = useState('I'); // Anul selectat implicit
+  const [anStudent, setAnStudent] = useState('I'); // Anul în care este înscris studentul
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
 
@@ -34,8 +35,14 @@ const MateriiStudentPage = () => {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         const userData = userDoc.data();
         const materiiIds = userData.materiiInscrise || [];
+        
+        // Setează anul studentului
+        setAnStudent(userData.an || 'I');
+        // Setează implicit anul activ ca fiind anul studentului
+        setActiveYear(userData.an || 'I');
 
         // Obține toate materiile obligatorii pentru facultatea și specializarea studentului
+        // Vom filtra materiile obligatorii pentru anul curent al studentului și anii anteriori
         const materiiObligatoriiSnapshot = await getDocs(
           query(
             collection(db, 'materii'),
@@ -45,10 +52,22 @@ const MateriiStudentPage = () => {
           )
         );
 
-        const materiiObligatorii = materiiObligatoriiSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
+        const materiiObligatorii = materiiObligatoriiSnapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }))
+          .filter(materie => {
+            // Includem doar materiile obligatorii pentru anii anteriori și anul curent
+            const materieAn = materie.an || 'I';
+            const studentAn = userData.an || 'I';
+            
+            // Convertim anul roman în număr pentru comparație
+            const materieAnNumeric = materieAn === 'I' ? 1 : materieAn === 'II' ? 2 : 3;
+            const studentAnNumeric = studentAn === 'I' ? 1 : studentAn === 'II' ? 2 : 3;
+            
+            return materieAnNumeric <= studentAnNumeric;
+          });
 
         // Adaugă materiile obligatorii la lista de materii înscrise (dacă nu există deja)
         const materiiObligatoriiIds = materiiObligatorii.map(m => m.id);
@@ -193,8 +212,158 @@ const MateriiStudentPage = () => {
       const month = currentDate.getMonth(); // 0-11
       const anUniversitar = month < 9 ? 
         `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
-        `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
+        `${year}-${year+1}`;
         
+      // Găsim toate materiile promovate din istoricul academic
+      const materiiPromovate = new Set();
+      const materiiNepromovate = new Set(); // Adăugăm set pentru materii nepromovate
+      const materiiNeevaluate = new Set(); // Adăugăm set pentru materii neevaluate
+      if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+        istoricData.istoricAnual.forEach(anual => {
+          if (anual.cursuri && anual.cursuri.length > 0) {
+            anual.cursuri.forEach(curs => {
+              if (curs.status === 'promovat' || curs.nota >= 5) {
+                materiiPromovate.add(curs.id);
+              } else if (curs.nota > 0 && curs.nota < 5) {
+                materiiNepromovate.add(curs.id);
+              } else if (curs.nota === 0 || curs.status === 'neevaluat') {
+                materiiNeevaluate.add(curs.id);
+              }
+            });
+          }
+        });
+      }
+      
+      // Obținem lista actuală de materii înscrise a studentului
+      const userRef = doc(db, 'users', user.uid);
+      const userData = (await getDoc(userRef)).data();
+      const materiiInscriseCurente = userData.materiiInscrise || [];
+      const anStudent = userData.an || 'I'; // Anul în care se află studentul
+      
+      // Verificăm dacă lipsește studentul din lista de studentiInscrisi a vreunei materii
+      const studentData = (await getDoc(doc(db, 'users', user.uid))).data();
+      
+      // Verificăm fiecare materie la care studentul este înscris
+      for (const materieId of materiiInscriseCurente) {
+        if (!materiiPromovate.has(materieId)) {
+          try {
+            const materieRef = doc(db, 'materii', materieId);
+            const materieDoc = await getDoc(materieRef);
+            
+            if (materieDoc.exists()) {
+              const materieData = materieDoc.data();
+              const studentiInscrisi = materieData.studentiInscrisi || [];
+              const anMaterie = materieData.an || 'I';
+              
+              // Convertim anii în numere pentru comparație
+              const anStudentNumeric = anStudent === 'I' ? 1 : anStudent === 'II' ? 2 : 3;
+              const anMaterieNumeric = anMaterie === 'I' ? 1 : anMaterie === 'II' ? 2 : 3;
+              
+              // Verificăm dacă studentul este din an mai mare sau an mai mic decât materia
+              const esteDinAnMaiMare = anStudentNumeric > anMaterieNumeric;
+              const esteDinAnMaiMic = anStudentNumeric < anMaterieNumeric;
+              
+              // Verificăm dacă studentul este în lista de studenți înscriși
+              const esteInscris = studentiInscrisi.some(student => student.id === user.uid);
+              
+              // Adăugăm studentul doar dacă:
+              // 1. Nu este deja înscris
+              // 2. ȘI Nu este din an mai mic decât materia (pentru a preveni înscrierea la materii din ani viitori)
+              // 3. ȘI (Nu este din an mai mare SAU are materia nepromovată/neevaluată)
+              if (!esteInscris && !esteDinAnMaiMic && 
+                  (!esteDinAnMaiMare || materiiNepromovate.has(materieId) || materiiNeevaluate.has(materieId))) {
+                await updateDoc(materieRef, {
+                  studentiInscrisi: arrayUnion({
+                    id: user.uid,
+                    nume: studentData.nume || studentData.displayName || 'Student',
+                    numarMatricol: studentData?.numarMatricol || 'N/A'
+                  })
+                });
+              } else if (esteInscris && esteDinAnMaiMic) {
+                // Dacă studentul este deja înscris la o materie din an viitor, îl scoatem din lista
+                const studentiInscrisiFiltrati = studentiInscrisi.filter(student => student.id !== user.uid);
+                
+                if (studentiInscrisi.length !== studentiInscrisiFiltrati.length) {
+                  await updateDoc(materieRef, {
+                    studentiInscrisi: studentiInscrisiFiltrati
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Eroare la actualizarea studenților înscriși pentru materia ${materieId}:`, error);
+          }
+        }
+      }
+      
+      // Filtrăm materiile din lista de materii înscrise pentru a exclude materiile din ani viitori
+      // și pentru a păstra materiile nepromovate
+      const materiiInscriseFiltrate = [];
+      
+      for (const materieId of materiiInscriseCurente) {
+        try {
+          const materieDoc = await getDoc(doc(db, 'materii', materieId));
+          
+          if (materieDoc.exists()) {
+            const materieData = materieDoc.data();
+            const anMaterie = materieData.an || 'I';
+            
+            // Convertim anii în numere pentru comparație
+            const anStudentNumeric = anStudent === 'I' ? 1 : anStudent === 'II' ? 2 : 3;
+            const anMaterieNumeric = anMaterie === 'I' ? 1 : anMaterie === 'II' ? 2 : 3;
+            
+            // Verificăm dacă materia este din an viitor față de studentul actual
+            const esteDinAnViitor = anMaterieNumeric > anStudentNumeric;
+            
+            // Adăugăm materia în lista filtrată doar dacă:
+            // 1. Nu este din an viitor
+            // 2. ȘI (Nu este promovată SAU este nepromovată/neevaluată)
+            if (!esteDinAnViitor && 
+                (!materiiPromovate.has(materieId) || 
+                 materiiNepromovate.has(materieId) || 
+                 materiiNeevaluate.has(materieId))) {
+              materiiInscriseFiltrate.push(materieId);
+            }
+          }
+        } catch (error) {
+          console.error(`Eroare la verificarea materiei ${materieId}:`, error);
+        }
+      }
+      
+      // Actualizăm lista de materii înscrise în baza de date
+      if (JSON.stringify(materiiInscriseCurente.sort()) !== JSON.stringify(materiiInscriseFiltrate.sort())) {
+        await updateDoc(userRef, {
+          materiiInscrise: materiiInscriseFiltrate
+        });
+        
+        // Actualizăm și lista de studenți înscriși din fiecare materie promovată
+        // Dar doar pentru cele care nu sunt nepromovate
+        const materiiDeAnulat = [...materiiPromovate].filter(id => !materiiNepromovate.has(id));
+        for (const materieId of materiiDeAnulat) {
+          try {
+            const materieRef = doc(db, 'materii', materieId);
+            const materieDoc = await getDoc(materieRef);
+            
+            if (materieDoc.exists()) {
+              const materieData = materieDoc.data();
+              const studentiInscrisi = materieData.studentiInscrisi || [];
+              
+              // Filtrăm studentul curent din lista de studenți înscriși
+              const studentiInscrisiFiltrati = studentiInscrisi.filter(student => student.id !== user.uid);
+              
+              // Actualizăm doar dacă s-a schimbat ceva
+              if (studentiInscrisi.length !== studentiInscrisiFiltrati.length) {
+                await updateDoc(materieRef, {
+                  studentiInscrisi: studentiInscrisiFiltrati
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Eroare la actualizarea studenților înscriși pentru materia ${materieId}:`, error);
+          }
+        }
+      }
+
       // Pentru fiecare materie, verifică dacă există în istoricul academic
       for (const materie of materii) {
         // Verifică dacă materia există deja în istoric
@@ -254,25 +423,40 @@ const MateriiStudentPage = () => {
     }
   };
 
-  // Calculează creditele și media pentru un an specific
-  const calculateStats = (an) => {
-    const materiiPromovate = materiiInscrise.filter(materie => 
-      materie.an === an && materie.nota && materie.nota >= 5
-    );
+  // Calculează creditele și media pentru un an și semestru specific
+  const calculateStats = (an, semestru = null) => {
+    let materiiPromovate;
+    
+    if (semestru) {
+      // Calculează pentru un semestru specific
+      materiiPromovate = materiiInscrise.filter(materie => 
+        materie.an === an && 
+        parseInt(materie.semestru) === semestru && 
+        materie.nota && materie.nota >= 5
+      );
+    } else {
+      // Calculează pentru tot anul
+      materiiPromovate = materiiInscrise.filter(materie => 
+        materie.an === an && materie.nota && materie.nota >= 5
+      );
+    }
     
     if (!materiiPromovate.length) return { totalCredite: 0, medie: 0 };
     
-    const totalCredite = materiiPromovate.reduce((sum, materie) => sum + (materie.credite || 0), 0);
+    // Calculează totalul de credite adunând creditele materiilor promovate
+    const totalCredite = materiiPromovate.reduce((sum, materie) => sum + (parseInt(materie.credite) || 0), 0);
     
+    // Calculează suma ponderată (notă * credite) pentru fiecare materie
     const sumaPonderate = materiiPromovate.reduce((sum, materie) => 
-      sum + (materie.nota * (materie.credite || 0)), 0
+      sum + (materie.nota * (parseInt(materie.credite) || 0)), 0
     );
     
-    const medie = sumaPonderate / totalCredite;
+    // Media ponderată = suma ponderată / total credite
+    const medie = totalCredite > 0 ? sumaPonderate / totalCredite : 0;
     
     return {
       totalCredite,
-      medie: Math.round(medie * 100) / 100 // Rotunjește la 2 zecimale
+      medie: medie > 0 ? Math.round(medie * 100) / 100 : 0 // Rotunjește la 2 zecimale
     };
   };
 
@@ -300,84 +484,201 @@ const MateriiStudentPage = () => {
           <div className="flex space-x-2 border-b pb-1">
             <button
               className={`px-3 py-1 text-sm font-medium rounded-t transition-colors ${
-                activeYear === 'I' ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:bg-gray-100'
+                activeYear === 'I' ? 'bg-[#034a76] text-[#f5f5f5]' : 'text-[#034a76] hover:bg-[#f5f5f5]'
               }`}
               onClick={() => setActiveYear('I')}
             >
               Anul I
             </button>
-            <button
-              className={`px-3 py-1 text-sm font-medium rounded-t transition-colors ${
-                activeYear === 'II' ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              onClick={() => setActiveYear('II')}
-            >
-              Anul II
-            </button>
-            <button
-              className={`px-3 py-1 text-sm font-medium rounded-t transition-colors ${
-                activeYear === 'III' ? 'bg-blue-100 text-blue-800' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-              onClick={() => setActiveYear('III')}
-            >
-              Anul III
-            </button>
-          </div>
-
-          {/* Materiile anului selectat */}
-          <div>
-            <h2 className="text-lg font-semibold mb-2">Anul {activeYear}</h2>
-            
-            {materiiInscrise.filter(materie => materie.an === activeYear).length === 0 ? (
-              <div className="text-center py-3 text-gray-500 text-sm">Nu există materii pentru Anul {activeYear}</div>
-            ) : (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full table-fixed">
-                  <thead className="bg-gray-50 text-xs">
-                    <tr>
-                      <th className="w-[55%] px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Materie</th>
-                      <th className="w-[15%] px-2 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">Credite</th>
-                      <th className="w-[30%] px-2 py-2 text-center font-medium text-gray-500 uppercase tracking-wider">Notă</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 text-sm">
-                    {materiiInscrise
-                      .filter(materie => materie.an === activeYear)
-                      .map((materie) => (
-                        <tr 
-                          key={materie.id} 
-                          className="hover:bg-gray-50 cursor-pointer"
-                          onClick={() => setSelectedMaterie(materie)}
-                        >
-                          <td className="px-2 py-2 truncate font-medium text-gray-900">
-                            {materie.nume}
-                          </td>
-                          <td className="px-2 py-2 text-center text-gray-500">{materie.credite}</td>
-                          <td className="px-2 py-2 text-center">
-                            {materie.nota ? 
-                              <span className={`font-medium ${materie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
-                                {materie.nota}
-                              </span> : 
-                              <span className="text-gray-500">Neevaluat</span>
-                            }
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                  <tfoot className="bg-gray-50 border-t border-gray-200 text-xs">
-                    <tr>
-                      <td className="px-2 py-2 font-medium text-gray-900">
-                        Credite obținute: <span className="font-bold">{calculateStats(activeYear).totalCredite}</span>
-                      </td>
-                      <td colSpan="2" className="px-2 py-2 text-right font-medium text-gray-900">
-                        Medie: <span className="font-bold">{calculateStats(activeYear).medie || 'N/A'}</span>
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+            {/* Butonul pentru Anul II este vizibil doar dacă studentul este în anul II sau mai mare */}
+            {(anStudent === 'II' || anStudent === 'III') && (
+              <button
+                className={`px-3 py-1 text-sm font-medium rounded-t transition-colors ${
+                  activeYear === 'II' ? 'bg-[#034a76] text-[#f5f5f5]' : 'text-[#034a76] hover:bg-[#f5f5f5]'
+                }`}
+                onClick={() => setActiveYear('II')}
+              >
+                Anul II
+              </button>
+            )}
+            {/* Butonul pentru Anul III este vizibil doar dacă studentul este în anul III */}
+            {anStudent === 'III' && (
+              <button
+                className={`px-3 py-1 text-sm font-medium rounded-t transition-colors ${
+                  activeYear === 'III' ? 'bg-[#034a76] text-[#f5f5f5]' : 'text-[#034a76] hover:bg-[#f5f5f5]'
+                }`}
+                onClick={() => setActiveYear('III')}
+              >
+                Anul III
+              </button>
             )}
           </div>
+
+          {/* Verificăm accesul la materiile anului selectat */}
+          {/* Studentul poate vedea doar materiile anului său sau ale anilor anteriori */}
+          {((activeYear === 'I') || 
+            (activeYear === 'II' && (anStudent === 'II' || anStudent === 'III')) || 
+            (activeYear === 'III' && anStudent === 'III')) ? (
+            <div>
+              <h2 className="text-lg font-semibold mb-2 text-[#034a76]">Anul {activeYear}</h2>
+              
+              {materiiInscrise.filter(materie => materie.an === activeYear).length === 0 ? (
+                <div className="text-center py-3 text-gray-500 text-sm">Nu există materii pentru Anul {activeYear}</div>
+              ) : (
+                <div className="bg-[#f5f5f5] rounded-lg shadow overflow-hidden border border-[#034a76]/20">
+                  <table className="w-full table-fixed">
+                    <thead className="bg-[#034a76] text-xs">
+                      <tr>
+                        <th className="w-[25%] px-2 py-2 text-left font-medium text-[#f5f5f5] uppercase tracking-wider">Materie</th>
+                        <th className="w-[15%] px-2 py-2 text-center font-medium text-[#f5f5f5] uppercase tracking-wider">Credite</th>
+                        <th className="w-[30%] px-2 py-2 text-center font-medium text-[#f5f5f5] uppercase tracking-wider">Notă</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#034a76]/10 text-sm">
+                      {(() => {
+                        const materiiAnCurent = materiiInscrise.filter(materie => materie.an === activeYear);
+                        const materiiSem1 = materiiAnCurent.filter(materie => parseInt(materie.semestru) === 1);
+                        const materiiSem2 = materiiAnCurent.filter(materie => parseInt(materie.semestru) === 2);
+                        
+                        return (
+                          <>
+                            {/* Materiile din semestrul 1 */}
+                            {materiiSem1.length > 0 && (
+                              <>
+                                <tr className="bg-[#e3ab23] text-[#034a76]">
+                                  <td colSpan="3" className="px-2 py-1 font-medium">
+                                    Semestrul 1
+                                  </td>
+                                </tr>
+                                {materiiSem1.map((materie) => (
+                                  <tr 
+                                    key={materie.id} 
+                                    className="hover:bg-[#034a76]/5 cursor-pointer"
+                                    onClick={() => {
+                                      // Verificare suplimentară pentru a se asigura că studentul poate accesa această materie
+                                      if (materie.an === 'I' || 
+                                          (materie.an === 'II' && (anStudent === 'II' || anStudent === 'III')) ||
+                                          (materie.an === 'III' && anStudent === 'III')) {
+                                        setSelectedMaterie(materie);
+                                      }
+                                    }}
+                                  >
+                                    <td className="px-2 py-2 truncate font-medium text-[#034a76]">
+                                      {materie.nume}
+                                    </td>
+                                    <td className="px-2 py-2 text-center text-[#034a76]/80">{materie.credite}</td>
+                                    <td className="px-2 py-2 text-center">
+                                      {materie.nota ? 
+                                        <span className={`font-medium ${materie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {materie.nota}
+                                        </span> : 
+                                        <span className="text-gray-500">Neevaluat</span>
+                                      }
+                                    </td>
+                                  </tr>
+                                ))}
+                                {/* Statistici pentru semestrul 1 */}
+                                <tr className="bg-[#f5f5f5] text-xs border-t border-[#034a76]/20">
+                                  <td colSpan="3" className="px-2 py-1">
+                                    <div className="flex justify-between">
+                                      <span className="font-medium text-[#034a76]">
+                                        Credite Sem. 1: <span className="font-bold">{calculateStats(activeYear, 1).totalCredite}</span>
+                                      </span>
+                                      <span className="font-medium text-[#034a76]">
+                                        Medie Sem. 1: <span className="font-bold">{calculateStats(activeYear, 1).medie || 'N/A'}</span>
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              </>
+                            )}
+                            
+                            {/* Materiile din semestrul 2 */}
+                            {materiiSem2.length > 0 && (
+                              <>
+                                <tr className="bg-[#e3ab23] text-[#034a76]">
+                                  <td colSpan="3" className="px-2 py-1 font-medium">
+                                    Semestrul 2
+                                  </td>
+                                </tr>
+                                {materiiSem2.map((materie) => (
+                                  <tr 
+                                    key={materie.id} 
+                                    className="hover:bg-[#034a76]/5 cursor-pointer"
+                                    onClick={() => {
+                                      // Verificare suplimentară pentru a se asigura că studentul poate accesa această materie
+                                      if (materie.an === 'I' || 
+                                          (materie.an === 'II' && (anStudent === 'II' || anStudent === 'III')) ||
+                                          (materie.an === 'III' && anStudent === 'III')) {
+                                        setSelectedMaterie(materie);
+                                      }
+                                    }}
+                                  >
+                                    <td className="px-2 py-2 truncate font-medium text-[#034a76]">
+                                      {materie.nume}
+                                    </td>
+                                    <td className="px-2 py-2 text-center text-[#034a76]/80">{materie.credite}</td>
+                                    <td className="px-2 py-2 text-center">
+                                      {materie.nota ? 
+                                        <span className={`font-medium ${materie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {materie.nota}
+                                        </span> : 
+                                        <span className="text-gray-500">Neevaluat</span>
+                                      }
+                                    </td>
+                                  </tr>
+                                ))}
+                                {/* Statistici pentru semestrul 2 */}
+                                <tr className="bg-[#f5f5f5] text-xs border-t border-[#034a76]/20">
+                                  <td colSpan="3" className="px-2 py-1">
+                                    <div className="flex justify-between">
+                                      <span className="font-medium text-[#034a76]">
+                                        Credite Sem. 2: <span className="font-bold">{calculateStats(activeYear, 2).totalCredite}</span>
+                                      </span>
+                                      <span className="font-medium text-[#034a76]">
+                                        Medie Sem. 2: <span className="font-bold">{calculateStats(activeYear, 2).medie || 'N/A'}</span>
+                                      </span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </tbody>
+                    <tfoot className="bg-[#034a76] border-t-2 border-[#e3ab23] text-xs font-semibold">
+                      <tr>
+                        <td colSpan="3" className="px-2 py-2">
+                          <div className="flex justify-between text-[#f5f5f5]">
+                            <span>
+                              Total credite anul {activeYear}: <span className="font-bold">{calculateStats(activeYear).totalCredite}</span>
+                            </span>
+                            <span>
+                              Medie anul {activeYear}: <span className="font-bold">{calculateStats(activeYear).medie || 'N/A'}</span>
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="font-medium">Acces restricționat!</span>
+              </div>
+              <p className="mt-2 text-sm">
+                Nu poți vedea materiile din Anul {activeYear} deoarece ești înscris în Anul {anStudent}. 
+                Accesul la materiile din anii superiori va fi disponibil când vei promova în anul respectiv.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -391,103 +692,128 @@ const MateriiStudentPage = () => {
             }
           }}
         >
-          <div className="bg-white rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
-            <div className="p-4 flex-shrink-0 border-b">
-              <div className="flex justify-between items-start">
-                <h2 className="text-lg font-bold">{selectedMaterie.nume}</h2>
-                <button 
-                  onClick={() => setSelectedMaterie(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
-              <div className="flex space-x-2 text-xs mt-2">
-                <span className="bg-gray-100 px-2 py-1 rounded">Anul {selectedMaterie.an}</span>
-                <span className="bg-gray-100 px-2 py-1 rounded">Semestrul {selectedMaterie.semestru}</span>
-                {selectedMaterie.status && (
-                  <span className={`px-2 py-1 rounded ${
-                    selectedMaterie.status === 'promovat' ? 'bg-green-100 text-green-800' : 
-                    selectedMaterie.status === 'nepromovat' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {selectedMaterie.status === 'promovat' ? 'Promovat' : 
-                     selectedMaterie.status === 'nepromovat' ? 'Nepromovat' : 'Neevaluat'}
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            <div className="p-4 overflow-y-auto flex-grow text-sm">
-              <div className="space-y-3">
-                <div>
-                  <h3 className="font-medium text-gray-700 mb-1">Descriere:</h3>
-                  <p className="text-gray-600 bg-gray-50 p-2 rounded max-h-[20vh] overflow-y-auto">
-                    {selectedMaterie.descriere || 'Nicio descriere disponibilă.'}
-                  </p>
+          {/* Verificăm dacă studentul are acces la această materie bazat pe anul său */}
+          {(selectedMaterie.an === 'I' || 
+           (selectedMaterie.an === 'II' && (anStudent === 'II' || anStudent === 'III')) ||
+           (selectedMaterie.an === 'III' && anStudent === 'III')) ? (
+            <div className="bg-[#f5f5f5] rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
+              <div className="p-4 flex-shrink-0 border-b border-[#034a76]/20">
+                <div className="flex justify-between items-start">
+                  <h2 className="text-lg font-bold text-[#034a76]">{selectedMaterie.nume}</h2>
+                  <button 
+                    onClick={() => setSelectedMaterie(null)}
+                    className="text-[#034a76]/70 hover:text-[#034a76]"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <h3 className="font-medium text-gray-700">Facultate:</h3>
-                    <p className="text-gray-600 truncate">{selectedMaterie.facultate}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-700">Specializare:</h3>
-                    <p className="text-gray-600 truncate">{selectedMaterie.specializare}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-700">Profesor:</h3>
-                    <p className="text-gray-600 truncate">{selectedMaterie.profesor?.nume || 'Nespecificat'}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-700">Credite:</h3>
-                    <p className="text-gray-600">{selectedMaterie.credite}</p>
-                  </div>
-                  {selectedMaterie.nota !== undefined && (
-                    <div>
-                      <h3 className="font-medium text-gray-700">Notă:</h3>
-                      <p className={`font-medium ${selectedMaterie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
-                        {selectedMaterie.nota || 'Neevaluat'}
-                      </p>
-                    </div>
-                  )}
-                  {selectedMaterie.dataNota && (
-                    <div>
-                      <h3 className="font-medium text-gray-700">Data evaluării:</h3>
-                      <p className="text-gray-600">
-                        {selectedMaterie.dataNota instanceof Date 
-                          ? selectedMaterie.dataNota.toLocaleDateString('ro-RO') 
-                          : typeof selectedMaterie.dataNota === 'object' && selectedMaterie.dataNota.toDate 
-                            ? selectedMaterie.dataNota.toDate().toLocaleDateString('ro-RO')
-                            : 'Necunoscută'
-                        }
-                      </p>
-                    </div>
-                  )}
-                  {selectedMaterie.anUniversitarIstoric && (
-                    <div>
-                      <h3 className="font-medium text-gray-700">An universitar:</h3>
-                      <p className="text-gray-600">{selectedMaterie.anUniversitarIstoric}</p>
-                    </div>
+                <div className="flex space-x-2 text-xs mt-2">
+                  <span className="bg-[#034a76] px-2 py-1 rounded text-[#f5f5f5]">Anul {selectedMaterie.an}</span>
+                  <span className="bg-[#e3ab23] px-2 py-1 rounded text-[#034a76]">Semestrul {selectedMaterie.semestru}</span>
+                  {selectedMaterie.status && (
+                    <span className={`px-2 py-1 rounded ${
+                      selectedMaterie.status === 'promovat' ? 'bg-green-100 text-green-800' : 
+                      selectedMaterie.status === 'nepromovat' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedMaterie.status === 'promovat' ? 'Promovat' : 
+                      selectedMaterie.status === 'nepromovat' ? 'Nepromovat' : 'Neevaluat'}
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
+              
+              <div className="p-4 overflow-y-auto flex-grow text-sm">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-medium text-gray-700 mb-1">Descriere:</h3>
+                    <p className="text-gray-600 bg-gray-50 p-2 rounded max-h-[20vh] overflow-y-auto">
+                      {selectedMaterie.descriere || 'Nicio descriere disponibilă.'}
+                    </p>
+                  </div>
 
-            <div className="p-3 flex-shrink-0 bg-gray-50">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <h3 className="font-medium text-gray-700">Facultate:</h3>
+                      <p className="text-gray-600 truncate">{selectedMaterie.facultate}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-700">Specializare:</h3>
+                      <p className="text-gray-600 truncate">{selectedMaterie.specializare}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-700">Profesor:</h3>
+                      <p className="text-gray-600 truncate">{selectedMaterie.profesor?.nume || 'Nespecificat'}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-700">Credite:</h3>
+                      <p className="text-gray-600">{selectedMaterie.credite}</p>
+                    </div>
+                    {selectedMaterie.nota !== undefined && (
+                      <div>
+                        <h3 className="font-medium text-gray-700">Notă:</h3>
+                        <p className={`font-medium ${selectedMaterie.nota >= 5 ? 'text-green-600' : 'text-red-600'}`}>
+                          {selectedMaterie.nota || 'Neevaluat'}
+                        </p>
+                      </div>
+                    )}
+                    {selectedMaterie.dataNota && (
+                      <div>
+                        <h3 className="font-medium text-gray-700">Data evaluării:</h3>
+                        <p className="text-gray-600">
+                          {selectedMaterie.dataNota instanceof Date 
+                            ? selectedMaterie.dataNota.toLocaleDateString('ro-RO') 
+                            : typeof selectedMaterie.dataNota === 'object' && selectedMaterie.dataNota.toDate 
+                              ? selectedMaterie.dataNota.toDate().toLocaleDateString('ro-RO')
+                              : 'Necunoscută'
+                          }
+                        </p>
+                      </div>
+                    )}
+                    {selectedMaterie.anUniversitarIstoric && (
+                      <div>
+                        <h3 className="font-medium text-gray-700">An universitar:</h3>
+                        <p className="text-gray-600">{selectedMaterie.anUniversitarIstoric}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 flex-shrink-0 bg-gray-50">
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setSelectedMaterie(null)}
+                    className="px-3 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                  >
+                    Închide
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg w-full max-w-md p-5">
+              <div className="flex items-center mb-4 text-amber-700">
+                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 className="text-lg font-semibold">Acces restricționat</h2>
+              </div>
+              <p className="text-gray-700 mb-4">
+                Nu poți accesa detaliile acestei materii deoarece este de la un an de studiu superior anului tău.
+              </p>
               <div className="flex justify-end">
                 <button
                   onClick={() => setSelectedMaterie(null)}
-                  className="px-3 py-1 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300"
+                  className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                 >
                   Închide
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

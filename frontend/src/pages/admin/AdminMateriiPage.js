@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import DeleteIcon from '../../components/icons/DeleteIcon';
 import MaterieDetailsModal from '../../components/student/MaterieDetailsModal';
@@ -28,6 +28,7 @@ const AdminMateriiPage = () => {
     specializare: '',
     an: ''
   });
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedMaterie, setSelectedMaterie] = useState(null);
   const [pachete, setPachete] = useState([]);
   const [showPachetModal, setShowPachetModal] = useState(false);
@@ -127,21 +128,32 @@ const AdminMateriiPage = () => {
       specializare: '',
       an: ''
     });
+    setSearchTerm('');
   };
 
   const getFilteredMaterii = () => {
+    // Funcție helper pentru eliminarea diacriticelor
+    const removeDiacritics = (str) => {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    };
+
     return materii.filter(materie => {
       if (filters.facultate && materie.facultate !== filters.facultate) return false;
       if (filters.specializare && materie.specializare !== filters.specializare) return false;
       if (filters.an && materie.an !== filters.an) return false;
+      if (searchTerm) {
+        const normalizedSearchTerm = removeDiacritics(searchTerm.toLowerCase());
+        const normalizedMaterieName = removeDiacritics(materie.nume.toLowerCase());
+        if (!normalizedMaterieName.includes(normalizedSearchTerm)) return false;
+      }
       return true;
     });
   };
 
   const renderFilters = () => (
-    <div className="mb-6 bg-[#f5f5f5] p-4 rounded-lg shadow">
+    <div className="mb-6 bg-[#f5f5f5] p-4 rounded-lg shadow border border-[#034a76]/20">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-700">Filtre</h2>
+        <h2 className="text-lg font-semibold text-[#034a76]">Filtre</h2>
         <button
           onClick={resetFilters}
           className="text-sm text-[#034a76] hover:text-[#023557]"
@@ -152,7 +164,7 @@ const AdminMateriiPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Facultate</label>
+          <label className="block text-sm font-medium text-[#034a76] mb-1">Facultate</label>
           <select
             value={filters.facultate}
             onChange={(e) => setFilters(prev => ({ 
@@ -160,7 +172,7 @@ const AdminMateriiPage = () => {
               facultate: e.target.value,
               specializare: ''
             }))}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+            className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
           >
             <option value="">Toate facultățile</option>
             {facultati.map(fac => (
@@ -170,11 +182,11 @@ const AdminMateriiPage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Specializare</label>
+          <label className="block text-sm font-medium text-[#034a76] mb-1">Specializare</label>
           <select
             value={filters.specializare}
             onChange={(e) => setFilters(prev => ({ ...prev, specializare: e.target.value }))}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+            className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
             disabled={!filters.facultate}
           >
             <option value="">Toate specializările</option>
@@ -185,11 +197,11 @@ const AdminMateriiPage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">An</label>
+          <label className="block text-sm font-medium text-[#034a76] mb-1">An</label>
           <select
             value={filters.an}
             onChange={(e) => setFilters(prev => ({ ...prev, an: e.target.value }))}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+            className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
           >
             <option value="">Toți anii</option>
             {ani.map(an => (
@@ -204,27 +216,125 @@ const AdminMateriiPage = () => {
   const MaterieModal = ({ materie, onClose }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedMaterie, setEditedMaterie] = useState({...materie});
+    const [studentiAftati, setStudentiAfisati] = useState([]);
+    
+    useEffect(() => {
+      // Filtrăm studenții care au promovat materia și nu trebuie afișați
+      const filtreazaStudentiInscrisi = async () => {
+        if (!materie.studentiInscrisi || materie.studentiInscrisi.length === 0) {
+          setStudentiAfisati([]);
+          return;
+        }
+        
+        const studentiAfisati = [];
+        
+        for (const student of materie.studentiInscrisi) {
+          try {
+            // Verificăm anul studentului
+            const userRef = doc(db, 'users', student.id);
+            const userDoc = await getDoc(userRef);
+            
+            if (!userDoc.exists()) {
+              continue; // Sărim peste studenții care nu există
+            }
+            
+            const userData = userDoc.data();
+            const anStudent = userData.an || 'I';
+            const anMaterie = materie.an || 'I';
+            
+            // Convertim anul roman în număr pentru comparație
+            const anStudentNumeric = anStudent === 'I' ? 1 : anStudent === 'II' ? 2 : 3;
+            const anMaterieNumeric = anMaterie === 'I' ? 1 : anMaterie === 'II' ? 2 : 3;
+            
+            // Verificăm dacă studentul este dintr-un an mai mic decât materia (an viitor pentru student)
+            const esteDinAnMaiMic = anStudentNumeric < anMaterieNumeric;
+            
+            // Dacă studentul este dintr-un an mai mic decât materia, îl sărim
+            if (esteDinAnMaiMic) {
+              continue;
+            }
+                          
+            // Verificăm dacă studentul este dintr-un an mai mare decât materia
+            const esteDinAnMaiMare = anStudentNumeric > anMaterieNumeric;
+            
+            // Verificăm istoricul academic al studentului
+            const istoricRef = doc(db, 'istoricAcademic', student.id);
+            const istoricDoc = await getDoc(istoricRef);
+            
+            let esteCursulPromovat = false;
+            let esteNepromovat = false;
+            let esteNeevaluat = false;
+            
+            if (istoricDoc.exists()) {
+              const istoricData = istoricDoc.data();
+              
+              if (istoricData.istoricAnual && istoricData.istoricAnual.length > 0) {
+                for (const anAcademic of istoricData.istoricAnual) {
+                  if (anAcademic.cursuri && anAcademic.cursuri.length > 0) {
+                    const curs = anAcademic.cursuri.find(c => c.id === materie.id);
+                    if (curs) {
+                      if (curs.status === 'promovat' || curs.nota >= 5) {
+                        // Studentul a promovat cursul
+                        esteCursulPromovat = true;
+                        break;
+                      } else if (curs.nota > 0 && curs.nota < 5) {
+                        // Studentul nu a promovat cursul (are notă sub 5)
+                        esteNepromovat = true;
+                      } else if (curs.nota === 0 || curs.status === 'neevaluat') {
+                        // Studentul nu a fost evaluat încă
+                        esteNeevaluat = true;
+                      }
+                    }
+                  }
+                }
+              }
+            } else {
+              // Dacă nu are istoric academic, îl considerăm neevaluat
+              esteNeevaluat = true;
+            }
+            
+            // Adăugăm studentul în lista afișată dacă:
+            // 1. Nu a promovat cursul (inclusiv cei cu note sub 5)
+            // 2. ȘI nu este dintr-un an mai mic decât materia (adică să nu fie din an viitor)
+            // 3. ȘI (este nepromovat SAU este neevaluat SAU nu este dintr-un an mai mare)
+            if (!esteCursulPromovat && !esteDinAnMaiMic && (esteNepromovat || esteNeevaluat || !esteDinAnMaiMare)) {
+              studentiAfisati.push(student);
+            }
+          } catch (error) {
+            console.error(`Eroare la verificarea istoricului pentru studentul ${student.id}:`, error);
+          }
+        }
+        
+        setStudentiAfisati(studentiAfisati);
+      };
+      
+      filtreazaStudentiInscrisi();
+    }, [materie]);
 
     const handleEdit = () => {
       setIsEditing(true);
     };
-
+    
     const handleSave = async () => {
       try {
         const materieRef = doc(db, 'materii', materie.id);
         await updateDoc(materieRef, editedMaterie);
-        fetchMaterii();
+        
+        setMaterii(prevMaterii => 
+          prevMaterii.map(m => 
+            m.id === materie.id ? {...m, ...editedMaterie} : m
+          )
+        );
+        
         setIsEditing(false);
-        onClose();
       } catch (error) {
         console.error('Eroare la actualizarea materiei:', error);
-        setError('A apărut o eroare la actualizarea materiei');
       }
     };
-
+    
     const handleCancel = () => {
-      setIsEditing(false);
       setEditedMaterie({...materie});
+      setIsEditing(false);
     };
 
     return (
@@ -415,11 +525,11 @@ const AdminMateriiPage = () => {
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-medium text-gray-700 mb-3">
-                  Studenți Înscriși ({materie.studentiInscrisi?.length || 0}/{materie.locuriDisponibile || 0})
+                  Studenți Înscriși ({studentiAftati?.length || 0}/{materie.locuriDisponibile || 0})
                 </h3>
-                {materie.studentiInscrisi?.length > 0 ? (
+                {studentiAftati?.length > 0 ? (
                   <ul className="space-y-2">
-                    {materie.studentiInscrisi.map((student) => (
+                    {studentiAftati.map((student) => (
                       <li key={student.id} className="text-gray-600">
                         {student.nume} | {student.nrMatricol || student.numarMatricol || 'N/A'}
                       </li>
@@ -630,20 +740,20 @@ const AdminMateriiPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Administrare Materii și Pachete</h1>
+        <h1 className="text-2xl font-bold text-[#034a76]">Administrare Materii și Pachete</h1>
         <div className="space-x-4">
           <button
             onClick={() => setActiveTab('materii')}
-            className={`px-4 py-2 rounded ${
-              activeTab === 'materii' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            className={`px-4 py-2 rounded transition-colors ${
+              activeTab === 'materii' ? 'bg-[#034a76] text-[#f5f5f5]' : 'bg-[#f5f5f5] text-[#034a76] border border-[#034a76]/30'
             }`}
           >
             Materii
           </button>
           <button
             onClick={() => setActiveTab('pachete')}
-            className={`px-4 py-2 rounded ${
-              activeTab === 'pachete' ? 'bg-blue-600 text-white' : 'bg-gray-200'
+            className={`px-4 py-2 rounded transition-colors ${
+              activeTab === 'pachete' ? 'bg-[#034a76] text-[#f5f5f5]' : 'bg-[#f5f5f5] text-[#034a76] border border-[#034a76]/30'
             }`}
           >
             Pachete
@@ -655,14 +765,14 @@ const AdminMateriiPage = () => {
         <div>
           <button
             onClick={() => setShowPachetModal(true)}
-            className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="mb-4 px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
           >
             Adaugă Pachet Nou
           </button>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pachete.map((pachet) => (
-              <div key={pachet.id} className="border rounded-lg p-4 relative">
+              <div key={pachet.id} className="border border-[#034a76]/20 rounded-lg p-4 relative bg-[#f5f5f5] shadow-sm">
                 <button
                   onClick={() => handleDeletePachet(pachet.id)}
                   className="absolute top-2 right-2 p-2 text-red-600 hover:text-red-800"
@@ -670,15 +780,15 @@ const AdminMateriiPage = () => {
                 >
                   <DeleteIcon />
                 </button>
-                <h3 className="text-lg font-semibold pr-8">{pachet.nume}</h3>
-                <div className="mt-2 text-sm text-gray-600">
+                <h3 className="text-lg font-semibold pr-8 text-[#034a76]">{pachet.nume}</h3>
+                <div className="mt-2 text-sm text-[#034a76]/80">
                   <p>Facultate: {pachet.facultate || 'Toate'}</p>
                   <p>Specializare: {pachet.specializare || 'Toate'}</p>
                   <p>An: {pachet.an || 'Toți'}</p>
                 </div>
                 <div className="mt-4">
-                  <h4 className="font-medium mb-2">Materii în pachet:</h4>
-                  <ul className="list-disc list-inside">
+                  <h4 className="font-medium mb-2 text-[#034a76]">Materii în pachet:</h4>
+                  <ul className="list-disc list-inside text-[#034a76]/90">
                     {pachet.materii.map((materie) => (
                       <li key={materie.id}>{materie.nume}</li>
                     ))}
@@ -694,8 +804,8 @@ const AdminMateriiPage = () => {
         <div className="space-y-6">
           {renderFilters()}
 
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h1 className="text-3xl font-bold text-gray-800 mb-8">Administrare Materii</h1>
+          <div className="bg-[#f5f5f5] p-6 rounded-lg shadow-lg border border-[#034a76]/20">
+            <h1 className="text-2xl font-bold text-[#034a76] mb-6">Administrare Materii</h1>
 
             {error && (
               <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
@@ -704,27 +814,27 @@ const AdminMateriiPage = () => {
             )}
 
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold mb-4">Adaugă Materie Nouă</h2>
+              <div className="bg-[#f5f5f5] p-6 rounded-lg shadow-md border border-[#034a76]/20">
+                <h2 className="text-xl font-semibold mb-4 text-[#034a76]">Adaugă Materie Nouă</h2>
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Nume Materie</label>
+                      <label className="block text-sm font-medium text-[#034a76]">Nume Materie</label>
                       <input
                         type="text"
                         value={newMaterie.nume}
                         onChange={(e) => setNewMaterie({...newMaterie, nume: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Facultate</label>
+                      <label className="block text-sm font-medium text-[#034a76]">Facultate</label>
                       <select
                         value={newMaterie.facultate}
                         onChange={(e) => setNewMaterie({...newMaterie, facultate: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                         required
                       >
                         <option value="">Selectează facultatea</option>
@@ -735,11 +845,11 @@ const AdminMateriiPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Specializare</label>
+                      <label className="block text-sm font-medium text-[#034a76]">Specializare</label>
                       <select
                         value={newMaterie.specializare}
                         onChange={(e) => setNewMaterie({...newMaterie, specializare: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                         required
                         disabled={!newMaterie.facultate}
                       >
@@ -751,11 +861,11 @@ const AdminMateriiPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">An</label>
+                      <label className="block text-sm font-medium text-[#034a76]">An</label>
                       <select
                         value={newMaterie.an}
                         onChange={(e) => setNewMaterie({...newMaterie, an: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                         required
                       >
                         <option value="">Selectează anul</option>
@@ -766,11 +876,11 @@ const AdminMateriiPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Semestru</label>
+                      <label className="block text-sm font-medium text-[#034a76]">Semestru</label>
                       <select
                         value={newMaterie.semestru}
                         onChange={(e) => setNewMaterie({...newMaterie, semestru: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                         required
                       >
                         <option value="">Selectează semestrul</option>
@@ -781,14 +891,14 @@ const AdminMateriiPage = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Credite</label>
+                      <label className="block text-sm font-medium text-[#034a76]">Credite</label>
                       <input
                         type="number"
                         min="1"
                         max="30"
                         value={newMaterie.credite}
                         onChange={(e) => setNewMaterie({...newMaterie, credite: e.target.value})}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                         required
                       />
                     </div>
@@ -802,40 +912,40 @@ const AdminMateriiPage = () => {
                           ...newMaterie, 
                           obligatorie: e.target.checked
                         })}
-                        className="h-4 w-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 border-[#034a76]/30 rounded text-[#034a76] focus:ring-[#034a76]"
                       />
-                      <label htmlFor="obligatorie-checkbox" className="ml-2 block text-sm font-medium text-gray-700">
+                      <label htmlFor="obligatorie-checkbox" className="ml-2 block text-sm font-medium text-[#034a76]">
                         Materie obligatorie
                       </label>
                     </div>
 
                     {!newMaterie.obligatorie && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Locuri Disponibile</label>
+                        <label className="block text-sm font-medium text-[#034a76]">Locuri Disponibile</label>
                         <input
                           type="number"
                           min="1"
                           value={newMaterie.locuriDisponibile}
                           onChange={(e) => setNewMaterie({...newMaterie, locuriDisponibile: e.target.value})}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                           required={!newMaterie.obligatorie}
                         />
                       </div>
                     )}
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Descriere</label>
+                      <label className="block text-sm font-medium text-[#034a76]">Descriere</label>
                       <textarea
                         value={newMaterie.descriere}
                         onChange={(e) => setNewMaterie({...newMaterie, descriere: e.target.value})}
                         rows="4"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+                      className="w-full bg-[#034a76] text-[#f5f5f5] py-2 px-4 rounded-md hover:bg-[#023557] transition-colors"
                     >
                       Adaugă Materie
                     </button>
@@ -843,22 +953,55 @@ const AdminMateriiPage = () => {
                 </form>
               </div>
 
-              <div className="bg-white p-6 rounded-lg shadow-lg">
-                <h2 className="text-xl font-semibold mb-4">Materii Existente</h2>
+              <div className="bg-[#f5f5f5] p-6 rounded-lg shadow-md border border-[#034a76]/20">
+                <h2 className="text-xl font-semibold mb-4 text-[#034a76]">Materii Existente</h2>
+                
+                <div className="mb-4">
+                  <div className="flex">
+                    <input
+                      type="text"
+                      placeholder="Caută după numele materiei..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-grow rounded-l-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                    />
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="bg-[#034a76] text-white px-4 py-2 rounded-r-md hover:bg-[#023557] transition-colors flex items-center"
+                    >
+                      {searchTerm ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Șterge
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                          Caută
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2" style={{
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#cbd5e0 #f7fafc'
+                  scrollbarColor: '#034a76 #f5f5f5'
                 }}>
                   {getFilteredMaterii().map((materie) => (
                     <div 
                       key={materie.id} 
-                      className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="border border-[#034a76]/20 rounded-lg p-4 hover:bg-[#034a76]/5 cursor-pointer transition-colors"
                       onClick={() => setSelectedMaterie(materie)}
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <h3 className="font-medium text-lg">{materie.nume}</h3>
-                          <p className="text-sm text-gray-600">
+                          <h3 className="font-medium text-lg text-[#034a76]">{materie.nume}</h3>
+                          <p className="text-sm text-[#034a76]/70">
                             {materie.facultate} - {materie.specializare} (Anul {materie.an})
                           </p>
                         </div>
