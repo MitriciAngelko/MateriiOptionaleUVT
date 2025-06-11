@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, arrayUnion, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { isAdmin } from '../../utils/userRoles';
+import { useMaterii } from '../../contexts/MateriiContext';
 
 const AdminIstoricAcademicPage = () => {
   const [loading, setLoading] = useState(true);
@@ -25,6 +26,7 @@ const AdminIstoricAcademicPage = () => {
   });
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
+  const { allMaterii, loading: materiiLoading } = useMaterii();
   
   // State pentru formularul de adăugare note
   const [showAddNoteForm, setShowAddNoteForm] = useState(false);
@@ -50,7 +52,7 @@ const AdminIstoricAcademicPage = () => {
         
         if (adminAccess) {
           fetchStudents();
-          fetchCourses();
+          // No need to fetchCourses separately - using context data
         }
       }
     };
@@ -84,19 +86,16 @@ const AdminIstoricAcademicPage = () => {
     }
   };
 
-  // Obține toate cursurile disponibile
-  const fetchCourses = async () => {
-    try {
-      const coursesSnapshot = await getDocs(collection(db, 'materii'));
-      const coursesData = coursesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+  // Convert allMaterii context data to array format for compatibility
+  useEffect(() => {
+    if (!materiiLoading && allMaterii) {
+      const coursesData = Object.values(allMaterii).map(materie => ({
+        id: materie.id,
+        ...materie
       }));
       setAvailableCourses(coursesData);
-    } catch (error) {
-      console.error('Eroare la încărcarea cursurilor:', error);
     }
-  };
+  }, [allMaterii, materiiLoading]);
 
   // Funcție pentru a verifica dacă există deja o notă pentru o materie obligatorie
   const checkIfMaterieObligatorieExists = (materieId, istoricAnual) => {

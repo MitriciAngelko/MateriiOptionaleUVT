@@ -15,6 +15,7 @@ import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import MateriiStudentPage from './pages/student/MateriiStudentPage';
 import AdminIstoricAcademicPage from './pages/admin/AdminIstoricAcademicPage';
 import AlocareAutomataPage from './pages/admin/AlocareAutomataPage';
+import MateriiProvider from './contexts/MateriiContext';
 
 
 function App() {
@@ -26,106 +27,108 @@ function App() {
 
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {!isLoginPage && <Navbar />}
-      <div className={!isLoginPage ? 'pt-16' : ''}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
+    <MateriiProvider>
+      <div className="min-h-screen bg-gray-100">
+        {!isLoginPage && <Navbar />}
+        <div className={!isLoginPage ? 'pt-16' : ''}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
 
-          <Route path="/" element={<HomePage />} />
-          <Route path="/home" element={<HomePage />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/home" element={<HomePage />} />
 
-          
-          {/* Redirecționare condiționată pentru ruta principală */}
-          <Route 
-            path="/" 
-            element={
-              isAdmin ? (
-                <Navigate to="/admin-utilizatori" replace />
-              ) : (
-                <HomePage />
-              )
-            } 
-          />
-          <Route 
-            path="/home" 
-            element={
-              isAdmin ? (
-                <Navigate to="/admin-utilizatori" replace />
-              ) : (
-                <HomePage />
-              )
-            } 
-          />
+            
+            {/* Redirecționare condiționată pentru ruta principală */}
+            <Route 
+              path="/" 
+              element={
+                isAdmin ? (
+                  <Navigate to="/admin-utilizatori" replace />
+                ) : (
+                  <HomePage />
+                )
+              } 
+            />
+            <Route 
+              path="/home" 
+              element={
+                isAdmin ? (
+                  <Navigate to="/admin-utilizatori" replace />
+                ) : (
+                  <HomePage />
+                )
+              } 
+            />
 
-          {/* Rută protejată pentru profil */}
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute>
-                <ProfilePage />
-              </PrivateRoute>
-            }
-          />
-          
-          {/* Rută protejată pentru materiile profesorului */}
-          <Route
-            path="/materiile-mele"
-            element={
-              <PrivateRoute>
-                <MateriileMelePage />
-              </PrivateRoute>
-            }
-          />
-          
-          {/* Rute protejate pentru admin */}
-          <Route
-            path="/admin-utilizatori"
-            element={
-              <AdminRoute>
-                <AdminPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin-materii"
-            element={
-              <AdminRoute>
-                <AdminMateriiPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/inscriere-materii"
-            element={
-              <PrivateRoute>
-                <InscriereMateriiPage />
-              </PrivateRoute>
-            }
-          />
-          <Route 
-            path="/materiile-studentului" 
-            element={
-              <PrivateRoute>
-                <MateriiStudentPage />
-              </PrivateRoute>
-            } 
-          />
-          <Route
-            path="/istoric-academic"
-            element={
-              <AdminRoute>
-                <AdminIstoricAcademicPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/alocare-automata"
-            element={<AdminRoute><AlocareAutomataPage /></AdminRoute>}
-          />
-        </Routes>
+            {/* Rută protejată pentru profil */}
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <ProfilePage />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Rută protejată pentru materiile profesorului */}
+            <Route
+              path="/materiile-mele"
+              element={
+                <PrivateRoute>
+                  <MateriileMelePage />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Rute protejate pentru admin */}
+            <Route
+              path="/admin-utilizatori"
+              element={
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin-materii"
+              element={
+                <AdminRoute>
+                  <AdminMateriiPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/inscriere-materii"
+              element={
+                <PrivateRoute>
+                  <InscriereMateriiPage />
+                </PrivateRoute>
+              }
+            />
+            <Route 
+              path="/materiile-studentului" 
+              element={
+                <PrivateRoute>
+                  <MateriiStudentPage />
+                </PrivateRoute>
+              } 
+            />
+            <Route
+              path="/istoric-academic"
+              element={
+                <AdminRoute>
+                  <AdminIstoricAcademicPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/alocare-automata"
+              element={<AdminRoute><AlocareAutomataPage /></AdminRoute>}
+            />
+          </Routes>
+        </div>
       </div>
-    </div>
+    </MateriiProvider>
   );
 }
 

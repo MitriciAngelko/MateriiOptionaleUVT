@@ -7,6 +7,7 @@ import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firesto
 import AdminUserForm from '../../components/admin/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import { isAdmin } from '../../utils/userRoles';
+import { useMaterii } from '../../contexts/MateriiContext';
 
 const AdminPage = () => {
   const { loading } = useAuth();
@@ -29,6 +30,7 @@ const AdminPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [materiiList, setMateriiList] = useState([]);
   const [hasAccess, setHasAccess] = useState(false);
+  const { allMaterii, loading: materiiLoading } = useMaterii();
 
   const facultati = [
     "Facultatea de Matematică și Informatică",
@@ -91,22 +93,16 @@ const AdminPage = () => {
     fetchUsers();
   }, []);
 
+  // Use context data instead of separate Firebase call
   useEffect(() => {
-    const fetchMateriiList = async () => {
-      try {
-        const materiiSnapshot = await getDocs(collection(db, 'materii'));
-        const materiiData = materiiSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setMateriiList(materiiData);
-      } catch (error) {
-        console.error('Error fetching materii:', error);
-      }
-    };
-
-    fetchMateriiList();
-  }, []);
+    if (!materiiLoading && allMaterii) {
+      const materiiData = Object.values(allMaterii).map(materie => ({
+        id: materie.id,
+        ...materie
+      }));
+      setMateriiList(materiiData);
+    }
+  }, [allMaterii, materiiLoading]);
 
   useEffect(() => {
     const checkAccess = async () => {

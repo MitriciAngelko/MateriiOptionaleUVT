@@ -5,6 +5,7 @@ import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import { isStudent } from '../../utils/userRoles';
 import MaterieModal from '../../components/student/MaterieModal';
+import { useMaterii } from '../../contexts/MateriiContext';
 
 const MateriiStudentPage = () => {
   const [materiiInscrise, setMateriiInscrise] = useState([]);
@@ -15,11 +16,17 @@ const MateriiStudentPage = () => {
   const [anStudent, setAnStudent] = useState('I'); // Anul în care este înscris studentul
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
+  const { allMaterii, loading: materiiLoading } = useMaterii();
 
   useEffect(() => {
     const fetchMateriiInscrise = async () => {
       if (!user?.uid) {
         navigate('/login');
+        return;
+      }
+
+      // Wait for materii to be loaded from context
+      if (materiiLoading) {
         return;
       }
 
@@ -41,22 +48,14 @@ const MateriiStudentPage = () => {
         // Setează implicit anul activ ca fiind anul studentului
         setActiveYear(userData.an || 'I');
 
-        // Obține toate materiile obligatorii pentru facultatea și specializarea studentului
-        // Vom filtra materiile obligatorii pentru anul curent al studentului și anii anteriori
-        const materiiObligatoriiSnapshot = await getDocs(
-          query(
-            collection(db, 'materii'),
-            where('obligatorie', '==', true),
-            where('facultate', '==', userData.facultate),
-            where('specializare', '==', userData.specializare)
-          )
-        );
-
-        const materiiObligatorii = materiiObligatoriiSnapshot.docs
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }))
+        // Obține toate materiile obligatorii pentru facultatea și specializarea studentului din context
+        // (evitând un query suplimentar la Firebase)
+        const materiiObligatorii = Object.values(allMaterii)
+          .filter(materie => {
+            return materie.obligatorie === true &&
+                   materie.facultate === userData.facultate &&
+                   materie.specializare === userData.specializare;
+          })
           .filter(materie => {
             // Includem doar materiile obligatorii pentru anii anteriori și anul curent
             const materieAn = materie.an || 'I';
@@ -96,16 +95,11 @@ const MateriiStudentPage = () => {
           materiiIds.push(...materiiDeLaCareLipsesc);
         }
 
-        // Obține detaliile pentru fiecare materie
-        const materiiDetails = await Promise.all(
-          materiiIds.map(async (materieId) => {
-            const materieDoc = await getDoc(doc(db, 'materii', materieId));
-            if (materieDoc.exists()) {
-              return { id: materieDoc.id, ...materieDoc.data() };
-            }
-            return null;
-          })
-        );
+        // Obține detaliile pentru fiecare materie din context (evitând multiple Firebase calls)
+        const materiiDetails = materiiIds.map(materieId => {
+          const materie = allMaterii[materieId];
+          return materie ? { id: materieId, ...materie } : null;
+        });
 
         // Filtrează materiile care există și le sortează după nume
         let materiiValide = materiiDetails
@@ -175,7 +169,7 @@ const MateriiStudentPage = () => {
     };
 
     fetchMateriiInscrise();
-  }, [user, navigate]);
+  }, [user, navigate, allMaterii, materiiLoading]);
 
   // Sincronizează materiile cu istoricul academic
   const sincronizeazaIstoricAcademic = async (materii) => {
