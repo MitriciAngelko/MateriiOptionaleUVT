@@ -510,7 +510,7 @@ const AlocareAutomataPage = () => {
       // Verifică diverse formate de stocare a preferințelor
       studentsSnapshot.forEach((userDoc) => {
         const userData = userDoc.data();
-        console.log(`Verificare student: ${userData.nume} ${userData.prenume} (${userDoc.id})`);
+        console.log(`Verificare student: ${userData.nume} ${userData.prenume} ${userData.medieGenerala} (${userDoc.id})`);
         
         let preferinteGasite = false;
         let preferinteLista = [];
@@ -558,8 +558,23 @@ const AlocareAutomataPage = () => {
         
         // Dacă studentul are preferințe, îl adăugăm la lista
         if (preferinteGasite) {
-          // Obține media studentului
-          const media = userData.mediaGenerala || userData.media || 0;
+          // Obține media relevantă în funcție de anul academic
+          let media = 0;
+          const anStudiu = userData.an;
+          
+          if (anStudiu === 'II') {
+            // Pentru studenții din anul II, folosim media din anul I
+            media = userData.medieAnulI || 0;
+            console.log(`Student anul II - folosim medieAnulI: ${media}`);
+          } else if (anStudiu === 'III') {
+            // Pentru studenții din anul III, folosim media din anul II
+            media = userData.medieAnulII || 0;
+            console.log(`Student anul III - folosim medieAnulII: ${media}`);
+          } else {
+            // Pentru alte cazuri, încercăm să folosim media generală sau media din userData
+            media = userData.medieGenerala || userData.media || 0;
+            console.log(`Student anul ${anStudiu || 'necunoscut'} - folosim media generală: ${media}`);
+          }
           
           studenti.push({
             id: userDoc.id,
@@ -568,10 +583,14 @@ const AlocareAutomataPage = () => {
             numarMatricol: userData.numarMatricol || '',
             email: userData.email || '',
             media: media,
+            anStudiu: anStudiu,
+            medieAnulI: userData.medieAnulI,
+            medieAnulII: userData.medieAnulII,
+            medieGenerala: userData.medieGenerala,
             preferinte: preferinteLista
           });
           
-          console.log(`Student adăugat: ${userData.nume} ${userData.prenume}, Media: ${media}, Preferințe: ${preferinteLista.length}`);
+          console.log(`Student adăugat: ${userData.nume} ${userData.prenume}, An: ${anStudiu}, Media folosită: ${media}, Preferințe: ${preferinteLista.length}`);
         }
       });
       
@@ -737,14 +756,36 @@ const AlocareAutomataPage = () => {
             nume: userData.nume,
             prenume: userData.prenume,
             media: userData.media,
-            mediaGenerala: userData.mediaGenerala,
+            medieGenerala: userData.medieGenerala,
+            medieAnulI: userData.medieAnulI,
+            medieAnulII: userData.medieAnulII,
             an: userData.an,
             preferinteMateriiOptionale: userData.preferinteMateriiOptionale
           });
           
-          // Folosim media generală din profilul studentului
-          student.media = userData.mediaGenerala || userData.media || 0;
-          student.anStudiu = userData.an || anPachet;
+          // Folosim media relevantă în funcție de anul academic
+          const anStudiu = userData.an || anPachet;
+          let mediaFolosita = 0;
+          
+          if (anStudiu === 'II') {
+            // Pentru studenții din anul II, folosim media din anul I
+            mediaFolosita = userData.medieAnulI || 0;
+            console.log(`Student anul II - folosim medieAnulI: ${mediaFolosita}`);
+          } else if (anStudiu === 'III') {
+            // Pentru studenții din anul III, folosim media din anul II
+            mediaFolosita = userData.medieAnulII || 0;
+            console.log(`Student anul III - folosim medieAnulII: ${mediaFolosita}`);
+          } else {
+            // Pentru alte cazuri, încercăm să folosim media generală
+            mediaFolosita = userData.medieGenerala || userData.media || 0;
+            console.log(`Student anul ${anStudiu} - folosim media generală: ${mediaFolosita}`);
+          }
+          
+          student.media = mediaFolosita;
+          student.anStudiu = anStudiu;
+          student.medieAnulI = userData.medieAnulI;
+          student.medieAnulII = userData.medieAnulII;
+          student.medieGenerala = userData.medieGenerala;
           
           console.log(`Media folosită pentru alocare: ${student.media}, An studiu: ${student.anStudiu}`);
           
@@ -810,6 +851,15 @@ const AlocareAutomataPage = () => {
       // Sortăm studenții după media generală (descrescător)
       studenti.sort((a, b) => b.media - a.media);
       console.log('Studenți sortați după media generală:', studenti.map(s => `${s.nume} ${s.prenume} (Media: ${s.media})`));
+      
+      // Verificăm dacă avem medii valide
+      const studentiCuMedii = studenti.filter(s => s.media > 0);
+      console.log(`Studenți cu medii valide: ${studentiCuMedii.length}/${studenti.length}`);
+      if (studentiCuMedii.length > 0) {
+        const mediaMaxima = Math.max(...studentiCuMedii.map(s => s.media));
+        const mediaMinima = Math.min(...studentiCuMedii.map(s => s.media));
+        console.log(`Interval medii: ${mediaMinima.toFixed(2)} - ${mediaMaxima.toFixed(2)}`);
+      }
       
       // Verificăm dacă avem studenți cu preferințe valide
       const studentiCuPreferinteValide = studenti.filter(s => s.preferinte && s.preferinte.length > 0);
@@ -1529,6 +1579,35 @@ const AlocareAutomataPage = () => {
                       <div className="mt-6 border-t pt-6">
                         <h3 className="text-lg font-medium text-[#034a76] mb-4">Rezultate alocare</h3>
                         
+                        {/* Sumar rapid */}
+                        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div className="bg-white p-3 rounded-lg border">
+                              <div className="text-2xl font-bold text-green-600">{rezultateAlocare.studentiAlocati.length}</div>
+                              <div className="text-sm text-gray-600">Studenți alocați</div>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg border">
+                              <div className="text-2xl font-bold text-red-600">{rezultateAlocare.studentiNealocati.length}</div>
+                              <div className="text-sm text-gray-600">Studenți nealocați</div>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg border">
+                              <div className="text-2xl font-bold text-blue-600">
+                                {rezultateAlocare.studentiAlocati.filter(s => s.pozitiePrioritate === 1).length}
+                              </div>
+                              <div className="text-sm text-gray-600">Prima alegere</div>
+                            </div>
+                            <div className="bg-white p-3 rounded-lg border">
+                              <div className="text-2xl font-bold text-purple-600">
+                                {rezultateAlocare.studentiAlocati.length > 0 ? 
+                                  (rezultateAlocare.studentiAlocati.reduce((sum, s) => sum + s.media, 0) / rezultateAlocare.studentiAlocati.length).toFixed(2) :
+                                  '0.00'
+                                }
+                              </div>
+                              <div className="text-sm text-gray-600">Media pentru alocare</div>
+                            </div>
+                          </div>
+                        </div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <h4 className="text-md font-medium text-[#034a76] mb-2">Studenți alocați ({rezultateAlocare.studentiAlocati.length})</h4>
@@ -1539,11 +1618,45 @@ const AlocareAutomataPage = () => {
                                 <ul className="space-y-2">
                                   {rezultateAlocare.studentiAlocati.map(student => (
                                     <li key={student.id} className="text-sm border-b border-green-100 pb-2">
-                                      <div className="font-medium">{student.nume} {student.prenume}</div>
-                                      <div className="text-gray-600">Materie: {student.numeMaterieAlocata}</div>
-                                      <div className="text-gray-600">Poziție preferință: {student.pozitiePrioritate}</div>
-                                      <div className="text-gray-600">An studiu: {student.anStudiu || 'N/A'}</div>
-                                      <div className="text-gray-600">Media: {student.media.toFixed(2)}</div>
+                                      <div className="font-medium text-green-800">{student.nume} {student.prenume}</div>
+                                      <div className="text-gray-600">
+                                        <span className="font-medium">Materie:</span> {student.numeMaterieAlocata}
+                                      </div>
+                                      <div className="text-gray-600">
+                                        <span className="font-medium">Preferința #{student.pozitiePrioritate}</span>
+                                        <span className={`ml-2 px-2 py-1 text-xs rounded ${
+                                          student.pozitiePrioritate === 1 ? 'bg-green-200 text-green-800' :
+                                          student.pozitiePrioritate === 2 ? 'bg-yellow-200 text-yellow-800' :
+                                          'bg-orange-200 text-orange-800'
+                                        }`}>
+                                          {student.pozitiePrioritate === 1 ? 'Prima alegere' :
+                                           student.pozitiePrioritate === 2 ? 'A doua alegere' :
+                                           `A ${student.pozitiePrioritate}-a alegere`}
+                                        </span>
+                                      </div>
+                                      <div className="text-gray-600">
+                                        <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
+                                      </div>
+                                      <div className="text-gray-600">
+                                        <span className="font-medium">
+                                          {student.anStudiu === 'II' ? 'Media anul I:' :
+                                           student.anStudiu === 'III' ? 'Media anul II:' :
+                                           'Media generală:'}
+                                        </span> 
+                                        <span className={`ml-1 font-semibold ${
+                                          student.media >= 9 ? 'text-green-600' :
+                                          student.media >= 8 ? 'text-blue-600' :
+                                          student.media >= 7 ? 'text-yellow-600' :
+                                          'text-red-600'
+                                        }`}>
+                                          {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
+                                        </span>
+                                      </div>
+                                      {student.numarMatricol && (
+                                        <div className="text-gray-500 text-xs">
+                                          Nr. matricol: {student.numarMatricol}
+                                        </div>
+                                      )}
                                     </li>
                                   ))}
                                 </ul>
@@ -1560,12 +1673,36 @@ const AlocareAutomataPage = () => {
                                 <ul className="space-y-2">
                                   {rezultateAlocare.studentiNealocati.map(student => (
                                     <li key={student.id} className="text-sm border-b border-red-100 pb-2">
-                                      <div className="font-medium">{student.nume} {student.prenume}</div>
-                                      <div className="text-gray-600">An studiu: {student.anStudiu || 'N/A'}</div>
-                                      <div className="text-gray-600">Media: {student.media.toFixed(2)}</div>
+                                      <div className="font-medium text-red-800">{student.nume} {student.prenume}</div>
                                       <div className="text-gray-600">
-                                        Preferințe: {student.preferinte.map((p, idx) => `#${idx+1}`).join(', ')}
+                                        <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
                                       </div>
+                                      <div className="text-gray-600">
+                                        <span className="font-medium">
+                                          {student.anStudiu === 'II' ? 'Media anul I:' :
+                                           student.anStudiu === 'III' ? 'Media anul II:' :
+                                           'Media generală:'}
+                                        </span> 
+                                        <span className={`ml-1 font-semibold ${
+                                          student.media >= 9 ? 'text-green-600' :
+                                          student.media >= 8 ? 'text-blue-600' :
+                                          student.media >= 7 ? 'text-yellow-600' :
+                                          'text-red-600'
+                                        }`}>
+                                          {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
+                                        </span>
+                                      </div>
+                                      <div className="text-gray-600">
+                                        <span className="font-medium">Preferințe:</span> {student.preferinte ? student.preferinte.map((p, idx) => `#${idx+1}`).join(', ') : 'Nespecificate'}
+                                      </div>
+                                      <div className="text-red-600 text-xs mt-1">
+                                        <span className="font-medium">Motiv nealocare:</span> {student.motivNealocare}
+                                      </div>
+                                      {student.numarMatricol && (
+                                        <div className="text-gray-500 text-xs">
+                                          Nr. matricol: {student.numarMatricol}
+                                        </div>
+                                      )}
                                     </li>
                                   ))}
                                 </ul>

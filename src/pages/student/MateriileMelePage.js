@@ -158,6 +158,23 @@ const MateriileMelePage = () => {
           medieGenerala = parseFloat((sumaNotes / cursurilePromovate.length).toFixed(2));
         }
 
+        // Calculate averages for each academic year
+        const mediiAcademice = {};
+        ['I', 'II', 'III'].forEach(an => {
+          const materiiAnCurent = byAn[an];
+          const materiiPromovateAnCurent = materiiAnCurent.filter(materie => parseFloat(materie.nota) >= 5);
+          
+          let medieAn = '0.00';
+          if (materiiPromovateAnCurent.length > 0) {
+            const sumaNoteAn = materiiPromovateAnCurent.reduce((acc, course) => acc + parseFloat(course.nota), 0);
+            medieAn = parseFloat((sumaNoteAn / materiiPromovateAnCurent.length).toFixed(2));
+          }
+          
+          mediiAcademice[`medieAnul${an}`] = medieAn.toString();
+          
+          console.log(`📊 Anul ${an}: ${materiiPromovateAnCurent.length} materii promovate, medie: ${medieAn}`);
+        });
+
         // Convert to string for storage
         const medieGeneralaString = medieGenerala.toString();
 
@@ -166,19 +183,32 @@ const MateriileMelePage = () => {
           crediteTrecute,
           medieGenerala,
           materiiPromovate: cursurilePromovate.length,
-          totalCourses: toateCursurile.length
+          totalCourses: toateCursurile.length,
+          mediiAcademice
         });
 
-        // Update user document with medieGenerala if it has changed
-        if (userData.medieGenerala !== medieGeneralaString) {
+        // Check if any of the averages have changed
+        const averagesChanged = userData.medieGenerala !== medieGeneralaString ||
+          userData.medieAnulI !== mediiAcademice.medieAnulI ||
+          userData.medieAnulII !== mediiAcademice.medieAnulII ||
+          userData.medieAnulIII !== mediiAcademice.medieAnulIII;
+
+        // Update user document with all averages if any have changed
+        if (averagesChanged) {
           try {
             await setDoc(userDocRef, {
               ...userData,
-              medieGenerala: medieGeneralaString
+              medieGenerala: medieGeneralaString,
+              medieAnulI: mediiAcademice.medieAnulI,
+              medieAnulII: mediiAcademice.medieAnulII,
+              medieAnulIII: mediiAcademice.medieAnulIII
             });
-            console.log('Updated medieGenerala in user document:', medieGeneralaString);
+            console.log('Updated averages in user document:', {
+              medieGenerala: medieGeneralaString,
+              ...mediiAcademice
+            });
           } catch (error) {
-            console.error('Error updating medieGenerala in user document:', error);
+            console.error('Error updating averages in user document:', error);
           }
         }
 
