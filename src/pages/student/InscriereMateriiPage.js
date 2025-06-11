@@ -126,6 +126,80 @@ const AcademicYearProgress = ({ currentYear, accumulatedECTS, minECTS, isNewRegi
   );
 };
 
+// Toast Notification Component
+const ToastNotification = ({ message, type, onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000); // Auto close after 4 seconds
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const getToastStyles = () => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-500 text-white border-green-600';
+      case 'error':
+        return 'bg-red-500 text-white border-red-600';
+      case 'warning':
+        return 'bg-yellow-500 text-white border-yellow-600';
+      default:
+        return 'bg-blue-500 text-white border-blue-600';
+    }
+  };
+
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'error':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+      case 'warning':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+    }
+  };
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ease-in-out`}>
+      <div className={`${getToastStyles()} rounded-lg shadow-lg border-l-4 p-4 flex items-start space-x-3`}>
+        <div className="flex-shrink-0">
+          {getIcon()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium break-words">{message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 ml-2 opacity-70 hover:opacity-100 transition-opacity"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const InscriereMateriiPage = () => {
   const [pachete, setPachete] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +208,7 @@ const InscriereMateriiPage = () => {
   const [materieDetails, setMaterieDetails] = useState(null);
   const [preferinte, setPreferinte] = useState({}); // Preferințele utilizatorului pentru fiecare pachet
   const [loadingPachete, setLoadingPachete] = useState({}); // Pentru a urmări încărcarea pentru fiecare pachet
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null); // Changed from successMessage to toastMessage
   const [dragItem, setDragItem] = useState(null);
   const [dragPachet, setDragPachet] = useState(null);
   const user = useSelector((state) => state.auth.user);
@@ -147,6 +221,15 @@ const InscriereMateriiPage = () => {
     currentAcademicYear: ''
   });
   // Registration status removed - now handled by admins
+
+  // Function to show toast notifications
+  const showToast = (message, type = 'success') => {
+    setToastMessage({ message, type });
+  };
+
+  const closeToast = () => {
+    setToastMessage(null);
+  };
 
   // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
   const adaugaToateMateriile = (pachetId) => {
@@ -475,12 +558,11 @@ const InscriereMateriiPage = () => {
         preferinteMateriiOptionale: preferinteActualizate
       });
       
-      // Afisează mesajul de succes pentru 3 secunde
-      setSuccessMessage(`Preferințele pentru pachetul au fost salvate cu succes!`);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // Show success toast instead of banner message
+      showToast('Preferințele pentru pachet au fost salvate cu succes!', 'success');
     } catch (error) {
       console.error('Eroare la salvarea preferințelor:', error);
-      setError('A apărut o eroare la salvarea preferințelor');
+      showToast('A apărut o eroare la salvarea preferințelor', 'error');
     } finally {
       setLoadingPachete(prev => ({
         ...prev,
@@ -550,7 +632,7 @@ const InscriereMateriiPage = () => {
       }
     } catch (error) {
       console.error('Eroare la încărcarea detaliilor materiei:', error);
-      setError('Nu s-au putut încărca detaliile materiei.');
+      showToast('Nu s-au putut încărca detaliile materiei.', 'error');
     }
   };
 
@@ -586,7 +668,7 @@ const InscriereMateriiPage = () => {
           );
           
           if (materiePromovata) {
-            setError("Nu vă puteți înscrie la această materie deoarece ați promovat-o deja.");
+            showToast("Nu vă puteți înscrie la această materie deoarece ați promovat-o deja.", 'error');
             setLoading(false);
             return;
           }
@@ -625,7 +707,9 @@ const InscriereMateriiPage = () => {
       const studentiInscrisi = materieData.studentiInscrisi || [];
       
       if (studentiInscrisi.length >= locuriDisponibile && !studentiInscrisi.some(s => s.id === user.uid)) {
-        throw new Error('Nu mai sunt locuri disponibile pentru această materie');
+        showToast('Nu mai sunt locuri disponibile pentru această materie', 'error');
+        setLoading(false);
+        return;
       }
       
       // Dacă există o materie veche, dezînscrie studentul de la ea
@@ -660,7 +744,8 @@ const InscriereMateriiPage = () => {
       // Actualizează istoricul academic
       await adaugaLaIstoricAcademic(materieId, materieData);
 
-      // În loc să setăm mesajul de succes, închidem direct modalul
+      // Show success toast and close modal
+      showToast('Te-ai înscris cu succes la materie!', 'success');
       setSelectedMaterie(null);
       setMaterieDetails(null);
       
@@ -677,7 +762,7 @@ const InscriereMateriiPage = () => {
 
     } catch (error) {
       console.error('Eroare la înscriere:', error);
-      setError('A apărut o eroare la înscriere');
+      showToast('A apărut o eroare la înscriere', 'error');
     } finally {
       setLoading(false);
     }
@@ -867,6 +952,15 @@ const InscriereMateriiPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 relative">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <ToastNotification
+          message={toastMessage.message}
+          type={toastMessage.type}
+          onClose={closeToast}
+        />
+      )}
+
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-[#034a76]">Înscriere la Materii</h1>
       </div>
@@ -874,12 +968,6 @@ const InscriereMateriiPage = () => {
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
           {error}
-        </div>
-      )}
-      
-      {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
-          {successMessage}
         </div>
       )}
       
