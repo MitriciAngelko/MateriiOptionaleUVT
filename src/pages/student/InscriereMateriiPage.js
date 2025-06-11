@@ -35,7 +35,7 @@ const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDe
 };
 
 // Component to show academic year progress
-const AcademicYearProgress = ({ currentYear, accumulatedECTS, canAdvance, registrationActive, minECTS, isNewRegistration }) => {
+const AcademicYearProgress = ({ currentYear, accumulatedECTS, minECTS, isNewRegistration }) => {
   // Convert Roman numeral to numeric year
   const yearNumber = currentYear === 'I' ? 1 : currentYear === 'II' ? 2 : 3;
   
@@ -62,11 +62,10 @@ const AcademicYearProgress = ({ currentYear, accumulatedECTS, canAdvance, regist
             {year === yearNumber && accumulatedECTS >= minECTS && year < 3 && (
               <div className="absolute -top-2 -right-2">
                 <span 
-                  className={`flex items-center justify-center w-6 h-6 rounded-full text-xs
-                    ${registrationActive ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'}`}
-                  title={registrationActive ? 'Poți avansa în anul următor' : 'Ai acumulat suficiente ECTS, dar înscrierile nu sunt active'}
+                  className="flex items-center justify-center w-6 h-6 rounded-full text-xs bg-green-500 text-white"
+                  title="Ai acumulat suficiente ECTS pentru avansarea în anul următor"
                 >
-                  {registrationActive ? '✓' : '!'}
+                  ✓
                 </span>
               </div>
             )}
@@ -110,7 +109,7 @@ const AcademicYearProgress = ({ currentYear, accumulatedECTS, canAdvance, regist
             {accumulatedECTS}/{minECTS} ECTS acumulate în anul curent
             {accumulatedECTS >= minECTS && (
               <span className="ml-1 text-green-600 font-medium">
-                {registrationActive ? '- Poți avansa în anul următor' : '- Așteptați deschiderea perioadei de înscrieri'}
+                - Îndeplinești criteriile pentru avansarea în anul următor
               </span>
             )}
             {isNewRegistration && (
@@ -147,12 +146,7 @@ const InscriereMateriiPage = () => {
     accumulatedECTS: 0,
     currentAcademicYear: ''
   });
-  const [registrationLoading, setRegistrationLoading] = useState(false);
-  const [registrationStatus, setRegistrationStatus] = useState({
-    active: false,
-    dataStart: null,
-    dataFinal: null
-  });
+  // Registration status removed - now handled by admins
 
   // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
   const adaugaToateMateriile = (pachetId) => {
@@ -283,196 +277,7 @@ const InscriereMateriiPage = () => {
     }
   };
 
-  // Check if registration for next academic year is active
-  const checkRegistrationStatus = async () => {
-    try {
-      // First check global registration settings
-      const settingsRef = doc(db, 'settings', 'registration');
-      const settingsDoc = await getDoc(settingsRef);
-      
-      let globalSettings = {
-        active: false,
-        dataStart: null,
-        dataFinal: null,
-        minECTS: 40
-      };
-
-      if (settingsDoc.exists()) {
-        const settingsData = settingsDoc.data();
-        const dataStart = settingsData.dataStartInscriere ? new Date(settingsData.dataStartInscriere) : null;
-        const dataFinal = settingsData.dataFinalInscriere ? new Date(settingsData.dataFinalInscriere) : null;
-        const acum = new Date();
-        
-        // Check if manual activation is enabled or current date is between start and end dates
-        const globalActive = settingsData.isActive === true || 
-                            (dataStart && dataFinal && acum >= dataStart && acum <= dataFinal);
-        
-        globalSettings = {
-          active: globalActive,
-          dataStart: dataStart ? dataStart.toISOString() : null,
-          dataFinal: dataFinal ? dataFinal.toISOString() : null,
-          minECTS: settingsData.minECTS || 40
-        };
-      }
-
-      // Check if there are any active package registration periods for next year
-      if (!userData) {
-        return globalSettings;
-      }
-
-      // Determine next year for the student
-      const currentAn = userData.an || 'I';
-      const nextAn = currentAn === 'I' ? 'II' : currentAn === 'II' ? 'III' : null;
-      
-      if (!nextAn) {
-        // Student is already in final year
-        return {
-          ...globalSettings,
-          active: false
-        };
-      }
-
-      // Query packages for next year with same faculty and specialization
-      const nextYearPackagesQuery = query(
-        collection(db, 'pachete'),
-        where('facultate', '==', userData.facultate),
-        where('specializare', '==', userData.specializare),
-        where('an', '==', nextAn)
-      );
-      
-      const nextYearPackagesSnapshot = await getDocs(nextYearPackagesQuery);
-      const acum = new Date();
-      
-      let hasActivePackageRegistration = false;
-      let earliestStart = null;
-      let latestEnd = null;
-      
-      // Check if any package has active registration period
-      nextYearPackagesSnapshot.forEach(doc => {
-        const packetData = doc.data();
-        const packageStart = packetData.dataStart ? new Date(packetData.dataStart) : null;
-        const packageEnd = packetData.dataFinal ? new Date(packetData.dataFinal) : null;
-        
-        if (packageStart && packageEnd && acum >= packageStart && acum <= packageEnd) {
-          hasActivePackageRegistration = true;
-        }
-        
-        // Track earliest start and latest end for display
-        if (packageStart && (!earliestStart || packageStart < earliestStart)) {
-          earliestStart = packageStart;
-        }
-        if (packageEnd && (!latestEnd || packageEnd > latestEnd)) {
-          latestEnd = packageEnd;
-        }
-      });
-
-      // Registration is active if either global settings are active OR package registrations are active
-      const finalActive = globalSettings.active || hasActivePackageRegistration;
-      
-      return {
-        active: finalActive,
-        dataStart: earliestStart ? earliestStart.toISOString() : globalSettings.dataStart,
-        dataFinal: latestEnd ? latestEnd.toISOString() : globalSettings.dataFinal,
-        minECTS: globalSettings.minECTS,
-        hasPackageRegistration: hasActivePackageRegistration,
-        hasGlobalRegistration: globalSettings.active
-      };
-    } catch (error) {
-      console.error('Eroare la verificarea statusului înscrierii:', error);
-      return {
-        active: false,
-        dataStart: null,
-        dataFinal: null,
-        minECTS: 40
-      };
-    }
-  };
-
-  // Function to advance student to next academic year
-  const registerForNextYear = async () => {
-    if (registrationLoading) return;
-    
-    try {
-      setRegistrationLoading(true);
-      setError(null);
-      
-      // Check if registrations are active
-      if (!registrationStatus.active) {
-        if (!registrationStatus.hasGlobalRegistration && !registrationStatus.hasPackageRegistration) {
-          throw new Error('Înscrierile pentru anul următor nu sunt active în acest moment. Nu există perioada de înscriere activă nici la nivel global, nici pentru pachetele din anul următor.');
-        } else {
-          throw new Error('Înscrierile pentru anul următor nu sunt active în acest moment.');
-        }
-      }
-      
-      const requiredECTS = registrationStatus.minECTS || 40;
-      
-      // Check if student has accumulated enough ECTS
-      if (academicStats.accumulatedECTS < requiredECTS) {
-        throw new Error(`Nu aveți suficiente credite ECTS acumulate pentru înscrierea în anul următor. Sunt necesare minim ${requiredECTS} ECTS.`);
-      }
-      
-      if (!userData) {
-        throw new Error('Datele studentului nu sunt disponibile.');
-      }
-      
-      // Get current academic year as a Roman numeral
-      const currentAn = userData.an || 'I';
-      
-      // Convert to numeric and increment
-      let nextAnNumeric = currentAn === 'I' ? 2 : currentAn === 'II' ? 3 : 3;
-      
-      // If already in year III, cannot advance further
-      if (currentAn === 'III') {
-        throw new Error('Sunteți deja în ultimul an de studiu.');
-      }
-      
-      // Convert back to Roman numeral
-      const nextAn = nextAnNumeric === 2 ? 'II' : 'III';
-      
-      // Get current academic year for tracking
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-11
-      const currentAcademicYear = month < 9 ? 
-        `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
-        `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
-      
-      // Update student's academic year in Firestore
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, { 
-        an: nextAn,
-        lastRegistrationYear: currentAcademicYear,
-        lastRegistrationDate: new Date().toISOString()
-      });
-      
-      // Update local userData
-      setUserData({
-        ...userData,
-        an: nextAn,
-        lastRegistrationYear: currentAcademicYear,
-        lastRegistrationDate: new Date().toISOString()
-      });
-      
-      // Reset ECTS counter for the new academic year (will be recalculated in fetchPachete)
-      setAcademicStats({
-        ...academicStats,
-        accumulatedECTS: 0
-      });
-      
-      // Show success message
-      setSuccessMessage(`Felicitări! V-ați înscris cu succes în anul ${nextAn} de studiu.`);
-      
-      // Reload packages for the new year and recalculate stats
-      await fetchPachete(true);
-      
-    } catch (error) {
-      console.error('Eroare la înscrierea în anul următor:', error);
-      setError(error.message || 'A apărut o eroare la înscrierea în anul următor.');
-    } finally {
-      setRegistrationLoading(false);
-    }
-  };
+  // Registration for next year is now handled by admins in AlocareAutomataPage
 
   const fetchPachete = async (forceRefresh = false) => {
     try {
@@ -491,9 +296,7 @@ const InscriereMateriiPage = () => {
         return;
       }
       
-      // Check registration status
-      const status = await checkRegistrationStatus();
-      setRegistrationStatus(status);
+      // Registration status checking removed - now handled by admins
       
       // Obține datele studentului pentru a determina facultatea, specializarea și anul
       const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -1085,9 +888,7 @@ const InscriereMateriiPage = () => {
         <AcademicYearProgress 
           currentYear={userData.an || 'I'} 
           accumulatedECTS={academicStats.accumulatedECTS}
-          canAdvance={academicStats.accumulatedECTS >= registrationStatus.minECTS}
-          registrationActive={registrationStatus.active}
-          minECTS={registrationStatus.minECTS || 40}
+          minECTS={40}
           isNewRegistration={userData.lastRegistrationYear === academicStats.currentAcademicYear}
         />
       )}
@@ -1124,64 +925,76 @@ const InscriereMateriiPage = () => {
           </div>
         </div>
         
-        {/* Next Year Registration Section */}
-        {academicStats.accumulatedECTS >= (registrationStatus.minECTS || 40) && userData?.an !== 'III' && (
-          <div className="mt-4 p-3 bg-white rounded-md shadow-sm border border-[#034a76]/20">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div className="mb-3 md:mb-0">
-                <div className="text-sm text-[#034a76]/70">Criterii de înscriere în anul următor</div>
-                <div className="text-sm font-medium text-green-600">
-                  <span className="inline-flex items-center">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Ați acumulat minim {registrationStatus.minECTS || 40} ECTS în anul universitar curent
-                  </span>
-                </div>
-                <div className="text-sm font-medium mt-1">
-                  <span className={`inline-flex items-center ${registrationStatus.active ? 'text-green-600' : 'text-orange-600'}`}>
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={registrationStatus.active ? "M5 13l4 4L19 7" : "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"} />
-                    </svg>
-                    {registrationStatus.active ? 'Înscrieri active' : 'Înscrierea în anul următor nu este disponibilă'}
-                  </span>
-                  {registrationStatus.active && (
-                    <div className="text-xs text-green-500 mt-1 ml-5">
-                      {registrationStatus.hasPackageRegistration && registrationStatus.hasGlobalRegistration && 
-                        "Activă prin setări globale și pachete"}
-                      {registrationStatus.hasPackageRegistration && !registrationStatus.hasGlobalRegistration && 
-                        "Activă prin pachete de materii pentru anul următor"}
-                      {!registrationStatus.hasPackageRegistration && registrationStatus.hasGlobalRegistration && 
-                        "Activă prin setări globale"}
-                    </div>
-                  )}
-                </div>
-                {!registrationStatus.active && registrationStatus.dataStart && (
-                  <div className="text-sm text-[#034a76]/70 mt-1">
-                    {new Date(registrationStatus.dataStart) > new Date() ? 
-                      `Înscrierile încep la: ${formatDate(registrationStatus.dataStart)}` : 
-                      `Înscrierile s-au încheiat la: ${formatDate(registrationStatus.dataFinal)}`
-                    }
+        {/* Next Year Registration Status */}
+        {userData?.an && (
+          <div className="mt-4">
+            {userData.an === 'III' ? (
+              <div className="p-3 bg-purple-50 rounded-md shadow-sm border border-purple-200">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 mr-2 mt-0.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-purple-800">Anul final de studiu</p>
+                    <p className="text-sm text-purple-700 mt-1">
+                      Te afli în anul III (anul final). Concentrează-te pe finalizarea studiilor și pregătirea pentru examenele finale.
+                      {academicStats.accumulatedECTS >= 40 ? 
+                        ` Ai acumulat ${academicStats.accumulatedECTS} ECTS în acest an academic.` :
+                        ` Ai acumulat ${academicStats.accumulatedECTS} ECTS - continuă să promovezi cursurile pentru finalizarea anului.`
+                      }
+                    </p>
                   </div>
-                )}
+                </div>
               </div>
-              <button
-                onClick={registerForNextYear}
-                disabled={registrationLoading || !registrationStatus.active}
-                className={`px-4 py-2 rounded ${
-                  registrationLoading ? 'bg-gray-400' : 
-                  !registrationStatus.active ? 'bg-gray-300 cursor-not-allowed' : 
-                  'bg-[#e3ab23] hover:bg-[#c49520]'
-                } text-[#034a76] font-medium`}
-                title={registrationStatus.active ? 
-                  "Înscrie-te în anul următor" : 
-                  "Înscrierile pentru anul următor nu sunt active în acest moment"}
-              >
-                {registrationLoading ? 'Se procesează...' : 
-                 !registrationStatus.active ? 'Înscrierile nu sunt active' :
-                 `Înscrie-te în anul ${userData?.an === 'I' ? 'II' : 'III'}`}
-              </button>
-            </div>
+            ) : academicStats.accumulatedECTS >= 40 ? (
+              userData?.lastRegistrationYear === academicStats.currentAcademicYear ? (
+                <div className="p-3 bg-green-50 rounded-md shadow-sm border border-green-200">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 mr-2 mt-0.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-green-800">Ai fost înregistrat în anul următor</p>
+                      <p className="text-sm text-green-700 mt-1">
+                        Înregistrarea ta pentru anul {userData.an === 'I' ? 'II' : 'III'} a fost procesată cu succes de către administratori. 
+                        Cursurile pentru noul an academic vor fi disponibile la începutul semestrului.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-blue-50 rounded-md shadow-sm border border-blue-200">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 mr-2 mt-0.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">Îndeplinești criteriile pentru avansarea în anul următor</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Ai acumulat {academicStats.accumulatedECTS} ECTS (minim necesar: 40 ECTS). 
+                        Înscrierea în anul următor va fi procesată de către administratori în perioada de înregistrare.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="p-3 bg-yellow-50 rounded-md shadow-sm border border-yellow-200">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 mr-2 mt-0.5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">Nu îndeplinești încă criteriile pentru avansarea în anul următor</p>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      Ai acumulat {academicStats.accumulatedECTS} ECTS din minimum 40 ECTS necesare. 
+                      Continuă să promovezi cursurile pentru a putea avansa în anul următor.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

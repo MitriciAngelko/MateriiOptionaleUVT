@@ -16,6 +16,7 @@ import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import AdminIstoricAcademicPage from './pages/admin/AdminIstoricAcademicPage';
 import AlocareAutomataPage from './pages/admin/AlocareAutomataPage';
 import RegistrationSettingsPage from './pages/admin/RegistrationSettingsPage';
+import StudentNextYearRegistrationPage from './pages/admin/StudentNextYearRegistrationPage';
 import { MateriiProvider } from './contexts/MateriiContext';
 
 function App() {
@@ -83,6 +84,7 @@ function App() {
             </AdminRoute>
           } />
           <Route path="/alocare-automata" element={<AdminRoute><AlocareAutomataPage /></AdminRoute>} />
+          <Route path="/inscriere-anul-urmator" element={<AdminRoute><StudentNextYearRegistrationPage /></AdminRoute>} />
           <Route
             path="/registration-settings"
             element={<AdminRoute><RegistrationSettingsPage /></AdminRoute>}

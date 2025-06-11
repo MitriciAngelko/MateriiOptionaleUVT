@@ -88,6 +88,7 @@ const Navbar = () => {
       items.push({ path: '/admin-materii', label: 'Materii' });
       items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
       items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
+      items.push({ path: '/inscriere-anul-urmator', label: 'Înscrierea în Anul Următor' });
     }
     
     // Elemente pentru studenți (când nu sunt admin)
