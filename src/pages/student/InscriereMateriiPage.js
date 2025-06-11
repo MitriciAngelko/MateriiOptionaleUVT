@@ -49,6 +49,11 @@ const InscriereMateriiPage = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState(null);
   const [statusInscrieri, setStatusInscrieri] = useState({}); // Status înscrieri pentru fiecare pachet
+  const [academicStats, setAcademicStats] = useState({
+    avgGrade: 0,
+    accumulatedECTS: 0,
+    currentAcademicYear: ''
+  });
 
   // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
   const adaugaToateMateriile = (pachetId) => {
@@ -101,6 +106,71 @@ const InscriereMateriiPage = () => {
     }
   };
 
+  // Calculate academic stats
+  const calculateAcademicStats = async (userId) => {
+    try {
+      const istoricRef = doc(db, 'istoricAcademic', userId);
+      const istoricDoc = await getDoc(istoricRef);
+      
+      if (!istoricDoc.exists()) {
+        return {
+          avgGrade: 0,
+          accumulatedECTS: 0,
+          currentAcademicYear: ''
+        };
+      }
+      
+      const istoricData = istoricDoc.data();
+      
+      // Determine current academic year
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-11
+      const currentAcademicYear = month < 9 ? 
+        `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
+        `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
+      
+      // Filter entries for current academic year
+      const currentYearEntries = istoricData.istoricAnual?.filter(entry => 
+        entry.anUniversitar === currentAcademicYear
+      ) || [];
+      
+      // Get all courses with valid grades
+      const allCourses = [];
+      let totalECTS = 0;
+      
+      currentYearEntries.forEach(entry => {
+        entry.cursuri.forEach(curs => {
+          if (curs.nota > 0 && curs.status === 'promovat') {
+            allCourses.push(curs);
+            // Ensure credite is treated as a number by using parseInt or parseFloat
+            totalECTS += parseInt(curs.credite || 0, 10);
+          }
+        });
+      });
+      
+      // Calculate average grade
+      let avgGrade = 0;
+      if (allCourses.length > 0) {
+        const sum = allCourses.reduce((acc, course) => acc + course.nota, 0);
+        avgGrade = parseFloat((sum / allCourses.length).toFixed(2));
+      }
+      
+      return {
+        avgGrade,
+        accumulatedECTS: totalECTS,
+        currentAcademicYear
+      };
+    } catch (error) {
+      console.error('Error calculating academic stats:', error);
+      return {
+        avgGrade: 0,
+        accumulatedECTS: 0,
+        currentAcademicYear: ''
+      };
+    }
+  };
+
   const fetchPachete = async () => {
     try {
       setLoading(true);
@@ -128,6 +198,10 @@ const InscriereMateriiPage = () => {
       
       // Salvează datele studentului în state pentru a fi folosite mai târziu
       setUserData(userData);
+      
+      // Calculate academic stats
+      const stats = await calculateAcademicStats(user.uid);
+      setAcademicStats(stats);
       
       // Obține istoricul academic al studentului pentru a verifica materiile promovate
       const istoricRef = doc(db, 'istoricAcademic', user.uid);
@@ -654,6 +728,21 @@ const InscriereMateriiPage = () => {
           {successMessage}
         </div>
       )}
+      
+      {/* Academic Stats Summary */}
+      <div className="mb-6 p-4 bg-[#034a76]/10 rounded-lg">
+        <h2 className="text-lg font-medium text-[#034a76] mb-2">Performanța ta academică ({academicStats.currentAcademicYear})</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-3 rounded-md shadow-sm border border-[#034a76]/20">
+            <div className="text-sm text-[#034a76]/70">Media notelor</div>
+            <div className="text-xl font-bold text-[#034a76]">{academicStats.avgGrade}</div>
+          </div>
+          <div className="bg-white p-3 rounded-md shadow-sm border border-[#034a76]/20">
+            <div className="text-sm text-[#034a76]/70">ECTS acumulate</div>
+            <div className="text-xl font-bold text-[#034a76]">{academicStats.accumulatedECTS}</div>
+          </div>
+        </div>
+      </div>
       
       <p className="text-[#034a76]/80 mb-6">
         Ține apăsat pe o materie și trage-o pentru a schimba ordinea preferințelor. Prima materie din listă are cea mai mare prioritate.

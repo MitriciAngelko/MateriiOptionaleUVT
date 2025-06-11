@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import { useMaterii } from '../../contexts/MateriiContext';
@@ -22,37 +22,39 @@ const MateriileMelePage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user?.uid) {
-      navigate('/login');
-      return;
-    }
+    const fetchData = async () => {
+      try {
+        if (!user?.uid) {
+          navigate('/login');
+          return;
+        }
 
-    // Set up real-time listeners
-    const unsubscribeUser = onSnapshot(
-      doc(db, 'users', user.uid),
-      (userDoc) => {
-        if (!userDoc.exists()) {
+        // Wait for materii to be loaded from context
+        if (materiiLoading) {
+          return;
+        }
+
+        // One-time fetch for user data
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (!userDocSnap.exists()) {
           setError('Nu s-au găsit informații pentru utilizatorul curent');
           setLoading(false);
           return;
         }
-      },
-      (error) => {
-        console.error('Error listening to user document:', error);
-        setError(error.message);
-      }
-    );
 
-    const unsubscribeIstoric = onSnapshot(
-      doc(db, 'istoricAcademic', user.uid),
-      (istoricDoc) => {
-        if (!istoricDoc.exists()) {
+        // One-time fetch for istoric academic data
+        const istoricDocRef = doc(db, 'istoricAcademic', user.uid);
+        const istoricDocSnap = await getDoc(istoricDocRef);
+        
+        if (!istoricDocSnap.exists()) {
           setMateriiInscrise([]);
           setLoading(false);
           return;
         }
 
-        const istoricData = istoricDoc.data();
+        const istoricData = istoricDocSnap.data();
         const toateCursurile = [];
 
         // Process istoric data
@@ -123,19 +125,15 @@ const MateriileMelePage = () => {
         setMateriiInscrise(toateCursurile);
         setMateriiByAn(byAn);
         setLoading(false);
-      },
-      (error) => {
-        console.error('Error listening to istoric academic:', error);
+      } catch (error) {
+        console.error('Error fetching data:', error);
         setError(error.message);
+        setLoading(false);
       }
-    );
-
-    // Cleanup listeners
-    return () => {
-      unsubscribeUser();
-      unsubscribeIstoric();
     };
-  }, [user, navigate, allMaterii]);
+
+    fetchData();
+  }, [user, navigate, allMaterii, materiiLoading]);
 
   if (loading) {
     return <div className="text-center py-8">Se încarcă...</div>;
