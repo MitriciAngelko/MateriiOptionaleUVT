@@ -286,33 +286,96 @@ const InscriereMateriiPage = () => {
   // Check if registration for next academic year is active
   const checkRegistrationStatus = async () => {
     try {
-      // Query registration settings from Firestore
+      // First check global registration settings
       const settingsRef = doc(db, 'settings', 'registration');
       const settingsDoc = await getDoc(settingsRef);
       
-      if (!settingsDoc.exists()) {
-        return {
-          active: false,
-          dataStart: null,
-          dataFinal: null,
-          minECTS: 40
+      let globalSettings = {
+        active: false,
+        dataStart: null,
+        dataFinal: null,
+        minECTS: 40
+      };
+
+      if (settingsDoc.exists()) {
+        const settingsData = settingsDoc.data();
+        const dataStart = settingsData.dataStartInscriere ? new Date(settingsData.dataStartInscriere) : null;
+        const dataFinal = settingsData.dataFinalInscriere ? new Date(settingsData.dataFinalInscriere) : null;
+        const acum = new Date();
+        
+        // Check if manual activation is enabled or current date is between start and end dates
+        const globalActive = settingsData.isActive === true || 
+                            (dataStart && dataFinal && acum >= dataStart && acum <= dataFinal);
+        
+        globalSettings = {
+          active: globalActive,
+          dataStart: dataStart ? dataStart.toISOString() : null,
+          dataFinal: dataFinal ? dataFinal.toISOString() : null,
+          minECTS: settingsData.minECTS || 40
         };
       }
+
+      // Check if there are any active package registration periods for next year
+      if (!userData) {
+        return globalSettings;
+      }
+
+      // Determine next year for the student
+      const currentAn = userData.an || 'I';
+      const nextAn = currentAn === 'I' ? 'II' : currentAn === 'II' ? 'III' : null;
       
-      const settingsData = settingsDoc.data();
-      const dataStart = settingsData.dataStartInscriere ? new Date(settingsData.dataStartInscriere) : null;
-      const dataFinal = settingsData.dataFinalInscriere ? new Date(settingsData.dataFinalInscriere) : null;
+      if (!nextAn) {
+        // Student is already in final year
+        return {
+          ...globalSettings,
+          active: false
+        };
+      }
+
+      // Query packages for next year with same faculty and specialization
+      const nextYearPackagesQuery = query(
+        collection(db, 'pachete'),
+        where('facultate', '==', userData.facultate),
+        where('specializare', '==', userData.specializare),
+        where('an', '==', nextAn)
+      );
+      
+      const nextYearPackagesSnapshot = await getDocs(nextYearPackagesQuery);
       const acum = new Date();
       
-      // Check if manual activation is enabled or current date is between start and end dates
-      const active = settingsData.isActive === true || 
-                    (dataStart && dataFinal && acum >= dataStart && acum <= dataFinal);
+      let hasActivePackageRegistration = false;
+      let earliestStart = null;
+      let latestEnd = null;
+      
+      // Check if any package has active registration period
+      nextYearPackagesSnapshot.forEach(doc => {
+        const packetData = doc.data();
+        const packageStart = packetData.dataStart ? new Date(packetData.dataStart) : null;
+        const packageEnd = packetData.dataFinal ? new Date(packetData.dataFinal) : null;
+        
+        if (packageStart && packageEnd && acum >= packageStart && acum <= packageEnd) {
+          hasActivePackageRegistration = true;
+        }
+        
+        // Track earliest start and latest end for display
+        if (packageStart && (!earliestStart || packageStart < earliestStart)) {
+          earliestStart = packageStart;
+        }
+        if (packageEnd && (!latestEnd || packageEnd > latestEnd)) {
+          latestEnd = packageEnd;
+        }
+      });
+
+      // Registration is active if either global settings are active OR package registrations are active
+      const finalActive = globalSettings.active || hasActivePackageRegistration;
       
       return {
-        active,
-        dataStart: dataStart ? dataStart.toISOString() : null,
-        dataFinal: dataFinal ? dataFinal.toISOString() : null,
-        minECTS: settingsData.minECTS || 40
+        active: finalActive,
+        dataStart: earliestStart ? earliestStart.toISOString() : globalSettings.dataStart,
+        dataFinal: latestEnd ? latestEnd.toISOString() : globalSettings.dataFinal,
+        minECTS: globalSettings.minECTS,
+        hasPackageRegistration: hasActivePackageRegistration,
+        hasGlobalRegistration: globalSettings.active
       };
     } catch (error) {
       console.error('Eroare la verificarea statusului înscrierii:', error);
@@ -335,7 +398,11 @@ const InscriereMateriiPage = () => {
       
       // Check if registrations are active
       if (!registrationStatus.active) {
-        throw new Error('Înscrierile pentru anul următor nu sunt active în acest moment.');
+        if (!registrationStatus.hasGlobalRegistration && !registrationStatus.hasPackageRegistration) {
+          throw new Error('Înscrierile pentru anul următor nu sunt active în acest moment. Nu există perioada de înscriere activă nici la nivel global, nici pentru pachetele din anul următor.');
+        } else {
+          throw new Error('Înscrierile pentru anul următor nu sunt active în acest moment.');
+        }
       }
       
       const requiredECTS = registrationStatus.minECTS || 40;
@@ -1071,6 +1138,24 @@ const InscriereMateriiPage = () => {
                     Ați acumulat minim {registrationStatus.minECTS || 40} ECTS în anul universitar curent
                   </span>
                 </div>
+                <div className="text-sm font-medium mt-1">
+                  <span className={`inline-flex items-center ${registrationStatus.active ? 'text-green-600' : 'text-orange-600'}`}>
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={registrationStatus.active ? "M5 13l4 4L19 7" : "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"} />
+                    </svg>
+                    {registrationStatus.active ? 'Înscrieri active' : 'Înscrierea în anul următor nu este disponibilă'}
+                  </span>
+                  {registrationStatus.active && (
+                    <div className="text-xs text-green-500 mt-1 ml-5">
+                      {registrationStatus.hasPackageRegistration && registrationStatus.hasGlobalRegistration && 
+                        "Activă prin setări globale și pachete"}
+                      {registrationStatus.hasPackageRegistration && !registrationStatus.hasGlobalRegistration && 
+                        "Activă prin pachete de materii pentru anul următor"}
+                      {!registrationStatus.hasPackageRegistration && registrationStatus.hasGlobalRegistration && 
+                        "Activă prin setări globale"}
+                    </div>
+                  )}
+                </div>
                 {!registrationStatus.active && registrationStatus.dataStart && (
                   <div className="text-sm text-[#034a76]/70 mt-1">
                     {new Date(registrationStatus.dataStart) > new Date() ? 
@@ -1088,6 +1173,9 @@ const InscriereMateriiPage = () => {
                   !registrationStatus.active ? 'bg-gray-300 cursor-not-allowed' : 
                   'bg-[#e3ab23] hover:bg-[#c49520]'
                 } text-[#034a76] font-medium`}
+                title={registrationStatus.active ? 
+                  "Înscrie-te în anul următor" : 
+                  "Înscrierile pentru anul următor nu sunt active în acest moment"}
               >
                 {registrationLoading ? 'Se procesează...' : 
                  !registrationStatus.active ? 'Înscrierile nu sunt active' :

@@ -139,7 +139,13 @@ const AlocareAutomataPage = () => {
         const acum = new Date();
         
         let status = 'inactiv';
-        if (dataStart && dataFinal) {
+        
+        // Check if allocation has been processed
+        if (pachetData.procesat === true && pachetData.dataUltimaAlocare) {
+          status = 'procesat';
+        }
+        // Otherwise, check registration period
+        else if (dataStart && dataFinal) {
           if (acum < dataStart) {
             status = 'urmează';
           } else if (acum >= dataStart && acum <= dataFinal) {
@@ -676,15 +682,22 @@ const AlocareAutomataPage = () => {
       // 5. Salvăm rezultatele în Firestore
       console.log('\n=== SALVARE REZULTATE ÎN BAZA DE DATE ===');
       // Actualizăm pachetul cu materiile actualizate și listele de studenți
-      await updateDoc(doc(db, 'pachete', selectedPachet), {
-        materii: materii,
-        procesat: true,
-        dataUltimaAlocare: new Date().toISOString(),
-        studentiAlocati: studentiAlocati.length,
-        studentiNealocati: studentiNealocati.length,
-        totalMaterii: materii.length,
-        statisticiPreferinte: statisticiPreferinte
-      });
+      console.log(`Actualizare pachet ${selectedPachet} cu rezultatele alocării...`);
+      try {
+        await updateDoc(doc(db, 'pachete', selectedPachet), {
+          materii: materii,
+          procesat: true,
+          dataUltimaAlocare: new Date().toISOString(),
+          studentiAlocati: studentiAlocati.length,
+          studentiNealocati: studentiNealocati.length,
+          totalMaterii: materii.length,
+          statisticiPreferinte: statisticiPreferinte
+        });
+        console.log('✅ Pachet actualizat cu succes cu rezultatele alocării');
+      } catch (error) {
+        console.error('❌ Eroare la actualizarea pachetului:', error);
+        throw new Error(`Eroare la actualizarea pachetului: ${error.message}`);
+      }
       
       // Actualizăm și documentele individuale ale materiilor
       for (const materie of materii) {
@@ -876,6 +889,10 @@ const AlocareAutomataPage = () => {
       // Afișează rezultatele alocării
       setRezultateAlocare(rezultate);
       
+      // Refresh package list to show updated status
+      console.log('Actualizare listă pachete după alocare...');
+      await fetchPachete();
+      
       // Afisează mesajul de succes
       setSuccessMessage('Alocarea automată a fost procesată cu succes!');
       setTimeout(() => setSuccessMessage(null), 5000);
@@ -939,6 +956,8 @@ const AlocareAutomataPage = () => {
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'încheiat':
         return 'bg-orange-100 text-orange-800 border-orange-300';
+      case 'procesat':
+        return 'bg-purple-100 text-purple-800 border-purple-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -952,6 +971,8 @@ const AlocareAutomataPage = () => {
         return 'Înscrieri viitoare';
       case 'încheiat':
         return 'Înscrieri închise';
+      case 'procesat':
+        return 'Alocare procesată';
       default:
         return 'Inactiv';
     }
@@ -1042,6 +1063,16 @@ const AlocareAutomataPage = () => {
                         <span>{formatDate(pachet.dataStart)} - {formatDate(pachet.dataFinal)}</span>
                       </div>
                     </div>
+                    {pachet.dataUltimaAlocare && (
+                      <div className="grid grid-cols-2 gap-1 mt-1">
+                        <div>
+                          <span className="font-medium">Ultima alocare:</span>
+                        </div>
+                        <div>
+                          <span className="text-purple-600 font-medium">{formatDate(pachet.dataUltimaAlocare)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="mt-2 flex space-x-2">
@@ -1109,7 +1140,12 @@ const AlocareAutomataPage = () => {
                         ? 'border-b-2 border-blue-500 text-blue-600'
                         : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
-                    onClick={() => setActiveTab('perioadaInscriere')}
+                    onClick={() => {
+                      setActiveTab('perioadaInscriere');
+                      if (selectedPachet) {
+                        handleSetarePerioadaInscriere(selectedPachet);
+                      }
+                    }}
                   >
                     Setare Perioadă Înscriere
                   </button>
