@@ -88,13 +88,12 @@ const Navbar = () => {
       items.push({ path: '/admin-materii', label: 'Materii' });
       items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
       items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
-      items.push({ path: '/registration-settings', label: 'Setări Înscriere' });
     }
     
-    if (roles.isStudent) {
-      items.push({ path: '/inscriere-materii', label: 'Înscriere Materii' });
+    // Elemente pentru studenți (când nu sunt admin)
+    if (roles.isStudent && !isMainAdmin && !roles.isAdmin) {
       items.push({ path: '/materiile-mele', label: 'Materiile Mele' });
-      items.push({ path: '/materiile-studentului', label: 'Materiile Studentului' });
+      items.push({ path: '/inscriere-materii', label: 'Înscriere Materii' });
     }
     
     return items;
