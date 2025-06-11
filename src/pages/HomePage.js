@@ -19,10 +19,16 @@ const HomePage = () => {
     const fetchUserRole = async () => {
       if (user?.uid) {
         try {
+          // Special case for main admin account
+          if (user.email === 'admin@admin.com') {
+            navigate('/admin-utilizatori');
+            return;
+          }
+          
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            const isAdminUser = isAdmin(user);
+            const isAdminUser = await isAdmin(user);
             
             // Redirecționează admin-ul direct la pagina de utilizatori
             if (isAdminUser) {

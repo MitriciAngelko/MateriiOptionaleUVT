@@ -10,11 +10,13 @@ import ProfilePage from './pages/ProfilePage';
 import AdminRoute from './components/admin/AdminRoute';
 import PrivateRoute from './components/PrivateRoute';
 import AdminMateriiPage from './pages/admin/AdminMateriiPage';
-import MateriileMelePage from './pages/profesor/MateriileMelePage';
+import ProfesorMateriileMelePage from './pages/profesor/MateriileMelePage';
+import StudentMateriileMelePage from './pages/student/MateriileMelePage';
 import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import MateriiStudentPage from './pages/student/MateriiStudentPage';
 import AdminIstoricAcademicPage from './pages/admin/AdminIstoricAcademicPage';
 import AlocareAutomataPage from './pages/admin/AlocareAutomataPage';
+import RegistrationSettingsPage from './pages/admin/RegistrationSettingsPage';
 import MateriiProvider from './contexts/MateriiContext';
 
 
@@ -23,7 +25,10 @@ function App() {
   const isLoginPage = location.pathname === '/login';
 
   const user = useSelector((state) => state.auth.user);
-  const isAdmin = user?.email?.endsWith('@admin.com');
+  // Special check for main admin
+  const isMainAdmin = user?.email === 'admin@admin.com';
+  // Keep simple email check for initial navigation - AdminRoute will handle proper authorization
+  const isAdminEmail = isMainAdmin || user?.email?.endsWith('@admin.com');
 
 
   return (
@@ -42,7 +47,7 @@ function App() {
             <Route 
               path="/" 
               element={
-                isAdmin ? (
+                isAdminEmail ? (
                   <Navigate to="/admin-utilizatori" replace />
                 ) : (
                   <HomePage />
@@ -52,7 +57,7 @@ function App() {
             <Route 
               path="/home" 
               element={
-                isAdmin ? (
+                isAdminEmail ? (
                   <Navigate to="/admin-utilizatori" replace />
                 ) : (
                   <HomePage />
@@ -70,12 +75,22 @@ function App() {
               }
             />
             
-            {/* Rută protejată pentru materiile profesorului */}
+            {/* Rute separate pentru materiile mele - profesor vs student */}
+            <Route
+              path="/materiile-mele-profesor"
+              element={
+                <PrivateRoute>
+                  <ProfesorMateriileMelePage />
+                </PrivateRoute>
+              }
+            />
+            
+            {/* Rută pentru materiile mele - student */}
             <Route
               path="/materiile-mele"
               element={
                 <PrivateRoute>
-                  <MateriileMelePage />
+                  <StudentMateriileMelePage />
                 </PrivateRoute>
               }
             />
@@ -124,6 +139,10 @@ function App() {
             <Route
               path="/alocare-automata"
               element={<AdminRoute><AlocareAutomataPage /></AdminRoute>}
+            />
+            <Route
+              path="/registration-settings"
+              element={<AdminRoute><RegistrationSettingsPage /></AdminRoute>}
             />
           </Routes>
         </div>

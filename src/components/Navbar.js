@@ -19,11 +19,17 @@ const Navbar = () => {
   const [userData, setUserData] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // Special check for main admin
+  const isMainAdmin = user?.email === 'admin@admin.com';
+  
   useEffect(() => {
     const checkRoles = async () => {
       if (user?.uid) {
         try {
-          const admin = isAdmin(user);
+          // Special case for admin@admin.com
+          const admin = isMainAdmin || await isAdmin(user);
+          
+          // Utilizăm await pentru toate verificările de rol deoarece acum toate sunt async
           const [profesor, student, secretar] = await Promise.all([
             isProfesor(user.uid),
             isStudent(user.uid),
@@ -49,7 +55,7 @@ const Navbar = () => {
     };
 
     checkRoles();
-  }, [user]);
+  }, [user, isMainAdmin]);
 
   const handleLogout = async () => {
     try {
@@ -73,19 +79,22 @@ const Navbar = () => {
     
     // Elemente specifice rolurilor
     if (roles.isProfesor) {
-      items.push({ path: '/materiile-mele', label: 'Materiile Mele' });
+      items.push({ path: '/materiile-mele-profesor', label: 'Materiile Mele' });
     }
     
-    if (roles.isAdmin) {
+    // Special case for admin@admin.com or other admins
+    if (isMainAdmin || roles.isAdmin) {
       items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
       items.push({ path: '/admin-materii', label: 'Materii' });
       items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
       items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
+      items.push({ path: '/registration-settings', label: 'Setări Înscriere' });
     }
     
     if (roles.isStudent) {
       items.push({ path: '/inscriere-materii', label: 'Înscriere Materii' });
-      items.push({ path: '/materiile-studentului', label: 'Materiile Mele' });
+      items.push({ path: '/materiile-mele', label: 'Materiile Mele' });
+      items.push({ path: '/materiile-studentului', label: 'Materiile Studentului' });
     }
     
     return items;

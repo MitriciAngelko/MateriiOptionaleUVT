@@ -47,18 +47,24 @@ const AdminIstoricAcademicPage = () => {
   useEffect(() => {
     const checkAccess = async () => {
       if (user) {
-        const adminAccess = isAdmin(user);
+        const adminAccess = await isAdmin(user);
         setHasAccess(adminAccess);
         
-        if (adminAccess) {
-          fetchStudents();
-          // No need to fetchCourses separately - using context data
+        if (!adminAccess) {
+          navigate('/');
         }
       }
     };
 
     checkAccess();
-  }, [user]);
+  }, [user, navigate]);
+
+  // Add useEffect to fetch students when component mounts
+  useEffect(() => {
+    if (hasAccess) {
+      fetchStudents();
+    }
+  }, [hasAccess]);
 
   // Obține lista de studenți
   const fetchStudents = async () => {
@@ -96,19 +102,6 @@ const AdminIstoricAcademicPage = () => {
       setAvailableCourses(coursesData);
     }
   }, [allMaterii, materiiLoading]);
-
-  // Funcție pentru a verifica dacă există deja o notă pentru o materie obligatorie
-  const checkIfMaterieObligatorieExists = (materieId, istoricAnual) => {
-    if (!istoricAnual) return false;
-    
-    for (const anual of istoricAnual) {
-      for (const curs of anual.cursuri) {
-        if (curs.id === materieId) return true;
-      }
-    }
-    
-    return false;
-  };
 
   // Selectarea unui student pentru a-i vedea/edita istoricul
   const handleSelectStudent = async (studentId) => {
@@ -154,7 +147,15 @@ const AdminIstoricAcademicPage = () => {
       }
       
       // Adaugă materii obligatorii care lipsesc
-      await addMateriiObligatorii(studentData, istoricData, istoricRef);
+      const hasUpdatedCourses = await addMateriiObligatorii(studentData, istoricData, istoricRef);
+      
+      // Doar dacă cursurile au fost actualizate, reîncarcă istoricul
+      if (hasUpdatedCourses) {
+        const updatedIstoricDoc = await getDoc(istoricRef);
+        if (updatedIstoricDoc.exists()) {
+          istoricData = updatedIstoricDoc.data();
+        }
+      }
       
       setSelectedStudent(studentId);
       setSelectedStudentData({
@@ -179,10 +180,15 @@ const AdminIstoricAcademicPage = () => {
         course.specializare === studentData.specializare
       );
       
-      if (materiiObligatorii.length === 0) return;
+      if (materiiObligatorii.length === 0) return false;
       
       let shouldUpdateIstoric = false;
       const updatedIstoric = {...istoricData};
+      
+      // Asigură-te că avem array-ul istoricAnual
+      if (!updatedIstoric.istoricAnual) {
+        updatedIstoric.istoricAnual = [];
+      }
       
       // Determină anul universitar curent
       const currentDate = new Date();
@@ -192,62 +198,90 @@ const AdminIstoricAcademicPage = () => {
         `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
         `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
       
+      // Create a Set to track which courses have already been added
+      const addedCourses = new Set();
+      
+      // First, identify all courses that already exist in the history
+      if (updatedIstoric.istoricAnual) {
+        for (const anual of updatedIstoric.istoricAnual) {
+          if (anual.cursuri) {
+            for (const curs of anual.cursuri) {
+              addedCourses.add(curs.id);
+            }
+          }
+        }
+      }
+      
       for (const materie of materiiObligatorii) {
-        // Verifică dacă materia obligatorie există deja în istoric
-        if (!checkIfMaterieObligatorieExists(materie.id, istoricData.istoricAnual)) {
-          // Adaugă materia obligatorie cu notă 0 (sau altă valoare implicită)
-          const newNote = {
-            id: materie.id,
-            nume: materie.nume,
-            credite: materie.credite || 0,
-            nota: 0, // Nota 0 - neevaluată încă
-            dataNota: new Date(),
-            profesor: 'Nespecificat',
-            obligatorie: true,
-            status: 'neevaluat'
-          };
-          
-          const anStudiu = materie.an || 'I'; // Presupunem anul I dacă nu este specificat
-          const semestru = materie.semestru || 1; // Presupunem semestrul 1 dacă nu este specificat
-          
-          // Verifică dacă există deja un istoric pentru anul și semestrul specificat
-          const anualIndex = updatedIstoric.istoricAnual.findIndex(
-            item => item.anUniversitar === anUniversitar && 
-                  item.anStudiu === anStudiu &&
-                  item.semestru === semestru
-          );
-          
-          if (anualIndex >= 0) {
-            // Adaugă nota la un istoric existent
-            updatedIstoric.istoricAnual[anualIndex].cursuri.push(newNote);
-          } else {
-            // Creează un nou istoric anual
-            const newAnualRecord = {
-              anUniversitar: anUniversitar,
-              anStudiu: anStudiu,
-              semestru: semestru,
-              cursuri: [newNote]
-            };
-            
-            updatedIstoric.istoricAnual.push(newAnualRecord);
+        // Skip if this course is already in the history
+        if (addedCourses.has(materie.id)) {
+          continue;
+        }
+        
+        // Add the mandatory course with a default grade of 0 (or other default value)
+        const newNote = {
+          id: materie.id,
+          nume: materie.nume,
+          credite: materie.credite || 0,
+          nota: 0, // Nota 0 - neevaluată încă
+          dataNota: new Date().getTime(), // Folosim timestamp în loc de Date object
+          profesor: 'Nespecificat',
+          obligatorie: true,
+          status: 'neevaluat'
+        };
+        
+        const anStudiu = materie.an || 'I'; // Presupunem anul I dacă nu este specificat
+        const semestru = materie.semestru || 1; // Presupunem semestrul 1 dacă nu este specificat
+        
+        // Verifică dacă există deja un istoric pentru anul și semestrul specificat
+        const anualIndex = updatedIstoric.istoricAnual.findIndex(
+          item => item.anUniversitar === anUniversitar && 
+                item.anStudiu === anStudiu &&
+                item.semestru === semestru
+        );
+        
+        if (anualIndex >= 0) {
+          // Verifică dacă istoricul are proprietatea cursuri și este un array
+          if (!updatedIstoric.istoricAnual[anualIndex].cursuri) {
+            updatedIstoric.istoricAnual[anualIndex].cursuri = [];
           }
           
-          shouldUpdateIstoric = true;
+          // Verifică din nou dacă materia nu există deja în acest an/semestru specific
+          const materieExistentaInAn = updatedIstoric.istoricAnual[anualIndex].cursuri.some(
+            curs => curs.id === materie.id
+          );
+          
+          if (!materieExistentaInAn) {
+            // Adaugă nota la un istoric existent
+            updatedIstoric.istoricAnual[anualIndex].cursuri.push(newNote);
+          }
+        } else {
+          // Creează un nou istoric anual
+          const newAnualRecord = {
+            anUniversitar: anUniversitar,
+            anStudiu: anStudiu,
+            semestru: semestru,
+            cursuri: [newNote]
+          };
+          
+          updatedIstoric.istoricAnual.push(newAnualRecord);
         }
+        
+        // Mark the course as added
+        addedCourses.add(materie.id);
+        shouldUpdateIstoric = true;
       }
       
       if (shouldUpdateIstoric) {
         await updateDoc(istoricRef, updatedIstoric);
-        
-        // Reîncarcă datele istoricului
-        const updatedIstoricDoc = await getDoc(istoricRef);
-        if (updatedIstoricDoc.exists()) {
-          istoricData = updatedIstoricDoc.data();
-        }
+        return true;
       }
+      
+      return false;
       
     } catch (error) {
       console.error('Eroare la adăugarea materiilor obligatorii:', error);
+      return false;
     }
   };
 
@@ -304,7 +338,7 @@ const AdminIstoricAcademicPage = () => {
         nume: selectedCourse?.nume || noteFormData.materieNume,
         credite: parseInt(noteFormData.credite) || selectedCourse?.credite || 0,
         nota: parseInt(noteFormData.nota),
-        dataNota: new Date(),
+        dataNota: new Date().getTime(),
         profesor: selectedCourse?.profesor?.nume || 'Nespecificat',
         obligatorie: noteFormData.obligatorie,
         status: status
@@ -318,6 +352,15 @@ const AdminIstoricAcademicPage = () => {
       );
       
       if (anualIndex >= 0) {
+        // Verifică dacă materia nu există deja în acest an/semestru specific
+        const materieExistentaInAn = istoricData.istoricAnual[anualIndex].cursuri.some(
+          curs => curs.id === noteFormData.materieId
+        );
+        
+        if (materieExistentaInAn) {
+          throw new Error('Materia există deja în acest an și semestru');
+        }
+        
         // Adaugă nota la un istoric existent
         const updatedIstoric = [...istoricData.istoricAnual];
         updatedIstoric[anualIndex].cursuri.push(newNote);
@@ -326,21 +369,65 @@ const AdminIstoricAcademicPage = () => {
           istoricAnual: updatedIstoric
         });
       } else {
-        // Creează un nou istoric anual
-        const newAnualRecord = {
-          anUniversitar: anUniversitar,
-          anStudiu: noteFormData.anStudiu,
-          semestru: parseInt(noteFormData.semestru),
-          cursuri: [newNote]
-        };
+        // Verifică din nou întreaga structură pentru a evita duplicatele
+        const reloadedDoc = await getDoc(istoricRef);
+        const reloadedData = reloadedDoc.data();
         
-        await updateDoc(istoricRef, {
-          istoricAnual: arrayUnion(newAnualRecord)
-        });
+        // Verifică dacă între timp nu s-a adăugat un record similar
+        const conflictIndex = reloadedData.istoricAnual?.findIndex(
+          item => item.anUniversitar === anUniversitar && 
+                 item.anStudiu === noteFormData.anStudiu &&
+                 item.semestru === parseInt(noteFormData.semestru)
+        );
+        
+        if (conflictIndex >= 0) {
+          // S-a adăugat între timp, folosim logica de update
+          const materieExistentaInAn = reloadedData.istoricAnual[conflictIndex].cursuri.some(
+            curs => curs.id === noteFormData.materieId
+          );
+          
+          if (!materieExistentaInAn) {
+            const updatedIstoric = [...reloadedData.istoricAnual];
+            updatedIstoric[conflictIndex].cursuri.push(newNote);
+            
+            await updateDoc(istoricRef, {
+              istoricAnual: updatedIstoric
+            });
+          } else {
+            throw new Error('Materia există deja în acest an și semestru');
+          }
+        } else {
+          // Creează un nou istoric anual - EVITÂND arrayUnion pentru a preveni duplicatele
+          const newAnualRecord = {
+            anUniversitar: anUniversitar,
+            anStudiu: noteFormData.anStudiu,
+            semestru: parseInt(noteFormData.semestru),
+            cursuri: [newNote]
+          };
+          
+          // În loc de arrayUnion, folosim updateDoc cu întreaga structură
+          const updatedIstoric = [...(reloadedData.istoricAnual || []), newAnualRecord];
+          
+          await updateDoc(istoricRef, {
+            istoricAnual: updatedIstoric
+          });
+        }
       }
       
-      // Reîncarcă datele studentului
-      await handleSelectStudent(selectedStudent);
+      // In loc să reîncarce datele studentului, actualizăm direct datele în state
+      try {
+        // Actualizăm starea direct, fără a declanșa o nouă încărcare
+        const updatedIstoricDoc = await getDoc(istoricRef);
+        if (updatedIstoricDoc.exists()) {
+          const updatedIstoricData = updatedIstoricDoc.data();
+          setSelectedStudentData(prevData => ({
+            ...prevData,
+            istoric: updatedIstoricData
+          }));
+        }
+      } catch (error) {
+        console.error('Eroare la actualizarea datelor:', error);
+      }
       
       // Resetează formularul
       setNoteFormData({
@@ -416,7 +503,7 @@ const AdminIstoricAcademicPage = () => {
         ...existingNote,
         nota: editNoteForm.nota,
         status: status,
-        dataNota: new Date()
+        dataNota: new Date().getTime()
       };
       
       // Actualizează nota în istoric
@@ -430,41 +517,22 @@ const AdminIstoricAcademicPage = () => {
       // Resetează starea de editare
       setEditingNoteId(null);
       
-      // Actualizează datele studentului fără a reseta anul activ
+      // În loc să reîncarce datele studentului, actualizăm direct datele în state
       try {
-        // Obține datele studentului
-        const studentDoc = await getDoc(doc(db, 'users', selectedStudent));
-        
-        if (!studentDoc.exists()) {
-          throw new Error('Studentul nu a fost găsit');
+        // Actualizăm starea direct, fără a declanșa o nouă încărcare
+        const updatedIstoricDoc = await getDoc(istoricRef);
+        if (updatedIstoricDoc.exists()) {
+          const updatedIstoricData = updatedIstoricDoc.data();
+          setSelectedStudentData(prevData => ({
+            ...prevData,
+            istoric: updatedIstoricData
+          }));
+          
+          // Restaurăm anul activ
+          setActiveYear(currentActiveYear);
         }
-        
-        const studentData = {
-          id: studentDoc.id,
-          ...studentDoc.data()
-        };
-        
-        // Verifică dacă există istoric academic pentru student
-        const istoricRef = doc(db, 'istoricAcademic', selectedStudent);
-        const istoricDoc = await getDoc(istoricRef);
-        
-        let istoricData = null;
-        
-        if (istoricDoc.exists()) {
-          istoricData = istoricDoc.data();
-        }
-        
-        // Actualizează datele studentului în state
-        setSelectedStudentData({
-          ...studentData,
-          istoric: istoricData
-        });
-        
-        // Restaurăm anul activ
-        setActiveYear(currentActiveYear);
-        
       } catch (error) {
-        console.error('Eroare la reîncărcarea datelor studentului:', error);
+        console.error('Eroare la actualizarea datelor după editare:', error);
       }
       
       setLoading(false);
@@ -549,8 +617,20 @@ const AdminIstoricAcademicPage = () => {
         }
       }
       
-      // Reîncarcă datele studentului
-      await handleSelectStudent(selectedStudent);
+      // În loc să reîncarce datele studentului, actualizăm direct datele în state
+      try {
+        // Actualizăm starea direct, fără a declanșa o nouă încărcare
+        const updatedIstoricDoc = await getDoc(istoricRef);
+        if (updatedIstoricDoc.exists()) {
+          const updatedIstoricData = updatedIstoricDoc.data();
+          setSelectedStudentData(prevData => ({
+            ...prevData,
+            istoric: updatedIstoricData
+          }));
+        }
+      } catch (error) {
+        console.error('Eroare la actualizarea datelor după ștergere:', error);
+      }
       
       setSuccessMessage('Nota a fost ștearsă cu succes!');
       

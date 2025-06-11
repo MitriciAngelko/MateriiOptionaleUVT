@@ -376,7 +376,7 @@ const MateriiStudentPage = () => {
             nume: materie.nume,
             credite: materie.credite || 0,
             nota: 0, // Nota 0 - neevaluată încă
-            dataNota: new Date(),
+            dataNota: new Date().getTime(), // Folosim timestamp în loc de Date object
             profesor: materie.profesor?.nume || 'Nespecificat',
             obligatorie: materie.obligatorie || false,
             status: 'neevaluat'
@@ -390,25 +390,62 @@ const MateriiStudentPage = () => {
           );
           
           if (anualIndex >= 0) {
-            // Adaugă nota la un istoric existent
-            const updatedIstoric = [...istoricData.istoricAnual];
-            updatedIstoric[anualIndex].cursuri.push(newNote);
+            // Verifică din nou dacă materia nu există deja în acest an/semestru specific
+            const materieExistentaInAn = istoricData.istoricAnual[anualIndex].cursuri.some(
+              curs => curs.id === materie.id
+            );
             
-            await updateDoc(istoricRef, {
-              istoricAnual: updatedIstoric
-            });
+            if (!materieExistentaInAn) {
+              // Adaugă nota la un istoric existent
+              const updatedIstoric = [...istoricData.istoricAnual];
+              updatedIstoric[anualIndex].cursuri.push(newNote);
+              
+              await updateDoc(istoricRef, {
+                istoricAnual: updatedIstoric
+              });
+            }
           } else {
-            // Creează un nou istoric anual
-            const newAnualRecord = {
-              anUniversitar: anUniversitar,
-              anStudiu: anStudiu,
-              semestru: parseInt(semestru),
-              cursuri: [newNote]
-            };
+            // Verifică din nou întreaga structură pentru a evita duplicatele
+            const reloadedDoc = await getDoc(istoricRef);
+            const reloadedData = reloadedDoc.data();
             
-            await updateDoc(istoricRef, {
-              istoricAnual: arrayUnion(newAnualRecord)
-            });
+            // Verifică dacă între timp nu s-a adăugat un record similar
+            const conflictIndex = reloadedData.istoricAnual?.findIndex(
+              item => item.anUniversitar === anUniversitar && 
+                     item.anStudiu === anStudiu &&
+                     item.semestru === parseInt(semestru)
+            );
+            
+            if (conflictIndex >= 0) {
+              // S-a adăugat între timp, folosim logica de update
+              const materieExistentaInAn = reloadedData.istoricAnual[conflictIndex].cursuri.some(
+                curs => curs.id === materie.id
+              );
+              
+              if (!materieExistentaInAn) {
+                const updatedIstoric = [...reloadedData.istoricAnual];
+                updatedIstoric[conflictIndex].cursuri.push(newNote);
+                
+                await updateDoc(istoricRef, {
+                  istoricAnual: updatedIstoric
+                });
+              }
+            } else {
+              // Creează un nou istoric anual - EVITÂND arrayUnion pentru a preveni duplicatele
+              const newAnualRecord = {
+                anUniversitar: anUniversitar,
+                anStudiu: anStudiu,
+                semestru: parseInt(semestru),
+                cursuri: [newNote]
+              };
+              
+              // În loc de arrayUnion, folosim updateDoc cu întreaga structură
+              const updatedIstoric = [...(reloadedData.istoricAnual || []), newAnualRecord];
+              
+              await updateDoc(istoricRef, {
+                istoricAnual: updatedIstoric
+              });
+            }
           }
         }
       }

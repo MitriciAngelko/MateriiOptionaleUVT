@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import { useMaterii } from '../../contexts/MateriiContext';
+import { isStudent } from '../../utils/userRoles';
 
 const MateriileMelePage = () => {
   const [materiiInscrise, setMateriiInscrise] = useState([]);
@@ -29,6 +30,14 @@ const MateriileMelePage = () => {
           return;
         }
 
+        // SAFETY CHECK: Verify this is actually a student to prevent wrong access
+        const studentStatus = await isStudent(user.uid);
+        if (!studentStatus) {
+          console.warn('Non-student accessing student MateriileMelePage - redirecting');
+          navigate('/');
+          return;
+        }
+
         // Wait for materii to be loaded from context
         if (materiiLoading) {
           return;
@@ -44,6 +53,7 @@ const MateriileMelePage = () => {
           return;
         }
 
+        // IMPORTANT: This page should ONLY READ data, never write to istoricAcademic
         // One-time fetch for istoric academic data
         const istoricDocRef = doc(db, 'istoricAcademic', user.uid);
         const istoricDocSnap = await getDoc(istoricDocRef);
@@ -97,24 +107,50 @@ const MateriileMelePage = () => {
           byAn[an].sort((a, b) => a.nume.localeCompare(b.nume));
         });
 
-        // Calculate statistics
+        // Calculate statistics with proper type conversion and validation
         let totalCredite = 0;
-        let sumaProduse = 0;
         let crediteTrecute = 0;
-        let materiiPromovate = 0;
+        let cursurilePromovate = []; // Array to store promoted courses for average calculation
+
+        console.log('📊 Calculating stats for courses:', toateCursurile.length);
 
         toateCursurile.forEach(materie => {
-          const credite = materie.credite || 0;
+          // Ensure credite is a number
+          const credite = parseInt(materie.credite) || 0;
+          // Ensure nota is a number
+          const nota = parseFloat(materie.nota) || 0;
+          
+          console.log(`📚 ${materie.nume}: ${credite} credite, nota ${nota}`);
+          
+          // Add to total credits (all enrolled courses)
           totalCredite += credite;
 
-          if (materie.nota >= 5) {
-            sumaProduse += materie.nota * credite;
+          // Only count passed courses (nota >= 5) for average and passed credits
+          if (nota >= 5) {
             crediteTrecute += credite;
-            materiiPromovate++;
+            cursurilePromovate.push(materie); // Add course to promoted courses for average calculation
+            console.log(`✅ Promovat: ${materie.nume} - ${credite} credite, nota ${nota}`);
+          } else if (nota > 0) {
+            console.log(`❌ Nepromovat: ${materie.nume} - ${credite} credite, nota ${nota}`);
+          } else {
+            console.log(`⏳ Neevaluat: ${materie.nume} - ${credite} credite`);
           }
         });
 
-        const medieGenerala = materiiPromovate > 0 ? (sumaProduse / crediteTrecute).toFixed(2) : 0;
+        // Calculate simple arithmetic average (same as in InscriereMateriiPage)
+        let medieGenerala = '0.00';
+        if (cursurilePromovate.length > 0) {
+          const sumaNotes = cursurilePromovate.reduce((acc, course) => acc + parseFloat(course.nota), 0);
+          medieGenerala = parseFloat((sumaNotes / cursurilePromovate.length).toFixed(2));
+        }
+
+        console.log('📈 Final stats:', {
+          totalCredite,
+          crediteTrecute,
+          medieGenerala,
+          materiiPromovate: cursurilePromovate.length,
+          totalCourses: toateCursurile.length
+        });
 
         // Update state
         setStats({

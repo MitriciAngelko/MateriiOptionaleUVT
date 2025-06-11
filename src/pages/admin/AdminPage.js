@@ -45,105 +45,153 @@ const AdminPage = () => {
 
   const ani = ["I", "II", "III"];
   const tipuriUtilizatori = ["all", "student", "profesor", "secretar"];
-
+  
+  // Fetch users function that can be called from different places
   const fetchUsers = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'users'));
-      const usersData = querySnapshot.docs.map(doc => ({
+      // Verifică dacă utilizatorul este admin
+      const adminAccess = await isAdmin(user);
+
+      if (!adminAccess) {
+        navigate('/');
+        return;
+      }
+
+      setHasAccess(true);
+
+      // Obține lista de utilizatori
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const usersData = usersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.() || new Date(),
       }));
-      
-      const admins = usersData.filter(user => user.email?.endsWith('@admin.com'));
-      const regularUsers = usersData.filter(user => !user.email?.endsWith('@admin.com'));
-      
-      setAdminUsers(admins);
-      setUsers(regularUsers);
+
+      // Filtrăm utilizatorii
+      setUsers(usersData.filter(u => !u.email?.endsWith('@admin.com') && u.tip !== 'admin'));
+
+      // Găsește utilizatorii cu email admin
+      const adminUsers = usersData.filter(u => u.email?.endsWith('@admin.com') || u.tip === 'admin');
+      setAdminUsers(adminUsers);
+
+      // Obține lista de materii pentru dropdown-ul de filtrare
+      const materiiDropdown = Object.values(allMaterii || {}).map(materie => ({
+        id: materie.id,
+        nume: materie.nume
+      }));
+      setMateriiList(materiiDropdown);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Eroare la încărcarea utilizatorilor:', error);
     }
   };
+
+  useEffect(() => {
+    if (user?.uid && !materiiLoading) {
+      fetchUsers();
+    }
+  }, [user, navigate, allMaterii, materiiLoading]);
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Sigur doriți să ștergeți acest utilizator?')) {
+    if (window.confirm('Ești sigur că vrei să ștergi acest utilizator?')) {
       try {
         await deleteDoc(doc(db, 'users', userId));
-        fetchUsers(); // Reîncarcă lista după ștergere
+        fetchUsers(); // Actualizează lista după ștergere
       } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Eroare la ștergerea utilizatorului');
+        console.error('Eroare la ștergerea utilizatorului:', error);
       }
     }
   };
-
-  const handleUpdateRole = async (userId, newRole) => {
-    try {
-      await updateDoc(doc(db, 'users', userId), {
-        role: newRole
-      });
-      fetchUsers(); // Reîncarcă lista după actualizare
-    } catch (error) {
-      console.error('Error updating user role:', error);
-      alert('Eroare la actualizarea rolului');
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Use context data instead of separate Firebase call
-  useEffect(() => {
-    if (!materiiLoading && allMaterii) {
-      const materiiData = Object.values(allMaterii).map(materie => ({
-        id: materie.id,
-        ...materie
-      }));
-      setMateriiList(materiiData);
-    }
-  }, [allMaterii, materiiLoading]);
-
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (user) {
-        const adminAccess = isAdmin(user);
-        setHasAccess(adminAccess);
-      }
-    };
-
-    checkAccess();
-  }, [user]);
 
   // Funcție pentru filtrarea utilizatorilor
   const getFilteredUsers = () => {
     return users.filter(user => {
+      // Filtrare după tip utilizator
       if (filters.tip !== 'all' && user.tip !== filters.tip) return false;
       
-      if (user.tip === 'student') {
-        if (filters.facultate && user.facultate !== filters.facultate) return false;
-        if (filters.specializare && user.specializare !== filters.specializare) return false;
-        if (filters.an && user.an !== filters.an) return false;
-      }
+      // Filtrare după facultate
+      if (filters.facultate && (!user.facultate || user.facultate !== filters.facultate)) return false;
       
-      if (user.tip === 'profesor' && filters.materie) {
-        // Verificăm dacă profesorul predă materia selectată
-        return user.materiiPredate?.some(materie => materie.id === filters.materie);
-      }
+      // Filtrare după specializare
+      if (filters.specializare && (!user.specializare || user.specializare !== filters.specializare)) return false;
+      
+      // Filtrare după an
+      if (filters.an && (!user.an || user.an !== filters.an)) return false;
+
+      // Filtrare după materie
+      if (filters.materie && (!user.materiiInscrise || !user.materiiInscrise.includes(filters.materie))) return false;
       
       return true;
     });
   };
 
-  // Funcție pentru resetarea filtrelor
-  const resetFilters = () => {
-    setFilters({
-      tip: 'all',
-      facultate: '',
-      specializare: '',
-      an: '',
-      materie: ''
-    });
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFormSubmit = () => {
+    // Ascunde formularul și actualizează lista de utilizatori
+    setShowCreateForm(false);
+    fetchUsers();
+  };
+
+  // Actualizează rolul utilizatorului
+  const handleRoleChange = async (userId, newRole) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        tip: newRole
+      });
+      
+      // Actualizează lista de utilizatori după modificare
+      fetchUsers();
+    } catch (error) {
+      console.error('Eroare la actualizarea rolului:', error);
+    }
+  };
+
+  // Actualizează specializarea utilizatorului
+  const handleSpecializareChange = async (userId, newSpecializare) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        specializare: newSpecializare
+      });
+      
+      // Actualizează lista de utilizatori după modificare
+      fetchUsers();
+    } catch (error) {
+      console.error('Eroare la actualizarea specializării:', error);
+    }
+  };
+
+  // Actualizează facultatea utilizatorului
+  const handleFacultateChange = async (userId, newFacultate) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        facultate: newFacultate
+      });
+      
+      // Actualizează lista de utilizatori după modificare
+      fetchUsers();
+    } catch (error) {
+      console.error('Eroare la actualizarea facultății:', error);
+    }
+  };
+
+  // Actualizează anul utilizatorului
+  const handleAnChange = async (userId, newAn) => {
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        an: newAn
+      });
+      
+      // Actualizează lista de utilizatori după modificare
+      fetchUsers();
+    } catch (error) {
+      console.error('Eroare la actualizarea anului:', error);
+    }
   };
 
   if (loading) {
@@ -233,7 +281,15 @@ const AdminPage = () => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-[#034a76]">Filtre</h2>
         <button
-          onClick={resetFilters}
+          onClick={() => {
+            setFilters({
+              tip: 'all',
+              facultate: '',
+              specializare: '',
+              an: '',
+              materie: ''
+            });
+          }}
           className="text-sm text-[#034a76] hover:text-[#023557]"
         >
           Resetează filtrele
@@ -247,15 +303,8 @@ const AdminPage = () => {
           </label>
           <select
             value={filters.tip}
-            onChange={(e) => {
-              setFilters({
-                tip: e.target.value,
-                facultate: '',
-                specializare: '',
-                an: '',
-                materie: ''
-              });
-            }}
+            onChange={handleFilterChange}
+            name="tip"
             className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
           >
             {tipuriUtilizatori.map(tip => (
@@ -272,7 +321,8 @@ const AdminPage = () => {
               <label className="block text-sm font-medium text-[#034a76] mb-1">Facultate</label>
               <select
                 value={filters.facultate}
-                onChange={(e) => setFilters(prev => ({ ...prev, facultate: e.target.value, specializare: '' }))}
+                onChange={handleFilterChange}
+                name="facultate"
                 className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
               >
                 <option value="">Toate facultățile</option>
@@ -286,7 +336,8 @@ const AdminPage = () => {
               <label className="block text-sm font-medium text-[#034a76] mb-1">Specializare</label>
               <select
                 value={filters.specializare}
-                onChange={(e) => setFilters(prev => ({ ...prev, specializare: e.target.value }))}
+                onChange={handleFilterChange}
+                name="specializare"
                 className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
                 disabled={!filters.facultate}
               >
@@ -301,7 +352,8 @@ const AdminPage = () => {
               <label className="block text-sm font-medium text-[#034a76] mb-1">An</label>
               <select
                 value={filters.an}
-                onChange={(e) => setFilters(prev => ({ ...prev, an: e.target.value }))}
+                onChange={handleFilterChange}
+                name="an"
                 className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
               >
                 <option value="">Toți anii</option>
@@ -318,7 +370,8 @@ const AdminPage = () => {
             <label className="block text-sm font-medium text-[#034a76] mb-1">Materie Predată</label>
             <select
               value={filters.materie}
-              onChange={(e) => setFilters(prev => ({ ...prev, materie: e.target.value }))}
+              onChange={handleFilterChange}
+              name="materie"
               className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
             >
               <option value="">Toate materiile</option>
@@ -366,12 +419,12 @@ const AdminPage = () => {
             setShowUserModal(false);
             setEditingUser(null);
           }}
-          onUserCreated={() => {
-            setShowUserModal(false);
-            setEditingUser(null);
-            fetchUsers();
-          }}
+          onUserCreated={handleFormSubmit}
           editingUser={editingUser}
+          onRoleChange={handleRoleChange}
+          onSpecializareChange={handleSpecializareChange}
+          onFacultateChange={handleFacultateChange}
+          onAnChange={handleAnChange}
         />
       )}
     </div>

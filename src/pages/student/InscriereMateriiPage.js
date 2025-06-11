@@ -34,6 +34,99 @@ const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDe
   );
 };
 
+// Component to show academic year progress
+const AcademicYearProgress = ({ currentYear, accumulatedECTS, canAdvance, registrationActive, minECTS, isNewRegistration }) => {
+  // Convert Roman numeral to numeric year
+  const yearNumber = currentYear === 'I' ? 1 : currentYear === 'II' ? 2 : 3;
+  
+  return (
+    <div className="mb-4 p-4 bg-white rounded-lg shadow-sm border border-[#034a76]/20">
+      <h3 className="text-md font-medium text-[#034a76] mb-3">Progresul anului academic</h3>
+      
+      <div className="flex items-center justify-between mb-2">
+        {[1, 2, 3].map(year => (
+          <div 
+            key={year} 
+            className={`relative flex flex-col items-center ${year <= yearNumber ? 'text-[#034a76]' : 'text-gray-400'}`}
+          >
+            <div 
+              className={`w-12 h-12 rounded-full flex items-center justify-center mb-1 border-2 
+                ${year < yearNumber ? 'bg-[#034a76] text-white border-[#034a76]' : 
+                  year === yearNumber ? 'bg-white text-[#034a76] border-[#034a76]' : 
+                  'bg-white text-gray-400 border-gray-300'}`}
+            >
+              {year === 1 ? 'I' : year === 2 ? 'II' : 'III'}
+            </div>
+            <span className="text-xs font-medium">Anul {year === 1 ? 'I' : year === 2 ? 'II' : 'III'}</span>
+            
+            {year === yearNumber && accumulatedECTS >= minECTS && year < 3 && (
+              <div className="absolute -top-2 -right-2">
+                <span 
+                  className={`flex items-center justify-center w-6 h-6 rounded-full text-xs
+                    ${registrationActive ? 'bg-green-500 text-white' : 'bg-yellow-500 text-white'}`}
+                  title={registrationActive ? 'Poți avansa în anul următor' : 'Ai acumulat suficiente ECTS, dar înscrierile nu sunt active'}
+                >
+                  {registrationActive ? '✓' : '!'}
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      {/* Progress bar connecting the circles */}
+      <div className="relative h-2 bg-gray-200 rounded-full mx-12 my-3">
+        <div 
+          className="absolute left-0 top-0 h-2 bg-[#034a76] rounded-full"
+          style={{ 
+            width: yearNumber === 1 ? 
+              `${Math.min(100, (accumulatedECTS / minECTS) * 50)}%` : 
+              yearNumber === 2 ? 
+              `50%` : 
+              '100%' 
+          }}
+        ></div>
+        <div 
+          className="absolute left-0 top-0 h-2 bg-[#e3ab23] rounded-full"
+          style={{ 
+            width: yearNumber === 1 && accumulatedECTS >= minECTS ? 
+              '50%' : 
+              yearNumber === 2 && accumulatedECTS >= minECTS ? 
+              '100%' : 
+              yearNumber === 1 ? 
+              `${Math.min(100, (accumulatedECTS / minECTS) * 50)}%` : 
+              yearNumber === 2 ? 
+              `${50 + Math.min(50, (accumulatedECTS / minECTS) * 50)}%` : 
+              '100%',
+            left: yearNumber === 2 ? '50%' : '0',
+            width: yearNumber === 2 ? `${Math.min(50, (accumulatedECTS / minECTS) * 50)}%` : 'auto'
+          }}
+        ></div>
+      </div>
+      
+      <div className="text-xs text-center text-[#034a76]/70">
+        {yearNumber < 3 ? (
+          <>
+            {accumulatedECTS}/{minECTS} ECTS acumulate în anul curent
+            {accumulatedECTS >= minECTS && (
+              <span className="ml-1 text-green-600 font-medium">
+                {registrationActive ? '- Poți avansa în anul următor' : '- Așteptați deschiderea perioadei de înscrieri'}
+              </span>
+            )}
+            {isNewRegistration && (
+              <div className="mt-1 text-blue-600 font-medium">
+                Te-ai înscris recent în noul an universitar. ECTS acumulate sunt pentru noul an.
+              </div>
+            )}
+          </>
+        ) : (
+          <span>Anul final de studiu</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const InscriereMateriiPage = () => {
   const [pachete, setPachete] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +146,12 @@ const InscriereMateriiPage = () => {
     avgGrade: 0,
     accumulatedECTS: 0,
     currentAcademicYear: ''
+  });
+  const [registrationLoading, setRegistrationLoading] = useState(false);
+  const [registrationStatus, setRegistrationStatus] = useState({
+    active: false,
+    dataStart: null,
+    dataFinal: null
   });
 
   // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
@@ -107,7 +206,7 @@ const InscriereMateriiPage = () => {
   };
 
   // Calculate academic stats
-  const calculateAcademicStats = async (userId) => {
+  const calculateAcademicStats = async (userId, forceRefresh = false) => {
     try {
       const istoricRef = doc(db, 'istoricAcademic', userId);
       const istoricDoc = await getDoc(istoricRef);
@@ -130,6 +229,14 @@ const InscriereMateriiPage = () => {
         `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
         `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
       
+      // Get user data to check if this is a new academic year
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data();
+      
+      // Check if user has a lastRegistrationYear field and it's the current academic year
+      const isNewYear = userData.lastRegistrationYear === currentAcademicYear;
+      
       // Filter entries for current academic year
       const currentYearEntries = istoricData.istoricAnual?.filter(entry => 
         entry.anUniversitar === currentAcademicYear
@@ -141,7 +248,12 @@ const InscriereMateriiPage = () => {
       
       currentYearEntries.forEach(entry => {
         entry.cursuri.forEach(curs => {
-          if (curs.nota > 0 && curs.status === 'promovat') {
+          // For a new academic year, we only count courses that were registered after the last registration
+          const shouldCount = !isNewYear || 
+                             (curs.dataInregistrare && 
+                              new Date(curs.dataInregistrare) > new Date(userData.lastRegistrationDate || 0));
+          
+          if (curs.nota > 0 && curs.status === 'promovat' && shouldCount) {
             allCourses.push(curs);
             // Ensure credite is treated as a number by using parseInt or parseFloat
             totalECTS += parseInt(curs.credite || 0, 10);
@@ -171,7 +283,131 @@ const InscriereMateriiPage = () => {
     }
   };
 
-  const fetchPachete = async () => {
+  // Check if registration for next academic year is active
+  const checkRegistrationStatus = async () => {
+    try {
+      // Query registration settings from Firestore
+      const settingsRef = doc(db, 'settings', 'registration');
+      const settingsDoc = await getDoc(settingsRef);
+      
+      if (!settingsDoc.exists()) {
+        return {
+          active: false,
+          dataStart: null,
+          dataFinal: null,
+          minECTS: 40
+        };
+      }
+      
+      const settingsData = settingsDoc.data();
+      const dataStart = settingsData.dataStartInscriere ? new Date(settingsData.dataStartInscriere) : null;
+      const dataFinal = settingsData.dataFinalInscriere ? new Date(settingsData.dataFinalInscriere) : null;
+      const acum = new Date();
+      
+      // Check if manual activation is enabled or current date is between start and end dates
+      const active = settingsData.isActive === true || 
+                    (dataStart && dataFinal && acum >= dataStart && acum <= dataFinal);
+      
+      return {
+        active,
+        dataStart: dataStart ? dataStart.toISOString() : null,
+        dataFinal: dataFinal ? dataFinal.toISOString() : null,
+        minECTS: settingsData.minECTS || 40
+      };
+    } catch (error) {
+      console.error('Eroare la verificarea statusului înscrierii:', error);
+      return {
+        active: false,
+        dataStart: null,
+        dataFinal: null,
+        minECTS: 40
+      };
+    }
+  };
+
+  // Function to advance student to next academic year
+  const registerForNextYear = async () => {
+    if (registrationLoading) return;
+    
+    try {
+      setRegistrationLoading(true);
+      setError(null);
+      
+      // Check if registrations are active
+      if (!registrationStatus.active) {
+        throw new Error('Înscrierile pentru anul următor nu sunt active în acest moment.');
+      }
+      
+      const requiredECTS = registrationStatus.minECTS || 40;
+      
+      // Check if student has accumulated enough ECTS
+      if (academicStats.accumulatedECTS < requiredECTS) {
+        throw new Error(`Nu aveți suficiente credite ECTS acumulate pentru înscrierea în anul următor. Sunt necesare minim ${requiredECTS} ECTS.`);
+      }
+      
+      if (!userData) {
+        throw new Error('Datele studentului nu sunt disponibile.');
+      }
+      
+      // Get current academic year as a Roman numeral
+      const currentAn = userData.an || 'I';
+      
+      // Convert to numeric and increment
+      let nextAnNumeric = currentAn === 'I' ? 2 : currentAn === 'II' ? 3 : 3;
+      
+      // If already in year III, cannot advance further
+      if (currentAn === 'III') {
+        throw new Error('Sunteți deja în ultimul an de studiu.');
+      }
+      
+      // Convert back to Roman numeral
+      const nextAn = nextAnNumeric === 2 ? 'II' : 'III';
+      
+      // Get current academic year for tracking
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-11
+      const currentAcademicYear = month < 9 ? 
+        `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
+        `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
+      
+      // Update student's academic year in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { 
+        an: nextAn,
+        lastRegistrationYear: currentAcademicYear,
+        lastRegistrationDate: new Date().toISOString()
+      });
+      
+      // Update local userData
+      setUserData({
+        ...userData,
+        an: nextAn,
+        lastRegistrationYear: currentAcademicYear,
+        lastRegistrationDate: new Date().toISOString()
+      });
+      
+      // Reset ECTS counter for the new academic year (will be recalculated in fetchPachete)
+      setAcademicStats({
+        ...academicStats,
+        accumulatedECTS: 0
+      });
+      
+      // Show success message
+      setSuccessMessage(`Felicitări! V-ați înscris cu succes în anul ${nextAn} de studiu.`);
+      
+      // Reload packages for the new year and recalculate stats
+      await fetchPachete(true);
+      
+    } catch (error) {
+      console.error('Eroare la înscrierea în anul următor:', error);
+      setError(error.message || 'A apărut o eroare la înscrierea în anul următor.');
+    } finally {
+      setRegistrationLoading(false);
+    }
+  };
+
+  const fetchPachete = async (forceRefresh = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -188,6 +424,10 @@ const InscriereMateriiPage = () => {
         return;
       }
       
+      // Check registration status
+      const status = await checkRegistrationStatus();
+      setRegistrationStatus(status);
+      
       // Obține datele studentului pentru a determina facultatea, specializarea și anul
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const userData = userDoc.data();
@@ -199,8 +439,8 @@ const InscriereMateriiPage = () => {
       // Salvează datele studentului în state pentru a fi folosite mai târziu
       setUserData(userData);
       
-      // Calculate academic stats
-      const stats = await calculateAcademicStats(user.uid);
+      // Calculate academic stats with optional refresh
+      const stats = await calculateAcademicStats(user.uid, forceRefresh);
       setAcademicStats(stats);
       
       // Obține istoricul academic al studentului pentru a verifica materiile promovate
@@ -610,20 +850,34 @@ const InscriereMateriiPage = () => {
         `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
         `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
         
+      const anStudiu = materieData.an || 'I'; 
+      const semestru = materieData.semestru || 1;
+      
+      // Verifică dacă materia există deja în istoric (verificare mai robustă)
+      const materieExistenta = istoricData.istoricAnual.some(anual => 
+        anual.cursuri.some(curs => curs.id === materieId)
+      );
+      
+      if (materieExistenta) {
+        // Materia deja există în istoric, nu o adăugăm din nou
+        console.log(`Materia ${materieId} există deja în istoric`);
+        return;
+      }
+      
       // Crează înregistrarea pentru materia la care s-a înscris studentul
+      // IMPORTANT: Folosim timestamp în loc de Date object pentru a evita duplicatele
+      const currentTimestamp = currentDate.getTime();
       const newNote = {
         id: materieId,
         nume: materieData.nume,
         credite: materieData.credite || 0,
         nota: 0, // Nota 0 - neevaluată încă
-        dataNota: new Date(),
+        dataNota: currentTimestamp, // Folosim timestamp în loc de Date object
         profesor: materieData.profesor?.nume || 'Nespecificat',
         obligatorie: materieData.obligatorie || false,
-        status: 'neevaluat'
+        status: 'neevaluat',
+        dataInregistrare: new Date().toISOString() // Păstrăm ISO string pentru data înregistrării
       };
-      
-      const anStudiu = materieData.an || 'I'; 
-      const semestru = materieData.semestru || 1;
       
       // Verifică dacă există deja un istoric pentru anul și semestrul specificat
       const anualIndex = istoricData.istoricAnual.findIndex(
@@ -632,17 +886,17 @@ const InscriereMateriiPage = () => {
                item.semestru === parseInt(semestru)
       );
       
-      // Verifică dacă materia există deja în istoric
-      const materieExistenta = istoricData.istoricAnual.some(anual => 
-        anual.cursuri.some(curs => curs.id === materieId)
-      );
-      
-      if (materieExistenta) {
-        // Materia deja există în istoric, nu o adăugăm din nou
-        return;
-      }
-      
       if (anualIndex >= 0) {
+        // Verificăm din nou dacă materia nu există deja în acest an/semestru specific
+        const materieExistentaInAn = istoricData.istoricAnual[anualIndex].cursuri.some(
+          curs => curs.id === materieId
+        );
+        
+        if (materieExistentaInAn) {
+          console.log(`Materia ${materieId} există deja în anul ${anStudiu}, semestrul ${semestru}`);
+          return;
+        }
+        
         // Adaugă nota la un istoric existent
         const updatedIstoric = [...istoricData.istoricAnual];
         updatedIstoric[anualIndex].cursuri.push(newNote);
@@ -651,17 +905,47 @@ const InscriereMateriiPage = () => {
           istoricAnual: updatedIstoric
         });
       } else {
-        // Creează un nou istoric anual
-        const newAnualRecord = {
-          anUniversitar: anUniversitar,
-          anStudiu: anStudiu,
-          semestru: parseInt(semestru),
-          cursuri: [newNote]
-        };
+        // Verifică din nou întreaga structură pentru a evita duplicatele
+        const reloadedDoc = await getDoc(istoricRef);
+        const reloadedData = reloadedDoc.data();
         
-        await updateDoc(istoricRef, {
-          istoricAnual: arrayUnion(newAnualRecord)
-        });
+        // Verifică dacă între timp nu s-a adăugat un record similar
+        const conflictIndex = reloadedData.istoricAnual?.findIndex(
+          item => item.anUniversitar === anUniversitar && 
+                 item.anStudiu === anStudiu &&
+                 item.semestru === parseInt(semestru)
+        );
+        
+        if (conflictIndex >= 0) {
+          // S-a adăugat între timp, folosim logica de update
+          const materieExistentaInAn = reloadedData.istoricAnual[conflictIndex].cursuri.some(
+            curs => curs.id === materieId
+          );
+          
+          if (!materieExistentaInAn) {
+            const updatedIstoric = [...reloadedData.istoricAnual];
+            updatedIstoric[conflictIndex].cursuri.push(newNote);
+            
+            await updateDoc(istoricRef, {
+              istoricAnual: updatedIstoric
+            });
+          }
+        } else {
+          // Creează un nou istoric anual - EVITÂND arrayUnion pentru a preveni duplicatele
+          const newAnualRecord = {
+            anUniversitar: anUniversitar,
+            anStudiu: anStudiu,
+            semestru: parseInt(semestru),
+            cursuri: [newNote]
+          };
+          
+          // În loc de arrayUnion, folosim updateDoc cu întreaga structură
+          const updatedIstoric = [...(reloadedData.istoricAnual || []), newAnualRecord];
+          
+          await updateDoc(istoricRef, {
+            istoricAnual: updatedIstoric
+          });
+        }
       }
     } catch (error) {
       console.error('Eroare la actualizarea istoricului academic:', error);
@@ -729,9 +1013,36 @@ const InscriereMateriiPage = () => {
         </div>
       )}
       
+      {/* Academic Year Progress */}
+      {userData && (
+        <AcademicYearProgress 
+          currentYear={userData.an || 'I'} 
+          accumulatedECTS={academicStats.accumulatedECTS}
+          canAdvance={academicStats.accumulatedECTS >= registrationStatus.minECTS}
+          registrationActive={registrationStatus.active}
+          minECTS={registrationStatus.minECTS || 40}
+          isNewRegistration={userData.lastRegistrationYear === academicStats.currentAcademicYear}
+        />
+      )}
+      
       {/* Academic Stats Summary */}
       <div className="mb-6 p-4 bg-[#034a76]/10 rounded-lg">
         <h2 className="text-lg font-medium text-[#034a76] mb-2">Performanța ta academică ({academicStats.currentAcademicYear})</h2>
+        
+        {userData?.lastRegistrationYear === academicStats.currentAcademicYear && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md border border-green-200">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-medium">Înregistrare nouă în anul {userData.an}</p>
+                <p className="text-sm mt-1">Te-ai înregistrat pentru noul an universitar la data {new Date(userData.lastRegistrationDate).toLocaleDateString('ro-RO')}. ECTS acumulate sunt numărate doar pentru cursurile noi.</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white p-3 rounded-md shadow-sm border border-[#034a76]/20">
             <div className="text-sm text-[#034a76]/70">Media notelor</div>
@@ -740,8 +1051,51 @@ const InscriereMateriiPage = () => {
           <div className="bg-white p-3 rounded-md shadow-sm border border-[#034a76]/20">
             <div className="text-sm text-[#034a76]/70">ECTS acumulate</div>
             <div className="text-xl font-bold text-[#034a76]">{academicStats.accumulatedECTS}</div>
+            {userData?.lastRegistrationYear === academicStats.currentAcademicYear && (
+              <div className="text-xs text-green-600 mt-1">Doar pentru cursurile noi din anul {userData.an}</div>
+            )}
           </div>
         </div>
+        
+        {/* Next Year Registration Section */}
+        {academicStats.accumulatedECTS >= (registrationStatus.minECTS || 40) && userData?.an !== 'III' && (
+          <div className="mt-4 p-3 bg-white rounded-md shadow-sm border border-[#034a76]/20">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="mb-3 md:mb-0">
+                <div className="text-sm text-[#034a76]/70">Criterii de înscriere în anul următor</div>
+                <div className="text-sm font-medium text-green-600">
+                  <span className="inline-flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Ați acumulat minim {registrationStatus.minECTS || 40} ECTS în anul universitar curent
+                  </span>
+                </div>
+                {!registrationStatus.active && registrationStatus.dataStart && (
+                  <div className="text-sm text-[#034a76]/70 mt-1">
+                    {new Date(registrationStatus.dataStart) > new Date() ? 
+                      `Înscrierile încep la: ${formatDate(registrationStatus.dataStart)}` : 
+                      `Înscrierile s-au încheiat la: ${formatDate(registrationStatus.dataFinal)}`
+                    }
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={registerForNextYear}
+                disabled={registrationLoading || !registrationStatus.active}
+                className={`px-4 py-2 rounded ${
+                  registrationLoading ? 'bg-gray-400' : 
+                  !registrationStatus.active ? 'bg-gray-300 cursor-not-allowed' : 
+                  'bg-[#e3ab23] hover:bg-[#c49520]'
+                } text-[#034a76] font-medium`}
+              >
+                {registrationLoading ? 'Se procesează...' : 
+                 !registrationStatus.active ? 'Înscrierile nu sunt active' :
+                 `Înscrie-te în anul ${userData?.an === 'I' ? 'II' : 'III'}`}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
       <p className="text-[#034a76]/80 mb-6">
