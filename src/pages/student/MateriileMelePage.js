@@ -158,6 +158,9 @@ const MateriileMelePage = () => {
           medieGenerala = parseFloat((sumaNotes / cursurilePromovate.length).toFixed(2));
         }
 
+        // Convert to string for storage
+        const medieGeneralaString = medieGenerala.toString();
+
         console.log('📈 Final stats:', {
           totalCredite,
           crediteTrecute,
@@ -165,6 +168,19 @@ const MateriileMelePage = () => {
           materiiPromovate: cursurilePromovate.length,
           totalCourses: toateCursurile.length
         });
+
+        // Update user document with medieGenerala if it has changed
+        if (userData.medieGenerala !== medieGeneralaString) {
+          try {
+            await setDoc(userDocRef, {
+              ...userData,
+              medieGenerala: medieGeneralaString
+            });
+            console.log('Updated medieGenerala in user document:', medieGeneralaString);
+          } catch (error) {
+            console.error('Error updating medieGenerala in user document:', error);
+          }
+        }
 
         // Update state
         setStats({

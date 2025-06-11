@@ -465,18 +465,50 @@ const AlocareAutomataPage = () => {
       // 2. Obține toți studenții care au preferințe pentru acest pachet
       console.log('Obținere studenți cu preferințe pentru pachetul:', selectedPachet);
       
-      // Verificăm întâi metoda 1: studenți care au preferinteMateriiOptionale direct
+      // Mai întâi să vedem ce utilizatori avem în baza de date
+      console.log('=== DEBUGGING: Verificăm toți utilizatorii ===');
+      const allUsersSnapshot = await getDocs(collection(db, 'users'));
+      console.log(`Total utilizatori în baza de date: ${allUsersSnapshot.size}`);
+      
+      // Să vedem ce roluri există
+      const rolesSummary = {};
+      allUsersSnapshot.forEach(doc => {
+        const userData = doc.data();
+        const role = userData.role || 'undefined';
+        rolesSummary[role] = (rolesSummary[role] || 0) + 1;
+      });
+      console.log('Roluri utilizatori găsite:', rolesSummary);
+      
+      // Să vedem primii 5 utilizatori pentru a înțelege structura
+      console.log('Primii 5 utilizatori:');
+      allUsersSnapshot.docs.slice(0, 5).forEach((doc, index) => {
+        const userData = doc.data();
+        console.log(`${index + 1}. ID: ${doc.id}, Role: ${userData.role}, Nume: ${userData.nume} ${userData.prenume}`);
+      });
+      
+      // Acum să căutăm studenții
+      console.log('\n=== CĂUTARE STUDENȚI ===');
       const usersSnapshot1 = await getDocs(
         query(collection(db, 'users'), where('role', '==', 'student'))
       );
       
+      // Dacă nu găsim studenți cu role='student', să încercăm fără filtru de rol
+      let studentsSnapshot = usersSnapshot1;
+      if (usersSnapshot1.size === 0) {
+        console.log('Nu s-au găsit utilizatori cu role="student", încercăm să găsim studenți în alt mod...');
+        
+        // Încercăm să găsim utilizatori care au preferințe (indiferent de rol)
+        studentsSnapshot = await getDocs(collection(db, 'users'));
+        console.log(`Verificăm toți ${studentsSnapshot.size} utilizatori pentru preferințe...`);
+      }
+      
       // Creează o listă de studenți care au preferințe pentru acest pachet
       const studenti = [];
       
-      console.log(`Număr total de studenți: ${usersSnapshot1.size}`);
+      console.log(`Număr total de utilizatori de verificat: ${studentsSnapshot.size}`);
       
       // Verifică diverse formate de stocare a preferințelor
-      usersSnapshot1.forEach((userDoc) => {
+      studentsSnapshot.forEach((userDoc) => {
         const userData = userDoc.data();
         console.log(`Verificare student: ${userData.nume} ${userData.prenume} (${userDoc.id})`);
         
@@ -486,15 +518,16 @@ const AlocareAutomataPage = () => {
         // Verifică formatul principal: preferinteMateriiOptionale[pachetId]
         if (userData.preferinteMateriiOptionale && 
             userData.preferinteMateriiOptionale[selectedPachet] && 
+            Array.isArray(userData.preferinteMateriiOptionale[selectedPachet]) &&
             userData.preferinteMateriiOptionale[selectedPachet].length > 0) {
           
-          preferinteLista = userData.preferinteMateriiOptionale[selectedPachet];
+          preferinteLista = [...userData.preferinteMateriiOptionale[selectedPachet]];
           preferinteGasite = true;
           console.log(`- Are preferințe în preferinteMateriiOptionale[${selectedPachet}]:`, preferinteLista);
         }
         // Verifică formatul alternativ: preferințe ca array direct
         else if (userData.preferinte && Array.isArray(userData.preferinte) && userData.preferinte.length > 0) {
-          preferinteLista = userData.preferinte;
+          preferinteLista = [...userData.preferinte];
           preferinteGasite = true;
           console.log(`- Are preferințe în câmpul preferinte:`, preferinteLista);
         }
@@ -504,7 +537,7 @@ const AlocareAutomataPage = () => {
                 Array.isArray(userData.prefMaterii) && 
                 userData.prefMaterii.length > 0) {
           
-          preferinteLista = userData.prefMaterii;
+          preferinteLista = [...userData.prefMaterii];
           preferinteGasite = true;
           console.log(`- Are preferințe în prefMaterii pentru pachetul ${selectedPachet}:`, preferinteLista);
         }
@@ -515,7 +548,7 @@ const AlocareAutomataPage = () => {
                 Array.isArray(userData.preferinte[selectedPachet]) && 
                 userData.preferinte[selectedPachet].length > 0) {
           
-          preferinteLista = userData.preferinte[selectedPachet];
+          preferinteLista = [...userData.preferinte[selectedPachet]];
           preferinteGasite = true;
           console.log(`- Are preferințe în preferinte[${selectedPachet}]:`, preferinteLista);
         }
@@ -526,7 +559,7 @@ const AlocareAutomataPage = () => {
         // Dacă studentul are preferințe, îl adăugăm la lista
         if (preferinteGasite) {
           // Obține media studentului
-          const media = userData.media || 0;
+          const media = userData.mediaGenerala || userData.media || 0;
           
           studenti.push({
             id: userDoc.id,
@@ -537,6 +570,8 @@ const AlocareAutomataPage = () => {
             media: media,
             preferinte: preferinteLista
           });
+          
+          console.log(`Student adăugat: ${userData.nume} ${userData.prenume}, Media: ${media}, Preferințe: ${preferinteLista.length}`);
         }
       });
       
@@ -548,19 +583,26 @@ const AlocareAutomataPage = () => {
         
         // Verificăm dacă există alte pachete cu preferințe
         const prefPachete = new Set();
-        usersSnapshot1.forEach(doc => {
+        const studentiCuPreferinte = [];
+        studentsSnapshot.forEach(doc => {
           const userData = doc.data();
           if (userData.preferinteMateriiOptionale) {
             Object.keys(userData.preferinteMateriiOptionale).forEach(pachetId => {
               prefPachete.add(pachetId);
             });
+            studentiCuPreferinte.push({
+              nume: userData.nume,
+              prenume: userData.prenume,
+              preferinte: userData.preferinteMateriiOptionale
+            });
           }
         });
         
         console.error('Pachete cu preferințe găsite:', Array.from(prefPachete));
+        console.error('Primii 3 studenți cu preferințe:', studentiCuPreferinte.slice(0, 3));
         
-        // Continuăm cu o listă goală în loc să aruncăm o eroare
-        console.warn('Continuăm procesul de alocare cu o listă goală de studenți');
+        // Aruncăm o eroare cu mai multe detalii
+        throw new Error(`Nu s-au găsit studenți cu preferințe pentru pachetul ${selectedPachet}. Pachete cu preferințe găsite: ${Array.from(prefPachete).join(', ')}`);
       }
       
       // Procesează alocarea automată
@@ -677,123 +719,121 @@ const AlocareAutomataPage = () => {
       console.log(`ID Pachet: ${selectedPachet}`);
       console.log('Materii în pachet:', materii.map(m => `${m.nume} (ID: ${m.id})`));
       
-      // Obținem maparea dintre ID-urile materiilor codificate și cele reale
-      // Preluăm toate documentele de materii pentru a găsi maparea corectă
-      console.log('Obținem toate materiile pentru mapare ID-uri...');
-      const materiiSnapshot = await getDocs(collection(db, 'materii'));
-      const mapareIduri = {};
+      // Log detailed info about the package and its courses
+      console.log('\n=== INFORMAȚII PACHET ȘI MATERII ===');
+      console.log('Materii disponibile în pachet:', materii.map(m => ({ id: m.id, nume: m.nume, locuriDisponibile: m.locuriDisponibile })));
       
-      materiiSnapshot.forEach(doc => {
-        const materieData = doc.data();
-        mapareIduri[materieData.codificat || ''] = doc.id;
-        console.log(`Mapare: ${materieData.codificat || 'necunoscut'} -> ${doc.id}`);
-      });
-      
-      console.log('Mapare ID-uri materii:', mapareIduri);
-      
-      // Calculăm media relevantă pentru fiecare student în funcție de anul său
-      const anCurent = new Date().getFullYear();
-      const anUniversitarCurent = `${anCurent}-${anCurent + 1}`;
-      
-      // Decodificăm preferințele materiilor pentru fiecare student
+      // Procesăm fiecare student pentru a obține media corectă și preferințele
       for (const student of studenti) {
-        console.log(`\nStudent: ${student.nume} ${student.prenume} (ID: ${student.id})`);
-        console.log('Preferințe originale:', student.preferinte);
+        console.log(`\n=== PROCESARE STUDENT: ${student.nume} ${student.prenume} (ID: ${student.id}) ===`);
+        console.log('Preferințe originale din query:', student.preferinte);
         
-        // Convertim ID-urile codificate în ID-uri reale
-        const preferinteDecodificate = [];
-        for (const preferintaCodificata of student.preferinte) {
-          const preferintaReala = mapareIduri[preferintaCodificata];
-          if (preferintaReala) {
-            preferinteDecodificate.push(preferintaReala);
-            console.log(`Preferință decodificată: ${preferintaCodificata} -> ${preferintaReala}`);
-          } else {
-            console.log(`! Preferință necunoscută: ${preferintaCodificata} - nu poate fi mapată la o materie reală`);
-          }
-        }
-        
-        // Actualizăm preferințele studentului cu ID-urile reale
-        student.preferinteOriginale = [...student.preferinte]; // Salvăm preferințele originale
-        student.preferinte = preferinteDecodificate;
-        console.log('Preferințe decodificate:', student.preferinte);
-        
-        // Determinăm anul de studiu al studentului
-        const anStudent = student.anStudiu || anPachet;
-        
-        // Pentru studenții din anul I, folosim media din semestrul 1 al anului I
-        if (anStudent === 'I') {
-          // Încercăm să obținem media semestrului 1 din anul I
-          const userDoc = await getDoc(doc(db, 'users', student.id));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            student.mediaOriginala = student.media; // Salvăm media originală
-            student.media = userData.mediaSemestru1AnI || student.media;
-            student.anStudiu = anStudent;
-            console.log(`Student ${student.nume} ${student.prenume} în anul I - media semestrului 1: ${student.media}`);
-          }
-        } 
-        // Pentru studenții din anii II și III, folosim media totală din anul anterior
-        else {
-          // Încercăm să obținem istoricul academic al studentului
-          const istoricQuery = query(
-            collection(db, 'istoricAcademic'),
-            where('studentId', '==', student.id)
-          );
+        // Obținem documentul complet al studentului pentru a avea acces la toate datele
+        const userDoc = await getDoc(doc(db, 'users', student.id));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
           
-          const istoricDocs = await getDocs(istoricQuery);
-          const anAnterior = anStudent === 'II' ? 'I' : 'II';
-          let mediaAnAnterior = 0;
+          console.log('Date complete student:', {
+            nume: userData.nume,
+            prenume: userData.prenume,
+            media: userData.media,
+            mediaGenerala: userData.mediaGenerala,
+            an: userData.an,
+            preferinteMateriiOptionale: userData.preferinteMateriiOptionale
+          });
           
-          if (!istoricDocs.empty) {
-            // Parcurgem toate intrările din istoricul academic
-            let sumaNoteAnAnterior = 0;
-            let numarNoteAnAnterior = 0;
+          // Folosim media generală din profilul studentului
+          student.media = userData.mediaGenerala || userData.media || 0;
+          student.anStudiu = userData.an || anPachet;
+          
+          console.log(`Media folosită pentru alocare: ${student.media}, An studiu: ${student.anStudiu}`);
+          
+          // Verificăm preferințele din userData direct (nu din ce am extras în query)
+          let preferinteFinale = [];
+          
+          if (userData.preferinteMateriiOptionale && 
+              userData.preferinteMateriiOptionale[selectedPachet] && 
+              Array.isArray(userData.preferinteMateriiOptionale[selectedPachet])) {
             
-            istoricDocs.forEach(doc => {
-              const istoricData = doc.data();
-              if (istoricData.anStudiu === anAnterior) {
-                sumaNoteAnAnterior += istoricData.nota || 0;
-                numarNoteAnAnterior++;
+            const preferinteRaw = userData.preferinteMateriiOptionale[selectedPachet];
+            console.log(`Preferințe raw din Firestore pentru pachetul ${selectedPachet}:`, preferinteRaw);
+            
+            // Verificăm dacă preferințele sunt direct ID-uri de materii din pachet
+            const materiiIds = materii.map(m => m.id);
+            console.log('ID-uri materii din pachet:', materiiIds);
+            
+            const preferinteDirecte = preferinteRaw.filter(pref => materiiIds.includes(pref));
+            
+            if (preferinteDirecte.length > 0) {
+              preferinteFinale = preferinteDirecte;
+              console.log('✅ Preferințe directe găsite:', preferinteFinale);
+            } else {
+              console.log('❌ Preferințele nu sunt ID-uri directe, încercăm decodificarea...');
+              
+              // Încercăm să decodificăm preferințele dacă sunt codificate
+              const materiiSnapshot = await getDocs(collection(db, 'materii'));
+              const mapareIduri = {};
+              
+              materiiSnapshot.forEach(doc => {
+                const materieData = doc.data();
+                if (materieData.codificat) {
+                  mapareIduri[materieData.codificat] = doc.id;
+                }
+              });
+              
+              console.log('Mapare coduri -> ID-uri:', Object.keys(mapareIduri).slice(0, 5));
+              
+              for (const preferinta of preferinteRaw) {
+                if (mapareIduri[preferinta] && materiiIds.includes(mapareIduri[preferinta])) {
+                  preferinteFinale.push(mapareIduri[preferinta]);
+                  console.log(`✅ Preferință decodificată: ${preferinta} -> ${mapareIduri[preferinta]}`);
+                } else {
+                  console.log(`❌ Nu s-a putut decodifica: ${preferinta}`);
+                }
               }
-            });
-            
-            if (numarNoteAnAnterior > 0) {
-              mediaAnAnterior = sumaNoteAnAnterior / numarNoteAnAnterior;
             }
+          } else {
+            console.log('❌ Nu există preferințe pentru acest pachet în userData');
           }
           
-          // Dacă am găsit o medie validă pentru anul anterior, o folosim
-          if (mediaAnAnterior > 0) {
-            student.mediaOriginala = student.media; // Salvăm media originală
-            student.media = mediaAnAnterior;
-          }
-          
-          student.anStudiu = anStudent;
-          console.log(`Student ${student.nume} ${student.prenume} în anul ${anStudent} - media anului ${anAnterior}: ${student.media}`);
+          // Actualizăm preferințele studentului
+          student.preferinteOriginale = [...student.preferinte];
+          student.preferinte = preferinteFinale;
+          console.log(`Preferințe finale pentru alocare: ${preferinteFinale.length} preferințe - ${preferinteFinale}`);
+        } else {
+          console.log(`❌ Nu s-a găsit documentul pentru studentul ${student.id}`);
+          student.media = student.media || 0;
+          student.anStudiu = anPachet;
         }
       }
 
-      // 3. Sortăm studenții după medie (descrescător)
+      // Sortăm studenții după media generală (descrescător)
       studenti.sort((a, b) => b.media - a.media);
-      console.log('Studenți sortați după media relevantă:', studenti.map(s => `${s.nume} ${s.prenume} (An: ${s.anStudiu || anPachet}, Media: ${s.media})`));
+      console.log('Studenți sortați după media generală:', studenti.map(s => `${s.nume} ${s.prenume} (Media: ${s.media})`));
       
       // Verificăm dacă avem studenți cu preferințe valide
       const studentiCuPreferinteValide = studenti.filter(s => s.preferinte && s.preferinte.length > 0);
-      console.log(`Studenți cu preferințe valide după decodificare: ${studentiCuPreferinteValide.length}/${studenti.length}`);
+      console.log(`Studenți cu preferințe valide: ${studentiCuPreferinteValide.length}/${studenti.length}`);
       
       if (studentiCuPreferinteValide.length === 0) {
-        console.warn('AVERTISMENT: După decodificare, niciun student nu are preferințe valide!');
-        console.warn('Verificați dacă ID-urile materiilor din preferințele studenților corespund cu ID-urile materiilor din pachet.');
+        console.warn('AVERTISMENT: Niciun student nu are preferințe valide!');
+        console.warn('Verificați dacă studenții au setat preferințe pentru acest pachet.');
       }
       
-      // 4. Alocăm studenții la materii, în ordinea mediilor și conform preferințelor lor
+      // Inițializăm materiile cu locurile disponibile și resetăm listele de studenți înscriși
+      for (const materie of materii) {
+        materie.locuriRamase = materie.locuriDisponibile || 0;
+        materie.studentiInscrisi = [];
+        console.log(`Materia ${materie.nume}: ${materie.locuriRamase} locuri disponibile`);
+      }
+      
+      // Alocăm studenții la materii, în ordinea mediilor și conform preferințelor lor
       const studentiAlocati = [];
       const studentiNealocati = [];
       const statisticiPreferinte = {};
       
       // Inițializăm statisticile pentru fiecare materie
       for (const materie of materii) {
-        materie.studentiInscrisi = materie.studentiInscrisi || [];
         statisticiPreferinte[materie.id] = {
           nume: materie.nume || '',
           preferinta1: 0,
@@ -805,13 +845,20 @@ const AlocareAutomataPage = () => {
         };
       }
       
-      console.log('=== ÎNCEPE ALOCAREA STUDENȚILOR ===');
+      console.log('\n=== ÎNCEPE ALOCAREA STUDENȚILOR ===');
+      console.log(`Total studenți pentru alocare: ${studenti.length}`);
+      console.log(`Total materii disponibile: ${materii.length}`);
       
       // Parcurgem studenții în ordinea mediilor (de la cea mai mare la cea mai mică)
-      for (const student of studenti) {
+      for (let studentIndex = 0; studentIndex < studenti.length; studentIndex++) {
+        const student = studenti[studentIndex];
+        
+        console.log(`\n=== STUDENT ${studentIndex + 1}/${studenti.length}: ${student.nume} ${student.prenume} ===`);
+        console.log(`ID: ${student.id}, Media: ${student.media}`);
+        
         // Sărim peste studenții fără preferințe valide
         if (!student.preferinte || student.preferinte.length === 0) {
-          console.log(`Studentul ${student.nume} ${student.prenume} nu are preferințe valide - este omis din procesul de alocare.`);
+          console.log(`❌ Studentul nu are preferințe valide - omis din alocare`);
           studentiNealocati.push({
             ...student,
             motivNealocare: 'Preferințe invalide sau lipsa de preferințe'
@@ -819,37 +866,47 @@ const AlocareAutomataPage = () => {
           continue;
         }
         
+        console.log(`Preferințe (${student.preferinte.length}):`, student.preferinte.map((p, i) => {
+          const materie = materii.find(m => m.id === p);
+          return `#${i+1}: ${materie?.nume || 'NECUNOSCUTĂ'} (ID: ${p})`;
+        }));
+        
         let alocat = false;
         
-        console.log(`\nProcesare student: ${student.nume} ${student.prenume} (An: ${student.anStudiu || anPachet}, Media: ${student.media})`);
-        console.log(`  Preferințe: ${student.preferinte.map((p, i) => {
-          const materie = materii.find(m => m.id === p);
-          return `#${i+1}: ${materie?.nume || p}`;
-        }).join(', ')}`);
-        
-        // Parcurgem preferințele studentului în ordine
-        for (const materieId of student.preferinte) {
+        // Parcurgem preferințele studentului în ordine (prima preferință, apoi a doua, etc.)
+        for (let prefIndex = 0; prefIndex < student.preferinte.length; prefIndex++) {
+          const materieId = student.preferinte[prefIndex];
+          
+          console.log(`\n  Verificare preferința #${prefIndex + 1}: ID ${materieId}`);
+          
           // Găsim materia în lista noastră
           const materieIndex = materii.findIndex(m => m.id === materieId);
           
           if (materieIndex !== -1) {
-            console.log(`  Verificare materie: ${materii[materieIndex].nume} (Locuri rămase: ${materii[materieIndex].locuriRamase})`);
+            const materie = materii[materieIndex];
+            console.log(`  📚 Materie găsită: ${materie.nume}`);
+            console.log(`  📊 Locuri rămase: ${materie.locuriRamase}/${materie.locuriDisponibile || 0}`);
+            console.log(`  👥 Studenți înscriși: ${materie.studentiInscrisi.length}`);
             
-            if (materii[materieIndex].locuriRamase > 0) {
+            if (materie.locuriRamase > 0) {
               // Am găsit un loc disponibil la o materie preferată
-              materii[materieIndex].locuriRamase--;
+              console.log(`  ✅ LOC DISPONIBIL! Alocăm studentul...`);
               
-              // Adăugăm studentul ca obiect complet, nu doar ID-ul
-              materii[materieIndex].studentiInscrisi.push({
+              materie.locuriRamase--;
+              
+              // Adăugăm studentul la lista de înscriși la materie
+              const studentInscris = {
                 id: student.id,
                 nume: student.nume,
                 prenume: student.prenume, 
                 numarMatricol: student.numarMatricol,
+                media: student.media,
                 anStudiu: student.anStudiu || anPachet
-              });
+              };
+              materie.studentiInscrisi.push(studentInscris);
               
-              // Determinăm poziția preferinței
-              const pozitiePrioritate = student.preferinte.indexOf(materieId) + 1;
+              // Determinăm poziția preferinței (1-based)
+              const pozitiePrioritate = prefIndex + 1;
               
               // Actualizăm statisticile
               if (pozitiePrioritate <= 5) {
@@ -859,7 +916,7 @@ const AlocareAutomataPage = () => {
               }
               
               // Adăugăm la lista de studenți alocați
-              studentiAlocati.push({
+              const studentAlocat = {
                 id: student.id,
                 nume: student.nume,
                 prenume: student.prenume,
@@ -867,24 +924,31 @@ const AlocareAutomataPage = () => {
                 anStudiu: student.anStudiu || anPachet,
                 numarMatricol: student.numarMatricol,
                 materieAlocata: materieId,
-                numeMaterieAlocata: materii[materieIndex].nume,
+                numeMaterieAlocata: materie.nume,
                 pozitiePrioritate: pozitiePrioritate,
-                preferintaOriginala: student.preferinteOriginale[student.preferinte.indexOf(materieId)]
-              });
+                preferintaOriginala: student.preferinteOriginale ? student.preferinteOriginale[prefIndex] : materieId
+              };
+              studentiAlocati.push(studentAlocat);
               
-              console.log(`  ✅ Student ALOCAT la materia ${materii[materieIndex].nume} (preferința #${pozitiePrioritate})`);
+              console.log(`  🎉 SUCCES! Student alocat la ${materie.nume} (preferința #${pozitiePrioritate})`);
+              console.log(`  📈 Locuri rămase după alocare: ${materie.locuriRamase}`);
+              console.log(`  👥 Total studenți înscriși la materie: ${materie.studentiInscrisi.length}`);
               
               alocat = true;
               break; // Trecem la următorul student
             } else {
-              console.log(`  ❌ Materia ${materii[materieIndex].nume} nu mai are locuri disponibile`);
+              console.log(`  ❌ Materia ${materie.nume} PLINĂ (0 locuri rămase)`);
             }
           } else {
-            console.log(`  ⚠️ Materia cu ID-ul ${materieId} nu există în pachet`);
+            console.log(`  ⚠️ EROARE: Materia cu ID ${materieId} NU EXISTĂ în pachet`);
+            console.log(`  📋 ID-uri materii disponibile:`, materii.map(m => m.id));
           }
         }
         
         if (!alocat) {
+          console.log(`  ❌ STUDENT NEALOCAT: ${student.nume} ${student.prenume}`);
+          console.log(`  📝 Motiv: Toate materiile preferate sunt pline sau nu există`);
+          
           // Studentul nu a putut fi alocat la nicio materie din lista sa de preferințe
           studentiNealocati.push({
             id: student.id,
@@ -896,13 +960,35 @@ const AlocareAutomataPage = () => {
             preferinte: student.preferinte,
             motivNealocare: 'Toate materiile preferate sunt pline'
           });
-          console.log(`  ❌ Student NEALOCAT: nicio materie preferată nu are locuri disponibile`);
         }
       }
       
       console.log('\n=== REZULTATE ALOCARE ===');
       console.log(`Studenți alocați: ${studentiAlocati.length}`);
       console.log(`Studenți nealocați: ${studentiNealocati.length}`);
+      
+      // Afișăm rezultatele detaliate
+      if (studentiAlocati.length > 0) {
+        console.log('\n🎉 STUDENȚI ALOCAȚI:');
+        studentiAlocati.forEach((student, index) => {
+          console.log(`${index + 1}. ${student.nume} ${student.prenume} -> ${student.numeMaterieAlocata} (preferința #${student.pozitiePrioritate})`);
+        });
+      } else {
+        console.log('\n❌ NICIUN STUDENT ALOCAT!');
+      }
+      
+      if (studentiNealocati.length > 0) {
+        console.log('\n❌ STUDENȚI NEALOCAȚI:');
+        studentiNealocati.forEach((student, index) => {
+          console.log(`${index + 1}. ${student.nume} ${student.prenume} - ${student.motivNealocare}`);
+        });
+      }
+      
+      // Verificăm starea finală a materiilor
+      console.log('\n📊 STARE FINALĂ MATERII:');
+      materii.forEach(materie => {
+        console.log(`${materie.nume}: ${materie.studentiInscrisi.length}/${materie.locuriDisponibile || 0} ocupate, ${materie.locuriRamase} libere`);
+      });
       
       // Afișăm statisticile de alocare pe preferințe
       console.log('\n=== STATISTICI ALOCARE PE PREFERINȚE ===');
@@ -975,7 +1061,11 @@ const AlocareAutomataPage = () => {
           if (userData.preferinteMateriiOptionale && userData.preferinteMateriiOptionale[selectedPachet]) {
             console.log(`- Actualizăm preferințele materiilor pentru pachetul ${selectedPachet}`);
             console.log(`  Preferințe originale: ${userData.preferinteMateriiOptionale[selectedPachet].join(', ')}`);
-            console.log(`  Preferințe decodificate: ${student.preferinte.join(', ')}`);
+            if (student.preferinte && Array.isArray(student.preferinte)) {
+              console.log(`  Preferințe decodificate: ${student.preferinte.join(', ')}`);
+            } else {
+              console.log(`  Preferințe decodificate: Nu sunt disponibile`);
+            }
           }
           
           // Actualizăm profilul utilizatorului
