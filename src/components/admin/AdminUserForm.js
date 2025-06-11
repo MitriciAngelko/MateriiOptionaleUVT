@@ -163,6 +163,120 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
     }
   };
 
+  // Populează istoricul academic cu materii obligatorii
+  const populateIstoricWithMandatoryCourses = async (studentId, studentData) => {
+    try {
+      // Obține toate materiile din colecția materii
+      const materiiSnapshot = await getDocs(collection(db, 'materii'));
+      const allMaterii = materiiSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Filtrează materiile obligatorii pentru facultatea și specializarea studentului
+      const materiiObligatorii = allMaterii.filter(materie => {
+        return materie.obligatorie === true &&
+               materie.facultate === studentData.facultate &&
+               materie.specializare === studentData.specializare;
+      });
+
+      // Filtrează materiile pentru anii anteriori și anul curent
+      const studentAn = studentData.an || 'I';
+      const studentAnNumeric = studentAn === 'I' ? 1 : studentAn === 'II' ? 2 : 3;
+      
+      const materiiPentruAni = materiiObligatorii.filter(materie => {
+        const materieAn = materie.an || 'I';
+        const materieAnNumeric = materieAn === 'I' ? 1 : materieAn === 'II' ? 2 : 3;
+        return materieAnNumeric <= studentAnNumeric;
+      });
+
+      if (materiiPentruAni.length === 0) return;
+
+      // Determină anul universitar curent
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-11
+      const anUniversitar = month < 9 ? 
+        `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
+        `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
+
+      // Obține referința la istoricul academic
+      const istoricRef = doc(db, 'istoricAcademic', studentId);
+      const istoricDoc = await getDoc(istoricRef);
+      
+      if (!istoricDoc.exists()) return;
+      
+      const istoricData = istoricDoc.data();
+      let updatedIstoric = [...(istoricData.istoricAnual || [])];
+
+      // Pentru fiecare materie obligatorie, adaugă în istoricul academic
+      for (const materie of materiiPentruAni) {
+        // Verifică dacă materia există deja în istoric
+        const materieExistenta = updatedIstoric.some(anual => 
+          anual.cursuri && anual.cursuri.some(curs => curs.id === materie.id)
+        );
+        
+        if (!materieExistenta) {
+          const anStudiu = materie.an || 'I';
+          const semestru = materie.semestru || 1;
+          
+          // Creează nota pentru materie
+          const newNote = {
+            id: materie.id,
+            nume: materie.nume,
+            credite: materie.credite || 0,
+            nota: 0, // Nota 0 - neevaluată încă
+            dataNota: new Date().getTime(),
+            profesor: materie.profesor?.nume || 'Nespecificat',
+            obligatorie: true,
+            status: 'neevaluat'
+          };
+          
+          // Verifică dacă există deja un istoric pentru anul și semestrul specificat
+          const anualIndex = updatedIstoric.findIndex(
+            item => item.anUniversitar === anUniversitar && 
+                   item.anStudiu === anStudiu &&
+                   item.semestru === parseInt(semestru)
+          );
+          
+          if (anualIndex >= 0) {
+            // Verifică dacă istoricul are proprietatea cursuri și este un array
+            if (!updatedIstoric[anualIndex].cursuri) {
+              updatedIstoric[anualIndex].cursuri = [];
+            }
+            
+            // Verifică din nou dacă materia nu există deja în acest an/semestru specific
+            const materieExistentaInAn = updatedIstoric[anualIndex].cursuri.some(
+              curs => curs.id === materie.id
+            );
+            
+            if (!materieExistentaInAn) {
+              updatedIstoric[anualIndex].cursuri.push(newNote);
+            }
+          } else {
+            // Creează un nou istoric anual
+            const newAnualRecord = {
+              anUniversitar: anUniversitar,
+              anStudiu: anStudiu,
+              semestru: parseInt(semestru),
+              cursuri: [newNote]
+            };
+            
+            updatedIstoric.push(newAnualRecord);
+          }
+        }
+      }
+
+      // Actualizează istoricul în baza de date
+      await updateDoc(istoricRef, {
+        istoricAnual: updatedIstoric
+      });
+
+    } catch (error) {
+      console.error('Eroare la popularea istoricului academic:', error);
+    }
+  };
+
   // Adaugă o nouă materie în listă
   const adaugaMaterie = () => {
     if (materieNoua.facultate && materieNoua.specializare && materieNoua.nume && materieNoua.an) {
@@ -370,6 +484,23 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
 
         // Salvăm utilizatorul în Firestore
         await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+
+        // Creăm istoricul academic pentru student
+        if (formType === 'student') {
+          const istoricAcademicData = {
+            studentId: userCredential.user.uid,
+            nume: formData.nume,
+            prenume: formData.prenume,
+            specializare: formData.specializare,
+            facultate: formData.facultate,
+            istoricAnual: []
+          };
+
+          await setDoc(doc(db, 'istoricAcademic', userCredential.user.uid), istoricAcademicData);
+
+          // Populează istoricul cu materii obligatorii pentru anii anteriori și anul curent
+          await populateIstoricWithMandatoryCourses(userCredential.user.uid, formData);
+        }
 
         // Actualizăm materiile pentru profesor
         if (formType === 'profesor' && materiiSelectate.length > 0) {

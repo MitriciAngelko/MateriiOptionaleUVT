@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import { useMaterii } from '../../contexts/MateriiContext';
@@ -53,18 +53,32 @@ const MateriileMelePage = () => {
           return;
         }
 
-        // IMPORTANT: This page should ONLY READ data, never write to istoricAcademic
-        // One-time fetch for istoric academic data
+        const userData = userDocSnap.data();
+
+        // Create or get istoric academic data
         const istoricDocRef = doc(db, 'istoricAcademic', user.uid);
         const istoricDocSnap = await getDoc(istoricDocRef);
         
-        if (!istoricDocSnap.exists()) {
-          setMateriiInscrise([]);
-          setLoading(false);
-          return;
+        let istoricData;
+        
+        if (istoricDocSnap.exists()) {
+          istoricData = istoricDocSnap.data();
+        } else {
+          // Create an empty istoric if it doesn't exist (preserve the functionality)
+          istoricData = {
+            studentId: user.uid,
+            nume: userData.nume || '',
+            prenume: userData.prenume || '',
+            specializare: userData.specializare || '',
+            facultate: userData.facultate || '',
+            istoricAnual: []
+          };
+          
+          // Save the empty istoric to the database
+          await setDoc(istoricDocRef, istoricData);
+          console.log('Created new istoricAcademic document for student:', user.uid);
         }
 
-        const istoricData = istoricDocSnap.data();
         const toateCursurile = [];
 
         // Process istoric data
