@@ -14,6 +14,23 @@ const HomePage = () => {
     isProfesor: false,
     isSecretar: false
   });
+  const [userData, setUserData] = useState(null);
+
+  // Function to get dynamic greeting based on current time
+  const getDynamicGreeting = (nume, prenume) => {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    const fullName = nume || prenume ? `${nume || ''} ${prenume || ''}`.trim() : '';
+    
+    if (hour >= 6 && hour < 12) {
+      return `Bună dimineața${fullName ? ` ${fullName}` : ''}!`;
+    } else if (hour >= 12 && hour < 20) {
+      return `Bună ziua${fullName ? ` ${fullName}` : ''}!`;
+    } else {
+      return `Bună seara${fullName ? ` ${fullName}` : ''}!`;
+    }
+  };
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -28,6 +45,7 @@ const HomePage = () => {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            setUserData(userData); // Store user data for greeting
             const isAdminUser = await isAdmin(user);
             
             // Redirecționează admin-ul direct la pagina de utilizatori
@@ -86,7 +104,7 @@ const HomePage = () => {
       {
         title: 'Materiile Mele',
         description: 'Gestionează materiile pe care le predai',
-        path: '/materiile-mele-profesor',
+        path: '/profesor/materiile-mele',
         icon: (
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9.5a2.5 2.5 0 00-2.5-2.5H15" />
@@ -110,7 +128,7 @@ const HomePage = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 text-center mb-12">
-          Bine ai venit{user?.nume ? `, ${user.nume}` : ''}!
+          {getDynamicGreeting(userData?.nume, userData?.prenume)}
         </h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">

@@ -5,6 +5,84 @@ import { db } from '../../firebase';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// Toast notification component
+const Toast = ({ message, type = 'success', onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const getToastStyles = () => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-500 text-white';
+      case 'error':
+        return 'bg-red-500 text-white';
+      case 'warning':
+        return 'bg-yellow-500 text-white';
+      case 'info':
+        return 'bg-blue-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'error':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'warning':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+        );
+    }
+  };
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out ${getToastStyles()}`}>
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          {getIcon()}
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium">{message}</p>
+        </div>
+        <div className="ml-4 flex-shrink-0">
+          <button
+            className="inline-flex text-white hover:text-gray-200 focus:outline-none focus:text-gray-200"
+            onClick={onClose}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AlocareAutomataPage = () => {
   const [pachete, setPachete] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,9 +101,19 @@ const AlocareAutomataPage = () => {
   const [pachetPerioadaId, setPachetPerioadaId] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [toast, setToast] = useState(null);
   
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
+
+  // Toast notification functions
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
 
   useEffect(() => {
     fetchPachete();
@@ -472,7 +560,7 @@ const AlocareAutomataPage = () => {
     try {
       // Validează datele
       if (!perioadaStartDate || !perioadaStartTime || !perioadaEndDate || !perioadaEndTime) {
-        setError('Toate câmpurile sunt obligatorii');
+        showToast('Toate câmpurile sunt obligatorii', 'error');
         return;
       }
       
@@ -480,12 +568,12 @@ const AlocareAutomataPage = () => {
       const finalDate = new Date(`${perioadaEndDate}T${perioadaEndTime}`);
       
       if (isNaN(startDate.getTime()) || isNaN(finalDate.getTime())) {
-        setError('Datele introduse nu sunt valide');
+        showToast('Datele introduse nu sunt valide', 'error');
         return;
       }
       
       if (startDate >= finalDate) {
-        setError('Data de început trebuie să fie înainte de data de final');
+        showToast('Data de început trebuie să fie înainte de data de final', 'error');
         return;
       }
       
@@ -499,15 +587,14 @@ const AlocareAutomataPage = () => {
       // Actualizează lista de pachete
       fetchPachete();
       
-      // Afisează mesajul de succes pentru 3 secunde
-      setSuccessMessage('Perioada de înscriere a fost actualizată cu succes!');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // Afișează toast de succes
+      showToast('Perioada de înscriere a fost actualizată cu succes!', 'success');
       
       // Revenim la tabul de informații
       setActiveTab('info');
     } catch (error) {
       console.error('Eroare la salvarea perioadei de înscriere:', error);
-      setError('A apărut o eroare la salvarea perioadei de înscriere');
+      showToast('A apărut o eroare la salvarea perioadei de înscriere', 'error');
     }
   };
 
@@ -1102,7 +1189,7 @@ const AlocareAutomataPage = () => {
       case 'încheiat':
         return 'bg-orange-100 text-orange-800 border-orange-300';
       case 'procesat':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
+        return 'bg-green-100 text-green-800 border-green-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -1117,7 +1204,7 @@ const AlocareAutomataPage = () => {
       case 'încheiat':
         return 'Înscrieri închise';
       case 'procesat':
-        return 'Alocare procesată';
+        return '';
       default:
         return 'Inactiv';
     }
@@ -1134,6 +1221,15 @@ const AlocareAutomataPage = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Alocare Automată Pachete</h1>
+      
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
       
       {/* Search Input and Button */}
       <div className="flex mb-4">
@@ -1179,33 +1275,41 @@ const AlocareAutomataPage = () => {
               filteredPachete.map(pachet => (
                 <div 
                   key={pachet.id} 
-                  className={`p-4 cursor-pointer hover:bg-gray-50 ${selectedPachet === pachet.id ? 'bg-gray-100' : ''}`}
+                  className={`p-4 cursor-pointer ${
+                    pachet.statusInscriere === 'activ' 
+                      ? (selectedPachet === pachet.id ? 'bg-green-200 hover:bg-green-300' : 'bg-green-100 hover:bg-green-200')
+                      : (selectedPachet === pachet.id ? 'bg-gray-100 hover:bg-gray-50' : 'hover:bg-gray-50')
+                  }`}
                   onClick={() => handleSelectPachet(pachet)}
                 >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-[#034a76]">{pachet.nume || 'Pachet fără nume'}</h3>
-                      <div className="mt-1 text-xs text-gray-500">
-                        {pachet.facultate && <span className="block">Facultate: {pachet.facultate}</span>}
-                        {pachet.specializare && <span className="block">Specializare: {pachet.specializare}</span>}
-                        {pachet.an && <span className="block">An: {pachet.an}</span>}
-                      </div>
-                    </div>
-                    
-                    <div 
-                      className={`px-2 py-1 text-xs rounded border ${getStatusClass(pachet.statusInscriere)}`}
-                    >
-                      {getStatusText(pachet.statusInscriere)}
+                  <div>
+                    <h3 className="font-medium text-[#034a76]">{pachet.nume || 'Pachet fără nume'}</h3>
+                    <div className="mt-1 text-xs text-gray-500">
+                      {pachet.facultate && <span className="block">Facultate: {pachet.facultate}</span>}
+                      {pachet.specializare && <span className="block">Specializare: {pachet.specializare}</span>}
+                      {pachet.an && <span className="block">An: {pachet.an}</span>}
                     </div>
                   </div>
                   
                   <div className="mt-2 text-sm text-gray-600">
                     <div className="grid grid-cols-2 gap-1">
                       <div>
-                        <span className="font-medium">Perioada:</span>
+                        <span className={`font-medium ${(() => {
+                          if (!pachet.dataStart || !pachet.dataFinal) return '';
+                          const now = new Date();
+                          const start = new Date(pachet.dataStart);
+                          const end = new Date(pachet.dataFinal);
+                          return (now >= start && now <= end) ? 'text-green-600' : '';
+                        })()}`}>Perioada:</span>
                       </div>
                       <div>
-                        <span>{formatDate(pachet.dataStart)} - {formatDate(pachet.dataFinal)}</span>
+                        <span className={(() => {
+                          if (!pachet.dataStart || !pachet.dataFinal) return '';
+                          const now = new Date();
+                          const start = new Date(pachet.dataStart);
+                          const end = new Date(pachet.dataFinal);
+                          return (now >= start && now <= end) ? 'text-green-600' : '';
+                        })()}>{formatDate(pachet.dataStart)} - {formatDate(pachet.dataFinal)}</span>
                       </div>
                     </div>
                     {pachet.dataUltimaAlocare && (

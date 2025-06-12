@@ -18,7 +18,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
     facultate: editingUser?.facultate || '',
     specializare: editingUser?.specializare || '',
     an: editingUser?.an || '',
-    functie: editingUser?.functie || '',
     materiiPredate: editingUser?.materiiPredate || []
   });
   const [error, setError] = useState(null);
@@ -374,7 +373,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
             };
           });
           updateData.materiiPredate = materiiComplete;
-          updateData.functie = formData.functie;
 
           // Actualizăm și referințele din colecția materii
           const materiiPromises = [];
@@ -439,11 +437,11 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
 
         // Construim datele pentru Firestore
         const userData = {
-          email: formData.email.toLowerCase(),
-          uid: userCredential.user.uid,
-          nume: formData.nume,
-          prenume: formData.prenume,
-          tip: formType,
+          email: formData.email?.toLowerCase() || '',
+          uid: userCredential.user.uid || '',
+          nume: formData.nume || '',
+          prenume: formData.prenume || '',
+          tip: formType || 'student',
           createdAt: new Date(),
         };
 
@@ -474,16 +472,49 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
             };
           }).filter(Boolean);
           
-          userData.materiiPredate = materiiComplete;
+          userData.materiiPredate = materiiComplete || [];
+          userData.facultate = formData.facultate || '';
         }
         // Adăugăm date specifice pentru secretar
         else if (formType === 'secretar') {
-          userData.facultate = formData.facultate;
-          userData.functie = formData.functie;
+          userData.facultate = formData.facultate || '';
         }
 
         // Salvăm utilizatorul în Firestore
-        await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+        console.log('userData before setDoc:', userData);
+        console.log('formData.facultate:', formData.facultate);
+        console.log('materiiSelectate:', materiiSelectate);
+        
+        // Deep check for undefined values
+        const checkForUndefined = (obj, path = '') => {
+          Object.keys(obj).forEach(key => {
+            const currentPath = path ? `${path}.${key}` : key;
+            if (obj[key] === undefined) {
+              console.error(`Field ${currentPath} is undefined in userData`);
+            } else if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && !(obj[key] instanceof Date)) {
+              checkForUndefined(obj[key], currentPath);
+            } else if (Array.isArray(obj[key])) {
+              obj[key].forEach((item, index) => {
+                if (item === undefined) {
+                  console.error(`Array item at ${currentPath}[${index}] is undefined`);
+                } else if (item && typeof item === 'object') {
+                  checkForUndefined(item, `${currentPath}[${index}]`);
+                }
+              });
+            }
+          });
+        };
+        
+        checkForUndefined(userData);
+        
+        try {
+          await setDoc(doc(db, 'users', userCredential.user.uid), userData);
+          console.log('User successfully saved to Firestore');
+        } catch (firestoreError) {
+          console.error('Firestore setDoc error:', firestoreError);
+          console.error('userData that caused the error:', JSON.stringify(userData, null, 2));
+          throw new Error(`Failed to save user to database: ${firestoreError.message}`);
+        }
 
         // Creăm istoricul academic pentru student
         if (formType === 'student') {
@@ -706,6 +737,63 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
                     placeholder="ex: 2002"
                     pattern="[0-9]{4}"
                     maxLength="4"
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Câmpuri specifice pentru profesor */}
+            {formType === 'profesor' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Facultate</label>
+                  <select
+                    name="facultate"
+                    value={formData.facultate}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">Selectează facultatea</option>
+                    {facultati.map(fac => (
+                      <option key={fac} value={fac}>{fac}</option>
+                    ))}
+                  </select>
+                </div>
+
+                
+              </>
+            )}
+
+            {/* Câmpuri specifice pentru secretar */}
+            {formType === 'secretar' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Facultate</label>
+                  <select
+                    name="facultate"
+                    value={formData.facultate}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  >
+                    <option value="">Selectează facultatea</option>
+                    {facultati.map(fac => (
+                      <option key={fac} value={fac}>{fac}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Funcție</label>
+                  <input
+                    type="text"
+                    name="functie"
+                    value={formData.functie}
+                    onChange={handleChange}
+                    placeholder="ex: Secretar șef, Secretar facultate, etc."
                     required
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   />

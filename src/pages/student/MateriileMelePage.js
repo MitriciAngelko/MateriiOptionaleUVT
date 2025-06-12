@@ -17,6 +17,7 @@ const MateriileMelePage = () => {
     'II': [],
     'III': []
   });
+  const [selectedYear, setSelectedYear] = useState('I');
   
   const { allMaterii, loading: materiiLoading } = useMaterii();
   const user = useSelector((state) => state.auth.user);
@@ -231,109 +232,205 @@ const MateriileMelePage = () => {
     fetchData();
   }, [user, navigate, allMaterii, materiiLoading]);
 
+  // Helper function to group courses by semester
+  const groupBySemester = (courses) => {
+    return courses.reduce((acc, course) => {
+      const semester = course.semestru || 1;
+      if (!acc[semester]) {
+        acc[semester] = [];
+      }
+      acc[semester].push(course);
+      return acc;
+    }, {});
+  };
+
+  const availableYears = Object.keys(materiiByAn).filter(year => materiiByAn[year].length > 0);
+  const currentYearCourses = materiiByAn[selectedYear] || [];
+  const coursesBySemester = groupBySemester(currentYearCourses);
+
+  // Calculate stats for selected year
+  const selectedYearStats = React.useMemo(() => {
+    let crediteTrecute = 0;
+    let cursurilePromovate = [];
+
+    currentYearCourses.forEach(materie => {
+      const credite = parseInt(materie.credite) || 0;
+      const nota = parseFloat(materie.nota) || 0;
+      
+      if (nota >= 5) {
+        crediteTrecute += credite;
+        cursurilePromovate.push(materie);
+      }
+    });
+
+    let medieGenerala = 0;
+    if (cursurilePromovate.length > 0) {
+      const sumaNotes = cursurilePromovate.reduce((acc, course) => acc + parseFloat(course.nota), 0);
+      medieGenerala = parseFloat((sumaNotes / cursurilePromovate.length).toFixed(2));
+    }
+
+    return {
+      totalCredite: crediteTrecute, // Only count credits from passed courses
+      crediteTrecute,
+      medieGenerala
+    };
+  }, [currentYearCourses]);
+
   if (loading) {
-    return <div className="text-center py-8">Se încarcă...</div>;
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="text-center py-8 text-[#034a76]">
+          <div className="text-lg font-semibold">Se încarcă...</div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Materiile Mele</h1>
-      </div>
-
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-          {error}
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+      <div className="container mx-auto px-4 py-4">
+        {/* Header */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-[#034a76] mb-1">Materiile Mele</h1>
+          <div className="h-0.5 w-16 bg-[#e3ab23] rounded"></div>
         </div>
-      )}
 
-      {/* Statistici */}
-      <div className="bg-white border rounded-lg p-4 mb-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-3">Situație școlară</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="border rounded p-3 bg-gray-50">
-            <div className="text-sm text-gray-600">Total credite înscrise</div>
-            <div className="text-2xl font-bold text-[#034a76]">{stats.totalCredite}</div>
+        {error && (
+          <div className="mb-4 p-2 bg-red-50 border-l-4 border-red-400 text-red-700 rounded-r-lg">
+            <div className="font-medium text-sm">{error}</div>
           </div>
-          <div className="border rounded p-3 bg-gray-50">
-            <div className="text-sm text-gray-600">Credite obținute</div>
-            <div className="text-2xl font-bold text-green-600">{stats.crediteTrecute}</div>
-          </div>
-          <div className="border rounded p-3 bg-gray-50">
-            <div className="text-sm text-gray-600">Medie generală</div>
-            <div className="text-2xl font-bold text-[#034a76]">{stats.medieGenerala}</div>
-          </div>
-        </div>
-      </div>
+        )}
 
-      {materiiInscrise.length === 0 ? (
-        <div className="text-center py-8 text-gray-600">
-          Nu aveți nicio materie în istoricul academic.
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {Object.entries(materiiByAn).map(([an, materii]) => {
-            if (materii.length === 0) return null;
-            
-            return (
-              <div key={an} className="bg-white border rounded-lg overflow-hidden shadow-sm">
-                <div className="bg-gray-50 p-4 border-b">
-                  <h2 className="text-lg font-semibold">Anul {an}</h2>
-                </div>
-                <div className="p-4">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="py-2 px-4 border-b text-left text-sm font-medium text-gray-700">Materie</th>
-                          <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-700">Credite</th>
-                          <th className="py-2 px-4 border-b text-center text-sm font-medium text-gray-700">Notă</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {materii.map((materie) => (
-                          <tr key={materie.id} className="hover:bg-gray-50">
-                            <td className="py-2 px-4 border-b text-sm">
-                              <div className="font-medium text-gray-900 cursor-pointer" 
-                                onClick={() => setExpandedMaterieId(expandedMaterieId === materie.id ? null : materie.id)}>
-                                {materie.nume}
-                                {materie.status === 'nepromovat' || (materie.nota > 0 && materie.nota < 5) ? 
-                                  <span className="ml-2 text-xs font-normal text-red-600">(Nepromovat)</span> : 
-                                  materie.status === 'promovat' || materie.nota >= 5 ?
-                                  <span className="ml-2 text-xs font-normal text-green-600">(Promovat)</span> : 
-                                  null
-                                }
-                              </div>
-                              {expandedMaterieId === materie.id && (
-                                <div className="mt-2 text-xs text-gray-600">
-                                  <p><span className="font-semibold">Specializare:</span> {materie.specializare}</p>
-                                  <p><span className="font-semibold">Profesor:</span> {materie.profesor?.nume || 'Nealocat'}</p>
-                                  <p className="mt-1 bg-gray-50 p-2 rounded">
-                                    {materie.descriere || 'Nicio descriere disponibilă.'}
-                                  </p>
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-2 px-4 border-b text-center text-sm">{materie.credite}</td>
-                            <td className="py-2 px-4 border-b text-center text-sm">
-                              <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                                materie.nota >= 5 ? 'bg-green-100 text-green-800' : 
-                                materie.nota > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {materie.nota > 0 ? materie.nota : 'N/A'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+        {materiiInscrise.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+            <div className="text-lg text-gray-500 mb-1">Nu aveți nicio materie în istoricul academic</div>
+            <div className="text-xs text-gray-400">Contactați secretariatul pentru mai multe informații</div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Header and Year Tabs */}
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-2">
+                {availableYears.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => setSelectedYear(year)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      selectedYear === year
+                        ? 'bg-[#034a76] text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    Anul {year}
+                  </button>
+                ))}
               </div>
-            );
-          })}
-        </div>
-      )}
+            </div>
+
+            {/* Course Table */}
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              {currentYearCourses.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Nu aveți cursuri pentru anul {selectedYear}
+                </div>
+              ) : (
+                <div>
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="bg-[#034a76] text-white">
+                        <th className="py-3 px-6 text-left font-semibold">Materie</th>
+                        <th className="py-3 px-6 text-center font-semibold">Credite</th>
+                        <th className="py-3 px-6 text-center font-semibold">Nota</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(coursesBySemester)
+                        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+                                                 .map(([semester, courses]) => {
+                           // Calculate semester totals - only count credits from passed courses
+                           const passedCourses = courses.filter(course => parseFloat(course.nota) >= 5);
+                           const semesterCredits = passedCourses.reduce((sum, course) => sum + parseInt(course.credite || 0), 0);
+                           const semesterAverage = passedCourses.length > 0 
+                             ? parseFloat((passedCourses.reduce((sum, course) => sum + parseFloat(course.nota), 0) / passedCourses.length).toFixed(2))
+                             : 0;
+
+                          return (
+                            <React.Fragment key={semester}>
+                              {/* Semester Header Row */}
+                              <tr className="bg-[#034a76] text-white">
+                                <td colSpan="3" className="py-2 px-6">
+                                  <span className="font-semibold">Semestrul {semester}</span>
+                                </td>
+                              </tr>
+                              
+                              {/* Course Rows */}
+                              {courses.map((materie, index) => (
+                                <tr 
+                                  key={materie.id}
+                                  className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 cursor-pointer`}
+                                  onClick={() => setExpandedMaterieId(expandedMaterieId === materie.id ? null : materie.id)}
+                                >
+                                  <td className="py-3 px-6 text-gray-900">
+                                    <div>
+                                      <div className="font-medium">{materie.nume}</div>
+                                      {expandedMaterieId === materie.id && (
+                                        <div className="mt-2 text-sm text-gray-600">
+                                          <div><span className="font-semibold">Profesor:</span> {materie.profesor?.nume || 'Nealocat'}</div>
+                                          <div><span className="font-semibold">Specializare:</span> {materie.specializare}</div>
+                                          {materie.descriere && (
+                                            <div className="mt-1"><span className="font-semibold">Descriere:</span> {materie.descriere}</div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-6 text-center text-gray-900">{materie.credite}</td>
+                                  <td className="py-3 px-6 text-center">
+                                    <span className={`font-semibold ${
+                                      materie.nota >= 5 
+                                        ? 'text-green-600' 
+                                        : materie.nota > 0 
+                                        ? 'text-red-600' 
+                                        : 'text-gray-500'
+                                    }`}>
+                                      {materie.nota > 0 ? materie.nota : '-'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                              
+                              {/* Semester Total Row */}
+                              <tr className="bg-blue-50 border-t-2 border-[#034a76]">
+                                <td className="py-2 px-6 font-semibold text-[#034a76]">Total</td>
+                                <td className="py-2 px-6 text-center font-semibold text-[#034a76]">{semesterCredits} credite</td>
+                                <td className="py-2 px-6 text-center">
+                                  <span className="bg-[#e3ab23] text-white px-3 py-1 rounded-full font-semibold text-sm">
+                                    {semesterAverage > 0 ? semesterAverage : '-'}
+                                  </span>
+                                </td>
+                              </tr>
+                            </React.Fragment>
+                          );
+                        })}
+                      
+                      {/* Year Total Row */}
+                      <tr className="bg-[#034a76] text-white">
+                        <td className="py-3 px-6 font-bold">Total Anul {selectedYear}</td>
+                        <td className="py-3 px-6 text-center font-bold">{selectedYearStats.totalCredite} credite</td>
+                        <td className="py-3 px-6 text-center">
+                          <span className="bg-[#e3ab23] text-white px-3 py-1 rounded-full font-bold">
+                            {selectedYearStats.medieGenerala || '-'}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

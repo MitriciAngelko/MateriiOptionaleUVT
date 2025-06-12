@@ -78,7 +78,7 @@ const Navbar = () => {
     
     // Elemente specifice rolurilor
     if (roles.isProfesor) {
-      items.push({ path: '/materiile-mele-profesor', label: 'Materiile Mele' });
+      items.push({ path: '/profesor/materiile-mele', label: 'Materiile Mele' });
     }
     
     // Special case for admin@admin.com or other admins
@@ -109,7 +109,7 @@ const Navbar = () => {
 
   return (
     <div className="h-16 bg-[#034a76] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50">
-      <div className="flex items-center">
+      <div className="flex items-center h-full">
         <div className="mr-8 pt-1">
           <button
             onClick={() => navigate('/home')}
@@ -135,16 +135,18 @@ const Navbar = () => {
         </button>
         
         {/* Meniu de navigare pentru desktop */}
-        <nav className="hidden md:flex">
-          <ul className="flex space-x-4">
+        <nav className="hidden md:flex h-full">
+          <ul className="flex h-full">
             {navItems.map((item) => (
-              <li key={item.path}>
+              <li key={item.path} className="h-full">
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`px-4 py-2 rounded hover:bg-[#023557] transition-colors
+                  className={`px-4 h-full flex items-center relative group transition-colors
                     ${location.pathname === item.path ? 'bg-[#023557]' : ''}`}
                 >
                   {item.label}
+                  {/* Hover line */}
+                  <span className="absolute bottom-0 left-0 w-0 h-1 bg-[#e3ab23] group-hover:w-full transition-all duration-300"></span>
                 </button>
               </li>
             ))}
@@ -192,10 +194,12 @@ const Navbar = () => {
                     navigate(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-6 py-3 hover:bg-[#023557] transition-colors
+                  className={`w-full text-left px-6 py-3 relative group transition-colors
                     ${location.pathname === item.path ? 'bg-[#023557]' : ''}`}
                 >
                   {item.label}
+                  {/* Hover line for mobile */}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#e3ab23] group-hover:w-full transition-all duration-300"></span>
                 </button>
               </li>
             ))}

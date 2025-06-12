@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { useAuth } from '../../providers/AuthProvider';
 import { db } from '../../firebase';
 import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import AdminUserForm from '../../components/admin/AdminUserForm';
+import AdminUserForm from '../../components/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import { isAdmin } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';

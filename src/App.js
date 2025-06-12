@@ -11,6 +11,7 @@ import AdminRoute from './components/admin/AdminRoute';
 import PrivateRoute from './components/PrivateRoute';
 import AdminMateriiPage from './pages/admin/AdminMateriiPage';
 import ProfesorMateriileMelePage from './pages/profesor/MateriileMelePage';
+import ProfesorMaterieDetailsPage from './pages/profesor/MaterieDetailsPage';
 import StudentMateriileMelePage from './pages/student/MateriileMelePage';
 import InscriereMateriiPage from './pages/student/InscriereMateriiPage';
 import AdminIstoricAcademicPage from './pages/admin/AdminIstoricAcademicPage';
@@ -59,6 +60,20 @@ function App() {
             <PrivateRoute>
               <MateriiProvider>
                 <ProfesorMateriileMelePage />
+              </MateriiProvider>
+            </PrivateRoute>
+          } />
+          <Route path="/profesor/materiile-mele" element={
+            <PrivateRoute>
+              <MateriiProvider>
+                <ProfesorMateriileMelePage />
+              </MateriiProvider>
+            </PrivateRoute>
+          } />
+          <Route path="/profesor/materie/:materieId" element={
+            <PrivateRoute>
+              <MateriiProvider>
+                <ProfesorMaterieDetailsPage />
               </MateriiProvider>
             </PrivateRoute>
           } />
