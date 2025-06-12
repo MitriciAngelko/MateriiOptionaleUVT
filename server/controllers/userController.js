@@ -1,5 +1,6 @@
 const db = require('../config/firebase').firestore();
 const { userExists } = require('../utils/userUtils');
+const admin = require('../config/firebase');
 
 const createUser = async (req, res) => {
   try {
@@ -39,7 +40,6 @@ const createUser = async (req, res) => {
 
     // Setează custom claims pentru toate rolurile specifice
     if (role !== 'user') {
-      const admin = require('../config/firebase');
       await admin.auth().setCustomUserClaims(uid, { role });
     }
 
@@ -171,9 +171,68 @@ const getUserInfo = async (req, res) => {
   }
 };
 
+/**
+ * Șterge un utilizator din Firebase Authentication
+ */
+const deleteUser = async (req, res) => {
+  const { uid } = req.params;
+  
+  console.log(`Delete User Controller - Request to delete user: ${uid}`);
+  
+  if (!uid) {
+    console.log('Delete User Controller - Missing uid parameter');
+    return res.status(400).json({ 
+      message: 'Missing required field: uid is required' 
+    });
+  }
+  
+  // Check if the request comes from an admin or the admin@admin.com user
+  if (!req.user.admin && req.user.email !== 'admin@admin.com') {
+    console.log(`Delete User Controller - Unauthorized deletion attempt by user: ${req.user.uid} (${req.user.email})`);
+    return res.status(403).json({ 
+      message: 'Unauthorized: only administrators can delete users' 
+    });
+  }
+  
+  console.log(`Delete User Controller - Admin authorization confirmed: ${req.user.uid}`);
+  console.log(`Delete User Controller - Attempting to delete user: ${uid}`);
+
+  // Get Firebase Admin SDK reference
+  const adminAuth = admin.auth();
+  
+  // Use the exact method from Firebase documentation with Promise chaining
+  adminAuth.deleteUser(uid)
+    .then(() => {
+      console.log(`Delete User Controller - Successfully deleted user: ${uid}`);
+      res.status(200).json({ 
+        message: 'User successfully deleted from authentication system', 
+        uid 
+      });
+    })
+    .catch((error) => {
+      console.error(`Delete User Controller - Error deleting user: ${uid}`, error);
+      
+      // Special handling for user-not-found
+      if (error.code === 'auth/user-not-found') {
+        return res.status(404).json({
+          message: 'User not found in authentication system',
+          uid
+        });
+      }
+      
+      // Return detailed error response
+      res.status(500).json({
+        message: 'Error deleting user from authentication system',
+        error: error.message,
+        code: error.code
+      });
+    });
+};
+
 module.exports = { 
   createUser, 
   updateUserProfile, 
   updateStudentMedia, 
-  getUserInfo 
+  getUserInfo,
+  deleteUser
 };

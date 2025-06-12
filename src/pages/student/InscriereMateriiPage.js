@@ -144,6 +144,8 @@ const ToastNotification = ({ message, type, onClose }) => {
         return 'bg-red-500 text-white border-red-600';
       case 'warning':
         return 'bg-yellow-500 text-white border-yellow-600';
+      case 'info':
+        return 'bg-blue-500 text-white border-blue-600';
       default:
         return 'bg-blue-500 text-white border-blue-600';
     }
@@ -167,6 +169,12 @@ const ToastNotification = ({ message, type, onClose }) => {
         return (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        );
+      case 'info':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         );
       default:
@@ -229,21 +237,6 @@ const InscriereMateriiPage = () => {
 
   const closeToast = () => {
     setToastMessage(null);
-  };
-
-  // Adaugă toate materiile la lista de preferințe pentru un pachet dacă lista e goală
-  const adaugaToateMateriile = (pachetId) => {
-    const pachet = pachete.find(p => p.id === pachetId);
-    if (!pachet) return;
-    
-    if (!preferinte[pachetId] || preferinte[pachetId].length === 0) {
-      const toateMateriile = pachet.materii.map(m => m.id);
-      
-      setPreferinte(prevPreferinte => ({
-        ...prevPreferinte,
-        [pachetId]: toateMateriile
-      }));
-    }
   };
 
   // Funcții pentru drag-and-drop
@@ -362,6 +355,10 @@ const InscriereMateriiPage = () => {
 
   // Registration for next year is now handled by admins in AlocareAutomataPage
 
+  /**
+   * Încarcă pachetele de materii disponibile pentru student
+   * și setează preferințe implicite în baza de date dacă studentul nu are preferințe pentru un pachet
+   */
   const fetchPachete = async (forceRefresh = false) => {
     try {
       setLoading(true);
@@ -491,6 +488,41 @@ const InscriereMateriiPage = () => {
       // Actualizează state-ul
       setPachete(pacheteData);
       setStatusInscrieri(statusUpdates);
+      
+      // Verifică dacă utilizatorul are preferințe salvate în baza de date
+      // Dacă nu, setează valori implicite pentru toate pachetele
+      const preferinteMateriiOptionale = userData.preferinteMateriiOptionale || {};
+      let shouldUpdatePreferinte = false;
+      const preferinteImplicite = { ...preferinteMateriiOptionale };
+      
+      // Pentru fiecare pachet, verifică dacă există preferințe
+      for (const pachet of pacheteData) {
+        // Dacă nu există preferințe pentru acest pachet, adaugă toate materiile ca preferințe implicite
+        if (!preferinteMateriiOptionale[pachet.id] || preferinteMateriiOptionale[pachet.id].length === 0) {
+          const toateMateriile = pachet.materii.map(m => m.id);
+          preferinteImplicite[pachet.id] = toateMateriile;
+          shouldUpdatePreferinte = true;
+        }
+      }
+      
+      // Actualizează preferințele în baza de date dacă s-au adăugat preferințe implicite
+      if (shouldUpdatePreferinte) {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, {
+            preferinteMateriiOptionale: preferinteImplicite
+          });
+          
+          // Actualizează starea locală cu preferințele implicite
+          setPreferinte(preferinteImplicite);
+        } catch (error) {
+          console.error('Eroare la salvarea preferințelor implicite:', error);
+        }
+      } else {
+        // Actualizează starea locală cu preferințele existente
+        setPreferinte(preferinteMateriiOptionale);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Eroare la încărcarea pachetelor:', error);
@@ -503,16 +535,7 @@ const InscriereMateriiPage = () => {
     fetchPachete();
   }, [user, navigate]);
 
-  // Verifică dacă avem pachete și adaugă materiile la preferințe dacă e nevoie
-  useEffect(() => {
-    if (pachete.length > 0) {
-      pachete.forEach(pachet => {
-        if (!preferinte[pachet.id] || preferinte[pachet.id].length === 0) {
-          adaugaToateMateriile(pachet.id);
-        }
-      });
-    }
-  }, [pachete, preferinte]);
+  // Această verificare a fost mutată în fetchPachete pentru a seta valorile implicite direct în baza de date
 
   // Obține numele materiei după ID
   const getNumeMaterie = (pachetId, materieId) => {
@@ -546,20 +569,32 @@ const InscriereMateriiPage = () => {
       // Obține preferințele actuale din Firestore
       const userDoc = await getDoc(userRef);
       const preferinteExistente = userDoc.data().preferinteMateriiOptionale || {};
+      const preferintePachetExistente = preferinteExistente[pachetId] || [];
+      const preferintePachetNoi = preferinte[pachetId] || [];
       
-      // Actualizează doar preferințele pentru pachetul specific
-      const preferinteActualizate = {
-        ...preferinteExistente,
-        [pachetId]: preferinte[pachetId] || []
-      };
+      // Verifică dacă preferințele s-au schimbat
+      const preferinteSchimbate = 
+        preferintePachetExistente.length !== preferintePachetNoi.length ||
+        !preferintePachetExistente.every((id, index) => id === preferintePachetNoi[index]);
       
-      // Salvează preferințele actualizate
-      await updateDoc(userRef, {
-        preferinteMateriiOptionale: preferinteActualizate
-      });
-      
-      // Show success toast instead of banner message
-      showToast('Preferințele pentru pachet au fost salvate cu succes!', 'success');
+      if (preferinteSchimbate) {
+        // Actualizează doar preferințele pentru pachetul specific
+        const preferinteActualizate = {
+          ...preferinteExistente,
+          [pachetId]: preferintePachetNoi
+        };
+        
+        // Salvează preferințele actualizate
+        await updateDoc(userRef, {
+          preferinteMateriiOptionale: preferinteActualizate
+        });
+        
+        // Show success toast
+        showToast('Preferințele pentru pachet au fost salvate cu succes!', 'success');
+      } else {
+        // Show info toast when preferences haven't changed
+        showToast('Preferințele pentru pachet sunt deja salvate.', 'info');
+      }
     } catch (error) {
       console.error('Eroare la salvarea preferințelor:', error);
       showToast('A apărut o eroare la salvarea preferințelor', 'error');

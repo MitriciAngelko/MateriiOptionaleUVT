@@ -20,16 +20,18 @@ import StudentNextYearRegistrationPage from './pages/admin/StudentNextYearRegist
 import { MateriiProvider } from './contexts/MateriiContext';
 
 function App() {
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login';
+
+  // Conditional Navbar component
   const ConditionalNavbar = () => {
-    const location = useLocation();
-    const hideNavbar = location.pathname === '/login';
-    return !hideNavbar ? <Navbar /> : null;
+    return !isLoginPage ? <Navbar /> : null;
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <ConditionalNavbar />
-      <main className="pt-16">
+      <main className={!isLoginPage ? "pt-16" : ""}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />

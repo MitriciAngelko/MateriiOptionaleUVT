@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, browserLocalPersistence } from 'firebase/auth';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -16,6 +17,11 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
+      // Set persistence based on "Remember Me" checkbox
+      const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceType);
+      
+      // Sign in with email and password
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/home');
     } catch (error) {
@@ -103,17 +109,13 @@ const LoginPage = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-[#e3ab23] border-[#034a76]/30 rounded focus:ring-[#e3ab23]"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-[#034a76]">
                   Ține-mă minte
                 </label>
-              </div>
-
-              <div className="text-sm">
-                <a href="#" className="font-medium text-[#034a76] hover:text-[#e3ab23] transition-colors">
-                  Ai uitat parola?
-                </a>
               </div>
             </div>
 

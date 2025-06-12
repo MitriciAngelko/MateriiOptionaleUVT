@@ -8,6 +8,7 @@ import AdminUserForm from '../../components/admin/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import { isAdmin } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
+import axios from 'axios';
 
 const AdminPage = () => {
   const { loading } = useAuth();
@@ -94,10 +95,71 @@ const AdminPage = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Ești sigur că vrei să ștergi acest utilizator?')) {
       try {
+        // 1. Delete user from Firestore users collection
         await deleteDoc(doc(db, 'users', userId));
-        fetchUsers(); // Actualizează lista după ștergere
+        
+        // 2. Delete user from istoricAcademic collection if exists
+        try {
+          await deleteDoc(doc(db, 'istoricAcademic', userId));
+          console.log('Istoric academic șters cu succes');
+        } catch (istoricError) {
+          console.log('Nu s-a găsit istoric academic pentru acest utilizator sau a apărut o eroare:', istoricError);
+        }
+
+        // 3. Delete user from Firebase Authentication
+        // This requires server-side admin SDK, so we'll make an API call to our server
+        try {
+          // Get the current user and token from localStorage
+          const currentUser = JSON.parse(localStorage.getItem('user'));
+          if (!currentUser || !currentUser.token) {
+            throw new Error('User not authenticated');
+          }
+
+          // Note: Server is running on port 5001 according to server.js
+          const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api';
+          console.log(`Attempting to delete user ${userId} from Firebase Auth via API: ${apiBaseUrl}/users/${userId}`);
+          
+          // Add a loading message
+          console.log('Waiting for API response...');
+          
+          const response = await axios.delete(`${apiBaseUrl}/users/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${currentUser.token}`
+            },
+            // Increase timeout to 10 seconds
+            timeout: 10000
+          });
+          
+          console.log('API Response:', response.data);
+          console.log('Utilizator șters din Firebase Authentication');
+          
+          // Show confirmation to the user
+          alert('Utilizator șters cu succes din sistem!');
+        } catch (authError) {
+          console.error('Eroare la ștergerea utilizatorului din Firebase Authentication:', authError);
+          
+          if (authError.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.error('Response data:', authError.response.data);
+            console.error('Response status:', authError.response.status);
+            console.error('Response headers:', authError.response.headers);
+          } else if (authError.request) {
+            // The request was made but no response was received
+            console.error('No response received from server:', authError.request);
+            alert('Eroare de comunicare cu serverul. Verificați conexiunea la internet și rularea serverului.');
+          } else {
+            // Something happened in setting up the request that triggered an Error
+            console.error('Error setting up request:', authError.message);
+            alert(`Eroare la ștergerea utilizatorului: ${authError.message}`);
+          }
+        }
+
+        // Reload users list
+        fetchUsers();
       } catch (error) {
         console.error('Eroare la ștergerea utilizatorului:', error);
+        alert(`Eroare la ștergerea utilizatorului: ${error.message}`);
       }
     }
   };

@@ -4,7 +4,8 @@ const {
   createUser, 
   updateUserProfile, 
   updateStudentMedia, 
-  getUserInfo 
+  getUserInfo,
+  deleteUser
 } = require('../controllers/userController');
 const { isAdmin, isAdminOrProfessor } = require('../middleware/roleMiddleware');
 
@@ -21,5 +22,9 @@ router.put('/:uid/media', verifyToken, isAdminOrProfessor, updateStudentMedia);
 
 // Rută pentru obținerea informațiilor despre un utilizator
 router.get('/:uid', verifyToken, getUserInfo);
+
+// Rută pentru ștergerea unui utilizator (doar admin)
+// Use the plain verifyToken middleware first, then in the controller we check for admin rights
+router.delete('/:uid', verifyToken, deleteUser);
 
 module.exports = router;

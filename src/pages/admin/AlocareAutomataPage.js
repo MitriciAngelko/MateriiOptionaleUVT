@@ -19,17 +19,11 @@ const AlocareAutomataPage = () => {
   const [perioadaStartTime, setPerioadaStartTime] = useState('');
   const [perioadaEndDate, setPerioadaEndDate] = useState('');
   const [perioadaEndTime, setPerioadaEndTime] = useState('');
-  const [activeTab, setActiveTab] = useState('info'); // 'info', 'perioadaInscriere', or 'inscriereaAnulUrmator'
+  const [activeTab, setActiveTab] = useState('info'); // 'info' or 'perioadaInscriere'
   const [pachetPerioadaId, setPachetPerioadaId] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // States for next year registration
-  const [eligibleStudents, setEligibleStudents] = useState([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
-  const [selectedStudents, setSelectedStudents] = useState([]);
-  const [registrationProgress, setRegistrationProgress] = useState(null);
-  const [registrationResults, setRegistrationResults] = useState(null);
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
 
@@ -117,236 +111,26 @@ const AlocareAutomataPage = () => {
     return result;
   };
 
-  // Calculate academic stats for a student
-  const calculateStudentAcademicStats = async (studentId) => {
-    try {
-      const istoricRef = doc(db, 'istoricAcademic', studentId);
-      const istoricDoc = await getDoc(istoricRef);
-      
-      if (!istoricDoc.exists()) {
-        return {
-          avgGrade: 0,
-          accumulatedECTS: 0,
-          currentAcademicYear: ''
-        };
-      }
-      
-      const istoricData = istoricDoc.data();
-      
-      // Determine current academic year
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-11
-      const currentAcademicYear = month < 9 ? 
-        `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
-        `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
-      
-      // Filter entries for current academic year
-      const currentYearEntries = istoricData.istoricAnual?.filter(entry => 
-        entry.anUniversitar === currentAcademicYear
-      ) || [];
-      
-      // Get all courses with valid grades
-      const allCourses = [];
-      let totalECTS = 0;
-      
-      currentYearEntries.forEach(entry => {
-        entry.cursuri.forEach(curs => {
-          if (curs.nota > 0 && curs.status === 'promovat') {
-            allCourses.push(curs);
-            totalECTS += parseInt(curs.credite || 0, 10);
-          }
-        });
-      });
-      
-      // Calculate average grade
-      let avgGrade = 0;
-      if (allCourses.length > 0) {
-        const sum = allCourses.reduce((acc, course) => acc + course.nota, 0);
-        avgGrade = parseFloat((sum / allCourses.length).toFixed(2));
-      }
-      
-      return {
-        avgGrade,
-        accumulatedECTS: totalECTS,
-        currentAcademicYear
-      };
-    } catch (error) {
-      console.error('Error calculating academic stats for student:', studentId, error);
-      return {
-        avgGrade: 0,
-        accumulatedECTS: 0,
-        currentAcademicYear: ''
-      };
-    }
-  };
-
-  // Fetch students eligible for next year registration
-  const fetchEligibleStudents = async () => {
-    try {
-      setLoadingStudents(true);
-      setError(null);
-      
-      console.log('Fetching students eligible for next year registration...');
-      
-      // Get all students
-      const studentsQuery = query(
-        collection(db, 'users'),
-        where('role', '==', 'student')
-      );
-      
-      const studentsSnapshot = await getDocs(studentsQuery);
-      const eligibleList = [];
-      
-      for (const studentDoc of studentsSnapshot.docs) {
-        const studentData = studentDoc.data();
-        const studentId = studentDoc.id;
-        
-        // Skip students who are already in year III (final year)
-        if (studentData.an === 'III') {
-          continue;
-        }
-        
-        // Calculate academic stats for this student
-        const academicStats = await calculateStudentAcademicStats(studentId);
-        
-        // Check if student has accumulated >= 40 ECTS
-        if (academicStats.accumulatedECTS >= 40) {
-          const nextYear = studentData.an === 'I' ? 'II' : 'III';
-          
-          eligibleList.push({
-            id: studentId,
-            nume: studentData.nume || '',
-            prenume: studentData.prenume || '',
-            email: studentData.email || '',
-            numarMatricol: studentData.numarMatricol || '',
-            facultate: studentData.facultate || '',
-            specializare: studentData.specializare || '',
-            anCurent: studentData.an || 'I',
-            anUrmator: nextYear,
-            accumulatedECTS: academicStats.accumulatedECTS,
-            avgGrade: academicStats.avgGrade,
-            currentAcademicYear: academicStats.currentAcademicYear
-          });
-        }
-      }
-      
-      // Sort by accumulated ECTS (descending) and then by average grade (descending)
-      eligibleList.sort((a, b) => {
-        if (a.accumulatedECTS !== b.accumulatedECTS) {
-          return b.accumulatedECTS - a.accumulatedECTS;
-        }
-        return b.avgGrade - a.avgGrade;
-      });
-      
-      console.log(`Found ${eligibleList.length} students eligible for next year registration`);
-      setEligibleStudents(eligibleList);
-      
-    } catch (error) {
-      console.error('Error fetching eligible students:', error);
-      setError('A apărut o eroare la încărcarea studenților eligibili');
-    } finally {
-      setLoadingStudents(false);
-    }
-  };
-
-  // Register selected students for next year
-  const registerStudentsForNextYear = async () => {
-    if (selectedStudents.length === 0) {
-      setError('Nu ați selectat niciun student pentru înscrierea în anul următor');
-      return;
-    }
+  // Utility functions
+  const formatDateForDateInput = (date) => {
+    if (!date) return '';
     
-    try {
-      setRegistrationProgress({
-        current: 0,
-        total: selectedStudents.length,
-        processing: true
-      });
-      
-      const results = {
-        successful: [],
-        failed: []
-      };
-      
-      // Get current academic year for tracking
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-11
-      const currentAcademicYear = month < 9 ? 
-        `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
-        `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
-      
-      for (let i = 0; i < selectedStudents.length; i++) {
-        const studentId = selectedStudents[i];
-        const student = eligibleStudents.find(s => s.id === studentId);
-        
-        try {
-          // Update student's academic year in Firestore
-          const userRef = doc(db, 'users', studentId);
-          await updateDoc(userRef, { 
-            an: student.anUrmator,
-            lastRegistrationYear: currentAcademicYear,
-            lastRegistrationDate: new Date().toISOString()
-          });
-          
-          results.successful.push({
-            id: studentId,
-            nume: student.nume,
-            prenume: student.prenume,
-            anCurent: student.anCurent,
-            anUrmator: student.anUrmator,
-            accumulatedECTS: student.accumulatedECTS
-          });
-          
-          console.log(`✅ Student ${student.nume} ${student.prenume} înregistrat cu succes în anul ${student.anUrmator}`);
-          
-        } catch (error) {
-          console.error(`❌ Eroare la înregistrarea studentului ${student.nume} ${student.prenume}:`, error);
-          results.failed.push({
-            id: studentId,
-            nume: student.nume,
-            prenume: student.prenume,
-            error: error.message
-          });
-        }
-        
-        // Update progress
-        setRegistrationProgress({
-          current: i + 1,
-          total: selectedStudents.length,
-          processing: true
-        });
-        
-        // Small delay to prevent overwhelming the database
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      
-      setRegistrationProgress({
-        current: selectedStudents.length,
-        total: selectedStudents.length,
-        processing: false
-      });
-      
-      setRegistrationResults(results);
-      
-      // Clear selected students
-      setSelectedStudents([]);
-      
-      // Refresh the eligible students list
-      await fetchEligibleStudents();
-      
-      // Show success message
-      if (results.successful.length > 0) {
-        setSuccessMessage(`${results.successful.length} studenți au fost înregistrați cu succes în anul următor!`);
-        setTimeout(() => setSuccessMessage(null), 5000);
-      }
-      
-    } catch (error) {
-      console.error('Error during bulk registration:', error);
-      setError('A apărut o eroare la înregistrarea studenților în anul următor');
-      setRegistrationProgress(null);
-    }
+    const pad = (num) => String(num).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    
+    return `${year}-${month}-${day}`;
+  };
+  
+  const formatTimeForTimeInput = (date) => {
+    if (!date) return '';
+    
+    const pad = (num) => String(num).padStart(2, '0');
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    
+    return `${hours}:${minutes}`;
   };
 
   const fetchPachete = async () => {
@@ -1283,24 +1067,6 @@ const AlocareAutomataPage = () => {
     }
   };
 
-  // Funcție pentru formatarea datei pentru input de tip date
-  const formatDateForDateInput = (dateObj) => {
-    if (!dateObj || isNaN(dateObj.getTime())) return '';
-    
-    const pad = (num) => num.toString().padStart(2, '0');
-    
-    return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
-  };
-  
-  // Funcție pentru formatarea orei pentru input de tip time
-  const formatTimeForTimeInput = (dateObj) => {
-    if (!dateObj || isNaN(dateObj.getTime())) return '';
-    
-    const pad = (num) => num.toString().padStart(2, '0');
-    
-    return `${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}`;
-  };
-
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     
@@ -1527,19 +1293,6 @@ const AlocareAutomataPage = () => {
                     }}
                   >
                     Setare Perioadă Înscriere
-                  </button>
-                  <button
-                    className={`py-3 px-4 text-sm font-medium ${
-                      activeTab === 'inscriereaAnulUrmator'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                    onClick={() => {
-                      setActiveTab('inscriereaAnulUrmator');
-                      fetchEligibleStudents();
-                    }}
-                  >
-                    Înscrierea în anul următor
                   </button>
                 </nav>
               </div>
@@ -1861,215 +1614,6 @@ const AlocareAutomataPage = () => {
                         Salvează perioada
                       </button>
                     </div>
-                  </div>
-                )}
-                
-                {activeTab === 'inscriereaAnulUrmator' && (
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-lg font-medium text-[#034a76]">Înscrierea studenților în anul următor</h3>
-                        <p className="text-gray-600 mt-1">
-                          Selectați studenții care au acumulat minim 40 ECTS și înregistrați-i în anul următor de studiu.
-                        </p>
-                      </div>
-                      <button
-                        onClick={fetchEligibleStudents}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                        disabled={loadingStudents}
-                      >
-                        {loadingStudents ? 'Se încarcă...' : 'Actualizează lista'}
-                      </button>
-                    </div>
-                    
-                    {/* Progress indicator */}
-                    {registrationProgress && (
-                      <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-blue-800">
-                            {registrationProgress.processing ? 'Se procesează înregistrările...' : 'Înregistrări finalizate'}
-                          </span>
-                          <span className="text-sm text-blue-600">
-                            {registrationProgress.current} / {registrationProgress.total}
-                          </span>
-                        </div>
-                        <div className="w-full bg-blue-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(registrationProgress.current / registrationProgress.total) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Results display */}
-                    {registrationResults && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="bg-green-50 p-4 rounded-md border border-green-200">
-                          <h4 className="font-medium text-green-800 mb-2">
-                            Înregistrări reușite ({registrationResults.successful.length})
-                          </h4>
-                          <div className="max-h-40 overflow-y-auto">
-                            {registrationResults.successful.map(student => (
-                              <div key={student.id} className="text-sm text-green-700 py-1">
-                                {student.nume} {student.prenume} - {student.anCurent} → {student.anUrmator} 
-                                <span className="text-green-600 ml-2">({student.accumulatedECTS} ECTS)</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {registrationResults.failed.length > 0 && (
-                          <div className="bg-red-50 p-4 rounded-md border border-red-200">
-                            <h4 className="font-medium text-red-800 mb-2">
-                              Înregistrări eșuate ({registrationResults.failed.length})
-                            </h4>
-                            <div className="max-h-40 overflow-y-auto">
-                              {registrationResults.failed.map(student => (
-                                <div key={student.id} className="text-sm text-red-700 py-1">
-                                  {student.nume} {student.prenume}
-                                  <div className="text-xs text-red-600">{student.error}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {loadingStudents ? (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                        <p className="mt-2 text-gray-600">Se încarcă studenții eligibili...</p>
-                      </div>
-                    ) : (
-                      <div>
-                        {eligibleStudents.length === 0 ? (
-                          <div className="text-center py-8 text-gray-500">
-                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                            </svg>
-                            <p className="mt-2">Nu există studenți eligibili pentru înscrierea în anul următor</p>
-                            <p className="text-sm text-gray-400">Studenții trebuie să aibă minim 40 ECTS acumulate</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="flex justify-between items-center mb-4">
-                              <p className="text-sm text-gray-600">
-                                {eligibleStudents.length} studenți eligibili găsiți
-                              </p>
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => {
-                                    if (selectedStudents.length === eligibleStudents.length) {
-                                      setSelectedStudents([]);
-                                    } else {
-                                      setSelectedStudents(eligibleStudents.map(s => s.id));
-                                    }
-                                  }}
-                                  className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600"
-                                >
-                                  {selectedStudents.length === eligibleStudents.length ? 'Deselectează tot' : 'Selectează tot'}
-                                </button>
-                                <button
-                                  onClick={registerStudentsForNextYear}
-                                  disabled={selectedStudents.length === 0 || registrationProgress?.processing}
-                                  className={`px-4 py-2 rounded text-white ${
-                                    selectedStudents.length === 0 || registrationProgress?.processing ? 
-                                    'bg-gray-400 cursor-not-allowed' : 
-                                    'bg-green-500 hover:bg-green-600'
-                                  }`}
-                                >
-                                  {registrationProgress?.processing ? 
-                                    'Se procesează...' : 
-                                    `Înregistrează ${selectedStudents.length} studenți`
-                                  }
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <div className="border border-gray-200 rounded-md overflow-hidden">
-                              <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                  <tr>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedStudents.length === eligibleStudents.length && eligibleStudents.length > 0}
-                                        onChange={() => {
-                                          if (selectedStudents.length === eligibleStudents.length) {
-                                            setSelectedStudents([]);
-                                          } else {
-                                            setSelectedStudents(eligibleStudents.map(s => s.id));
-                                          }
-                                        }}
-                                        className="rounded border-gray-300"
-                                      />
-                                    </th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nr. Matricol</th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Facultate/Specializare</th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">An curent</th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">An următor</th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ECTS</th>
-                                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Media</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                  {eligibleStudents.map((student) => (
-                                    <tr key={student.id} className="hover:bg-gray-50">
-                                      <td className="px-3 py-3 whitespace-nowrap">
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedStudents.includes(student.id)}
-                                          onChange={() => {
-                                            if (selectedStudents.includes(student.id)) {
-                                              setSelectedStudents(selectedStudents.filter(id => id !== student.id));
-                                            } else {
-                                              setSelectedStudents([...selectedStudents, student.id]);
-                                            }
-                                          }}
-                                          className="rounded border-gray-300"
-                                        />
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap">
-                                        <div className="text-sm font-medium text-gray-900">
-                                          {student.nume} {student.prenume}
-                                        </div>
-                                        <div className="text-sm text-gray-500">{student.email}</div>
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
-                                        {student.numarMatricol}
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
-                                        <div>{student.facultate}</div>
-                                        <div className="text-xs text-gray-500">{student.specializare}</div>
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap">
-                                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                          Anul {student.anCurent}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap">
-                                        <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
-                                          Anul {student.anUrmator}
-                                        </span>
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {student.accumulatedECTS}
-                                      </td>
-                                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
-                                        {student.avgGrade.toFixed(2)}
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

@@ -74,8 +74,7 @@ const Navbar = () => {
   const getNavItems = () => {
     const items = [];
     
-    // Elemente comune
-    items.push({ path: '/home', label: 'Home' });
+    // Removed Home link as logo will now serve this purpose
     
     // Elemente specifice rolurilor
     if (roles.isProfesor) {
@@ -112,11 +111,17 @@ const Navbar = () => {
     <div className="h-16 bg-[#034a76] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50">
       <div className="flex items-center">
         <div className="mr-8 pt-1">
-          <img 
-            src="/logo.png" 
-            alt="Logo" 
-            className="h-12 w-auto"
-          />
+          <button
+            onClick={() => navigate('/home')}
+            className="cursor-pointer hover:opacity-90 transition-opacity"
+            aria-label="Home"
+          >
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="h-12 w-auto"
+            />
+          </button>
         </div>
         
         {/* Buton hamburger pentru mobile */}
