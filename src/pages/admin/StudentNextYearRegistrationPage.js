@@ -15,6 +15,11 @@ const StudentNextYearRegistrationPage = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
+  const [filters, setFilters] = useState({
+    facultate: '',
+    specializare: '',
+    an: ''
+  });
 
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
@@ -170,14 +175,50 @@ const StudentNextYearRegistrationPage = () => {
     });
   };
 
-  // Select all eligible students
+  // Select all filtered students
   const selectAllStudents = () => {
-    setSelectedStudents(eligibleStudents.map(student => student.id));
+    setSelectedStudents(filteredStudents.map(student => student.id));
   };
 
   // Deselect all students
   const deselectAllStudents = () => {
     setSelectedStudents([]);
+  };
+
+  // Get unique values for filters
+  const getUniqueValues = (key) => {
+    const values = eligibleStudents.map(student => student[key]).filter(Boolean);
+    return [...new Set(values)].sort();
+  };
+
+  // Filter students based on selected filters
+  const getFilteredStudents = () => {
+    return eligibleStudents.filter(student => {
+      return (
+        (!filters.facultate || student.facultate === filters.facultate) &&
+        (!filters.specializare || student.specializare === filters.specializare) &&
+        (!filters.an || student.an === filters.an)
+      );
+    });
+  };
+
+  const filteredStudents = getFilteredStudents();
+
+  // Reset filters
+  const resetFilters = () => {
+    setFilters({
+      facultate: '',
+      specializare: '',
+      an: ''
+    });
+  };
+
+  // Update filter values
+  const updateFilter = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   // Remove student from passed courses (grade 5 or higher)
@@ -484,7 +525,7 @@ const StudentNextYearRegistrationPage = () => {
         <button
           onClick={fetchEligibleStudents}
           disabled={studentsLoading}
-          className="px-4 py-2 bg-[#034a76] text-white rounded hover:bg-[#023557] disabled:bg-gray-400 flex items-center gap-2"
+          className="px-4 py-2 bg-[#024A76] text-white rounded-lg hover:bg-gradient-to-r hover:from-[#024A76] hover:to-[#3471B8] disabled:bg-gray-400 flex items-center gap-2 transition-all duration-200 shadow-md"
         >
           {studentsLoading ? (
             <>
@@ -512,126 +553,181 @@ const StudentNextYearRegistrationPage = () => {
         </div>
       )}
 
-      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h2 className="text-lg font-medium text-blue-800 mb-2">Informații despre procesul de înregistrare</h2>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Studenții eligibili sunt cei care au acumulat cel puțin 40 ECTS în anul academic curent</li>
-          <li>• Studenții din anul III (final) nu pot fi înregistrați în anul următor</li>
-          <li>• Studenții care s-au înregistrat deja în anul academic curent nu vor fi afișați</li>
-          <li>• Lista este sortată după media notelor (descrescător)</li>
-        </ul>
-      </div>
-
-      {eligibleStudents.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-gray-600">Acțiuni rapide:</span>
+      {/* Filters Section */}
+      <div className="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[#024A76]">Filtrare Studenți</h3>
           <button
-            onClick={selectAllStudents}
-            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+            onClick={resetFilters}
+            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium transition-all duration-200"
           >
-            Selectează Toți ({eligibleStudents.length})
+            Resetează Filtrele
           </button>
-          <button
-            onClick={deselectAllStudents}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-          >
-            Deselectează Toți
-          </button>
-          {selectedStudents.length > 0 && (
-            <button
-              onClick={bulkRegisterStudents}
-              disabled={registrationInProgress}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 flex items-center gap-2"
-            >
-              {registrationInProgress ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Se procesează...
-                </>
-              ) : (
-                `Înregistrează Selectați (${selectedStudents.length})`
-              )}
-            </button>
-          )}
         </div>
-      )}
-
-      {eligibleStudents.length === 0 && !studentsLoading ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <div className="text-gray-500 mb-4">
-            <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-2.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 009.586 13H7" />
-            </svg>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Facultate Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] mb-2">
+              Facultate
+            </label>
+            <select
+              value={filters.facultate}
+              onChange={(e) => updateFilter('facultate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+            >
+              <option value="">Toate facultățile</option>
+              {getUniqueValues('facultate').map(facultate => (
+                <option key={facultate} value={facultate}>
+                  {facultate}
+                </option>
+              ))}
+            </select>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Niciun student eligibil</h3>
-          <p className="text-gray-600">
-            Apăsați "Actualizează Lista" pentru a căuta studenți eligibili pentru înregistrarea în anul următor.
+
+          {/* Specializare Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] mb-2">
+              Specializare
+            </label>
+            <select
+              value={filters.specializare}
+              onChange={(e) => updateFilter('specializare', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+            >
+              <option value="">Toate specializările</option>
+              {getUniqueValues('specializare').map(specializare => (
+                <option key={specializare} value={specializare}>
+                  {specializare}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* An Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] mb-2">
+              An de studiu
+            </label>
+            <select
+              value={filters.an}
+              onChange={(e) => updateFilter('an', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+            >
+              <option value="">Toți anii</option>
+              {getUniqueValues('an').map(an => (
+                <option key={an} value={an}>
+                  Anul {an}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
+        {/* Filter Results Info */}
+        <div className="mt-4 p-3 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 rounded-md">
+          <p className="text-sm text-[#024A76]/80">
+            <strong>Rezultate filtrare:</strong> {filteredStudents.length} din {eligibleStudents.length} studenți
+            {filteredStudents.length !== eligibleStudents.length && (
+              <span className="text-[#E3AB23] font-medium"> (filtrați)</span>
+            )}
           </p>
         </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 bg-[#034a76] text-white">
-            <h2 className="text-lg font-medium">
-              Studenți Eligibili pentru Anul Următor ({eligibleStudents.length})
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2 items-center justify-between">
+        <button
+          onClick={bulkRegisterStudents}
+          disabled={registrationInProgress || selectedStudents.length === 0}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-all duration-200 shadow-md ${
+            selectedStudents.length === 0 
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70'
+          } ${registrationInProgress ? 'disabled:bg-gray-400' : ''}`}
+        >
+          {registrationInProgress ? (
+            <>
+              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Se procesează...
+            </>
+          ) : (
+            `Înregistrează Selectați`
+          )}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+          <div className="px-6 py-4 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
+            <h2 className="text-lg font-semibold">
+              Studenți Eligibili pentru Anul Următor
             </h2>
           </div>
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     <input
                       type="checkbox"
-                      checked={selectedStudents.length === eligibleStudents.length && eligibleStudents.length > 0}
+                      checked={filteredStudents.length > 0 && filteredStudents.every(student => selectedStudents.includes(student.id))}
                       onChange={() => {
-                        if (selectedStudents.length === eligibleStudents.length) {
-                          deselectAllStudents();
+                        if (filteredStudents.every(student => selectedStudents.includes(student.id))) {
+                          // Deselect all filtered students
+                          setSelectedStudents(prev => prev.filter(id => !filteredStudents.some(student => student.id === id)));
                         } else {
-                          selectAllStudents();
+                          // Select all filtered students
+                          const newSelected = [...selectedStudents];
+                          filteredStudents.forEach(student => {
+                            if (!newSelected.includes(student.id)) {
+                              newSelected.push(student.id);
+                            }
+                          });
+                          setSelectedStudents(newSelected);
                         }
                       }}
-                      className="w-4 h-4 text-[#034a76] border-gray-300 rounded focus:ring-[#034a76]"
+                      className="w-4 h-4 text-[#024A76] border-gray-300 rounded focus:ring-[#024A76]"
                     />
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     Student
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     An Curent
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    An Următor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     ECTS Acumulate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     Media
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     Facultate
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     Specializare
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {eligibleStudents.map((student) => (
+                {filteredStudents.map((student) => (
                   <tr 
                     key={student.id}
-                    className={`hover:bg-gray-50 ${selectedStudents.includes(student.id) ? 'bg-blue-50' : ''}`}
+                    className={`hover:bg-gray-50 transition-all duration-200 ${
+                      selectedStudents.includes(student.id) 
+                        ? 'border-l-4 border-[#E3AB23] bg-gradient-to-r from-[#E3AB23]/5 to-transparent' 
+                        : 'border-l-4 border-transparent'
+                    }`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <input
                         type="checkbox"
                         checked={selectedStudents.includes(student.id)}
                         onChange={() => toggleStudentSelection(student.id)}
-                        className="w-4 h-4 text-[#034a76] border-gray-300 rounded focus:ring-[#034a76]"
+                        className="w-4 h-4 text-[#024A76] border-gray-300 rounded focus:ring-[#024A76]"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -642,26 +738,25 @@ const StudentNextYearRegistrationPage = () => {
                         {student.email}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.an}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {student.nextYear}
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
+                        Anul {student.an}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#3471B8] to-[#3471B8]/70 text-white">
                         {student.currentECTS} ECTS
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {student.currentAverageGrade}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 text-[#024A76]">
+                        {student.currentAverageGrade}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {student.facultate}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                       {student.specializare}
                     </td>
                   </tr>
@@ -670,7 +765,6 @@ const StudentNextYearRegistrationPage = () => {
             </table>
           </div>
         </div>
-      )}
     </div>
   );
 };

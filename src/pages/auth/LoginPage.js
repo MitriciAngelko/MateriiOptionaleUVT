@@ -42,7 +42,7 @@ const LoginPage = () => {
           className="absolute inset-0 w-full h-full object-cover"
         />
         {/* Overlay pentru imagine cu un gradient de albastru spre galben */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#034a76]/80 via-[#034a76]/60 to-[#e3ab23]/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#024A76]/80 via-[#024A76]/60 to-[#E3AB23]/40" />
         {/* Gradient pentru tranziție */}
         <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#f5f5f5] to-transparent" />
       </div>
@@ -57,18 +57,18 @@ const LoginPage = () => {
                 alt="UVT Logo"
                 className="mx-auto h-20 w-auto"
               />
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[#e3ab23] rounded-full"></div>
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 rounded-full shadow-sm"></div>
             </div>
-            <h2 className="text-4xl font-bold text-[#034a76] mb-4">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent mb-4 drop-shadow-sm">
               Bine ați venit!
             </h2>
-            <p className="text-lg text-[#034a76]/70">
+            <p className="text-lg text-[#024A76]/70">
               Vă rugăm să vă autentificați pentru a continua
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded">
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg shadow-sm">
               <p className="font-medium">Eroare de autentificare</p>
               <p className="text-sm">{error}</p>
             </div>
@@ -76,7 +76,7 @@ const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-[#034a76] mb-2">
+              <label className="block text-sm font-medium text-[#024A76] mb-2">
                 Email
               </label>
               <input
@@ -84,13 +84,12 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full px-4 py-3 rounded-md border-[#034a76]/30 shadow-sm focus:border-[#e3ab23] focus:ring-[#e3ab23] bg-white transition-colors"
-                placeholder="nume.prenume@e-uvt.ro"
+                className="mt-1 block w-full px-4 py-3 rounded-lg border border-[#024A76]/30 shadow-sm focus:border-[#E3AB23] focus:ring-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#034a76] mb-2">
+              <label className="block text-sm font-medium text-[#024A76] mb-2">
                 Parolă
               </label>
               <input
@@ -98,7 +97,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full px-4 py-3 rounded-md border-[#034a76]/30 shadow-sm focus:border-[#e3ab23] focus:ring-[#e3ab23] bg-white transition-colors"
+                className="mt-1 block w-full px-4 py-3 rounded-lg border border-[#024A76]/30 shadow-sm focus:border-[#E3AB23] focus:ring-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
                 placeholder="••••••••"
               />
             </div>
@@ -111,20 +110,20 @@ const LoginPage = () => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-[#e3ab23] border-[#034a76]/30 rounded focus:ring-[#e3ab23]"
+                  className="h-4 w-4 text-[#E3AB23] border-[#024A76]/30 rounded focus:ring-[#E3AB23] transition-colors duration-200"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#034a76]">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#024A76]">
                   Ține-mă minte
                 </label>
               </div>
             </div>
 
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-[#034a76] to-[#e3ab23] rounded-md transform -rotate-1 opacity-70 blur-sm"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#024A76] to-[#E3AB23] rounded-lg transform -rotate-1 opacity-70 blur-sm"></div>
               <button
                 type="submit"
                 disabled={loading}
-                className={`relative w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-md text-base font-medium text-white bg-gradient-to-r from-[#034a76] to-[#034a76] hover:from-[#034a76] hover:to-[#e3ab23] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#e3ab23] transition-all duration-300
+                className={`relative w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-medium text-white bg-gradient-to-r from-[#024A76] to-[#3471B8] hover:from-[#024A76] hover:to-[#E3AB23] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E3AB23] transition-all duration-300 hover:shadow-xl hover:scale-105
                   ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? (

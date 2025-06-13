@@ -114,28 +114,28 @@ const Navbar = () => {
   };
 
   return (
-    <div className="h-16 bg-[#034a76] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50">
+    <div className="h-16 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50 shadow-lg border-b border-[#3471B8]/30">
       <div className="flex items-center h-full">
-        <div className="mr-8 pt-1">
+        <div className="mr-8 flex items-center h-full">
           <button
             onClick={() => navigate('/home')}
-            className="cursor-pointer hover:opacity-90 transition-opacity"
+            className="cursor-pointer hover:scale-105 transition-all duration-300 p-1 rounded-lg hover:bg-white/10 backdrop-blur-sm flex items-center justify-center"
             aria-label="Home"
           >
             <img 
               src="/logo.png" 
               alt="Logo" 
-              className="h-12 w-auto"
+              className="h-10 w-auto drop-shadow-md object-contain"
             />
           </button>
         </div>
         
         {/* Buton hamburger pentru mobile */}
         <button 
-          className="md:hidden"
+          className="md:hidden p-2 rounded-lg hover:bg-white/10 backdrop-blur-sm transition-all duration-300"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
           </svg>
         </button>
@@ -147,12 +147,17 @@ const Navbar = () => {
               <li key={item.path} className="h-full">
                 <button
                   onClick={() => navigate(item.path)}
-                  className={`px-4 h-full flex items-center relative group transition-colors
-                    ${location.pathname === item.path ? 'bg-[#023557]' : ''}`}
+                  className={`px-4 h-full flex items-center relative group transition-all duration-300 font-medium
+                    ${location.pathname === item.path 
+                      ? 'border-b-4 border-[#E3AB23]' 
+                      : 'hover:bg-white/10 hover:backdrop-blur-sm'
+                    }`}
                 >
-                  {item.label}
-                  {/* Hover line */}
-                  <span className="absolute bottom-0 left-0 w-0 h-1 bg-[#e3ab23] group-hover:w-full transition-all duration-300"></span>
+                  <span className="drop-shadow-sm">{item.label}</span>
+                  {/* Hover line - only show if not current page */}
+                  {location.pathname !== item.path && (
+                    <span className="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 group-hover:w-full transition-all duration-300 shadow-md"></span>
+                  )}
                 </button>
               </li>
             ))}
@@ -164,17 +169,17 @@ const Navbar = () => {
           <>
             <button
               onClick={handleProfileClick}
-              className="w-10 h-10 rounded-full bg-white text-[#034a76] flex items-center justify-center font-bold text-lg hover:bg-gray-100 transition-colors"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-100 text-[#024A76] flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 hover:text-[#024A76] transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20"
               title="Profil"
             >
               {getInitials()}
             </button>
             <button
               onClick={handleLogout}
-              className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-colors"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20"
               title="Deconectare"
             >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </button>
@@ -182,7 +187,7 @@ const Navbar = () => {
         ) : (
           <button
             onClick={() => navigate('/login')}
-            className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded transition-colors"
+            className="px-4 py-2 text-sm bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 rounded-lg transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 border border-white/20"
           >
             Autentificare
           </button>
@@ -191,7 +196,7 @@ const Navbar = () => {
       
       {/* Meniu mobile dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-[#034a76] border-t border-[#023557] z-50">
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-gradient-to-b from-[#024A76] to-[#3471B8] border-t border-[#E3AB23]/30 z-50 shadow-xl backdrop-blur-sm">
           <ul className="py-2">
             {navItems.map((item) => (
               <li key={item.path}>
@@ -200,12 +205,17 @@ const Navbar = () => {
                     navigate(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-6 py-3 relative group transition-colors
-                    ${location.pathname === item.path ? 'bg-[#023557]' : ''}`}
+                  className={`w-full text-left px-6 py-3 relative group transition-all duration-300 font-medium
+                    ${location.pathname === item.path 
+                      ? 'border-l-4 border-[#E3AB23]' 
+                      : 'hover:bg-white/10 hover:backdrop-blur-sm'
+                    }`}
                 >
-                  {item.label}
-                  {/* Hover line for mobile */}
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#e3ab23] group-hover:w-full transition-all duration-300"></span>
+                  <span className="drop-shadow-sm">{item.label}</span>
+                  {/* Hover line for mobile - only show if not current page */}
+                  {location.pathname !== item.path && (
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 group-hover:w-full transition-all duration-300 shadow-sm"></span>
+                  )}
                 </button>
               </li>
             ))}

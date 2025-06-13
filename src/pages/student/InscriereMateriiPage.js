@@ -14,17 +14,17 @@ const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDe
       onDragStart={(e) => onDragStart(e, id)}
       onDragOver={(e) => onDragOver(e)}
       onDrop={(e) => onDrop(e, id)}
-      className="flex items-center justify-between bg-[#f5f5f5] p-3 rounded-md border border-[#034a76]/20 mb-2 cursor-move hover:border-[#e3ab23] shadow-sm"
+      className="flex items-center justify-between bg-gradient-to-r from-white to-gray-50 p-3 rounded-lg border border-[#024A76]/20 mb-2 cursor-move hover:border-[#E3AB23] hover:shadow-md transition-all duration-200 shadow-sm"
     >
       <div className="flex items-center">
-        <span className="bg-[#034a76] text-[#f5f5f5] rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">
+        <span className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 shadow-sm">
           {index + 1}
         </span>
-        <span className="text-sm text-[#034a76]">{materie.nume}</span>
+        <span className="text-sm text-[#024A76] font-medium">{materie.nume}</span>
       </div>
       <button
         onClick={() => onViewDetails(materie.id)}
-        className="p-1 rounded text-[#034a76]/70 hover:text-[#034a76] hover:bg-[#e3ab23]/20"
+        className="p-1 rounded-full text-[#024A76]/70 hover:text-[#024A76] hover:bg-gradient-to-r hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 transition-all duration-200"
         title="Vezi detalii"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -959,13 +959,13 @@ const InscriereMateriiPage = () => {
   const getStatusClass = (status) => {
     switch (status) {
       case 'activ':
-        return 'bg-green-500 text-white';
+        return 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-sm';
       case 'urmează':
-        return 'bg-blue-500 text-white';
+        return 'bg-gradient-to-r from-[#3471B8] to-[#024A76] text-white shadow-sm';
       case 'încheiat':
-        return 'bg-red-500 text-white';
+        return 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm';
       default:
-        return 'bg-gray-500 text-white';
+        return 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-sm';
     }
   };
 
@@ -983,11 +983,20 @@ const InscriereMateriiPage = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-8">Se încarcă...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 flex items-center justify-center">
+        <div className="text-center py-8 text-[#024A76]">
+          <div className="text-lg font-semibold flex items-center justify-center space-x-2">
+            <div className="w-6 h-6 bg-gradient-to-r from-[#024A76] to-[#3471B8] rounded-full animate-spin"></div>
+            <span>Se încarcă...</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 pt-16 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 pt-16 pb-8">
       {/* AI Assistant */}
       <AIAssistant />
       
@@ -1002,132 +1011,16 @@ const InscriereMateriiPage = () => {
 
       <div className="container mx-auto px-4 py-8 relative">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-[#034a76]">Înscriere la Materii</h1>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">Înscriere la Materii</h1>
         </div>
         
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300 shadow-sm">
             {error}
           </div>
         )}
         
-        {/* Academic Year Progress */}
-        {userData && (
-          <AcademicYearProgress 
-            currentYear={userData.an || 'I'} 
-            accumulatedECTS={academicStats.accumulatedECTS}
-            minECTS={40}
-            isNewRegistration={userData.lastRegistrationYear === academicStats.currentAcademicYear}
-          />
-        )}
-        
-        {/* Academic Stats Summary */}
-        <div className="mb-6 p-4 bg-[#034a76]/10 rounded-lg">
-          <h2 className="text-lg font-medium text-[#034a76] mb-2">Performanța ta academică ({academicStats.currentAcademicYear})</h2>
-          
-          {userData?.lastRegistrationYear === academicStats.currentAcademicYear && (
-            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md border border-green-200">
-              <div className="flex items-start">
-                <svg className="w-5 h-5 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p className="font-medium">Înregistrare nouă în anul {userData.an}</p>
-                  <p className="text-sm mt-1">Te-ai înregistrat pentru noul an universitar la data {new Date(userData.lastRegistrationDate).toLocaleDateString('ro-RO')}. ECTS acumulate sunt numărate doar pentru cursurile noi.</p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-3 rounded-md shadow-sm border border-[#034a76]/20">
-              <div className="text-sm text-[#034a76]/70">Media notelor</div>
-              <div className="text-xl font-bold text-[#034a76]">{academicStats.avgGrade}</div>
-            </div>
-            <div className="bg-white p-3 rounded-md shadow-sm border border-[#034a76]/20">
-              <div className="text-sm text-[#034a76]/70">ECTS acumulate</div>
-              <div className="text-xl font-bold text-[#034a76]">{academicStats.accumulatedECTS}</div>
-              {userData?.lastRegistrationYear === academicStats.currentAcademicYear && (
-                <div className="text-xs text-green-600 mt-1">Doar pentru cursurile noi din anul {userData.an}</div>
-              )}
-            </div>
-          </div>
-          
-          {/* Next Year Registration Status */}
-          {userData?.an && (
-            <div className="mt-4">
-              {userData.an === 'III' ? (
-                <div className="p-3 bg-purple-50 rounded-md shadow-sm border border-purple-200">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 mr-2 mt-0.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-purple-800">Anul final de studiu</p>
-                      <p className="text-sm text-purple-700 mt-1">
-                        Te afli în anul III (anul final). Concentrează-te pe finalizarea studiilor și pregătirea pentru examenele finale.
-                        {academicStats.accumulatedECTS >= 40 ? 
-                          ` Ai acumulat ${academicStats.accumulatedECTS} ECTS în acest an academic.` :
-                          ` Ai acumulat ${academicStats.accumulatedECTS} ECTS - continuă să promovezi cursurile pentru finalizarea anului.`
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : academicStats.accumulatedECTS >= 40 ? (
-                userData?.lastRegistrationYear === academicStats.currentAcademicYear ? (
-                  <div className="p-3 bg-green-50 rounded-md shadow-sm border border-green-200">
-                    <div className="flex items-start">
-                      <svg className="w-5 h-5 mr-2 mt-0.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <p className="text-sm font-medium text-green-800">Ai fost înregistrat în anul următor</p>
-                        <p className="text-sm text-green-700 mt-1">
-                          Înregistrarea ta pentru anul {userData.an === 'I' ? 'II' : 'III'} a fost procesată cu succes de către administratori. 
-                          Cursurile pentru noul an academic vor fi disponibile la începutul semestrului.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-blue-50 rounded-md shadow-sm border border-blue-200">
-                    <div className="flex items-start">
-                      <svg className="w-5 h-5 mr-2 mt-0.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <div>
-                        <p className="text-sm font-medium text-blue-800">Îndeplinești criteriile pentru avansarea în anul următor</p>
-                        <p className="text-sm text-blue-700 mt-1">
-                          Ai acumulat {academicStats.accumulatedECTS} ECTS (minim necesar: 40 ECTS). 
-                          Înscrierea în anul următor va fi procesată de către administratori în perioada de înregistrare.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="p-3 bg-yellow-50 rounded-md shadow-sm border border-yellow-200">
-                  <div className="flex items-start">
-                    <svg className="w-5 h-5 mr-2 mt-0.5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
-                    <div>
-                      <p className="text-sm font-medium text-yellow-800">Nu îndeplinești încă criteriile pentru avansarea în anul următor</p>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Ai acumulat {academicStats.accumulatedECTS} ECTS din minimum 40 ECTS necesare. 
-                        Continuă să promovezi cursurile pentru a putea avansa în anul următor.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        <p className="text-[#034a76]/80 mb-6">
+        <p className="text-[#024A76]/80 mb-6 bg-white/70 p-4 rounded-lg border border-[#024A76]/20 shadow-sm">
           Ține apăsat pe o materie și trage-o pentru a schimba ordinea preferințelor. Prima materie din listă are cea mai mare prioritate.
           Apasă pe iconița de verificare din colțul dreapta sus al fiecărui pachet pentru a salva preferințele.
         </p>
@@ -1140,11 +1033,11 @@ const InscriereMateriiPage = () => {
             const statusData = statusInscrieri[pachet.id] || { status: 'inactiv', active: false };
             
             return (
-              <div key={pachet.id} className="border border-[#034a76]/20 rounded-lg bg-[#f5f5f5] shadow-sm overflow-hidden">
-                <div className="bg-[#034a76] p-4 border-b flex justify-between items-center">
+              <div key={pachet.id} className="border border-[#024A76]/20 rounded-lg bg-white shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] p-4 border-b flex justify-between items-center">
                   <div>
-                    <h2 className="text-lg font-semibold text-[#f5f5f5]">{pachet.nume}</h2>
-                    <div className="text-xs text-[#f5f5f5]/90 mt-1">
+                    <h2 className="text-lg font-semibold text-white drop-shadow-sm">{pachet.nume}</h2>
+                    <div className="text-xs text-white/90 mt-1">
                       {pachet.facultate && <span className="mr-2">Facultate: {pachet.facultate}</span>}
                       {pachet.specializare && <span className="mr-2">Specializare: {pachet.specializare}</span>}
                       {pachet.an && <span>An: {pachet.an}</span>}
@@ -1153,7 +1046,7 @@ const InscriereMateriiPage = () => {
                   <button
                     onClick={() => salveazaPreferintePachet(pachet.id)}
                     disabled={isLoading || !statusData.active}
-                    className={`p-2 rounded-full ${isLoading ? 'bg-gray-200' : statusData.active ? 'bg-[#e3ab23] hover:bg-[#c49520]' : 'bg-gray-400'} text-[#034a76]`}
+                    className={`p-2 rounded-full transition-all duration-300 ${isLoading ? 'bg-gray-200' : statusData.active ? 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 hover:from-[#E3AB23]/80 hover:to-[#E3AB23] shadow-lg' : 'bg-gray-400'} text-[#024A76]`}
                     title={statusData.active ? "Salvează preferințele pentru acest pachet" : "Înscrierile nu sunt active"}
                   >
                     {isLoading ? (
@@ -1182,10 +1075,10 @@ const InscriereMateriiPage = () => {
                 </div>
                 
                 <div className="p-4">
-                  <h3 className="font-medium text-sm text-[#034a76] mb-3">Materiile tale, ordonate după preferință:</h3>
+                  <h3 className="font-medium text-sm text-[#024A76] mb-3 drop-shadow-sm">Materiile tale, ordonate după preferință:</h3>
                   
                   {preferintePachet.length === 0 ? (
-                    <div className="text-sm text-[#034a76]/70 italic p-2 text-center">
+                    <div className="text-sm text-[#024A76]/70 italic p-2 text-center">
                       Se încarcă materiile...
                     </div>
                   ) : (
@@ -1213,8 +1106,8 @@ const InscriereMateriiPage = () => {
                 
                 {/* Afișează informații despre alocarea automată dacă înscrierea s-a încheiat */}
                 {statusData.status === 'încheiat' && (
-                  <div className="p-4 border-t border-[#034a76]/20 bg-gray-100">
-                    <p className="text-sm text-[#034a76]/80">
+                  <div className="p-4 border-t border-[#024A76]/20 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5">
+                    <p className="text-sm text-[#024A76]/80">
                       <strong>Notă:</strong> Perioada de înscriere pentru acest pachet s-a încheiat. 
                       Materiile vor fi alocate automat în funcție de preferințele studenților și de mediile acestora.
                     </p>
@@ -1236,15 +1129,15 @@ const InscriereMateriiPage = () => {
               }
             }}
           >
-            <div className="bg-white rounded-lg max-w-2xl w-full overflow-y-auto p-6">
+            <div className="bg-white rounded-lg max-w-2xl w-full overflow-y-auto p-6 shadow-xl border border-gray-200">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-[#034a76]">{materieDetails.nume}</h2>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">{materieDetails.nume}</h2>
                 <button 
                   onClick={() => {
                     setMaterieDetails(null);
                     setSelectedMaterie(null);
                   }}
-                  className="text-[#034a76] hover:text-[#023557]"
+                  className="text-[#024A76] hover:text-[#3471B8] transition-colors duration-200"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1253,37 +1146,37 @@ const InscriereMateriiPage = () => {
               </div>
               
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 bg-[#034a76]/10 p-3 rounded-lg">
+                <div className="grid grid-cols-2 gap-3 bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 p-3 rounded-lg border border-[#024A76]/20">
                   <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Facultate:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.facultate}</p>
+                    <h3 className="text-sm font-medium text-[#024A76]">Facultate:</h3>
+                    <p className="text-sm text-[#024A76]/80">{materieDetails.facultate}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Specializare:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.specializare}</p>
+                    <h3 className="text-sm font-medium text-[#024A76]">Specializare:</h3>
+                    <p className="text-sm text-[#024A76]/80">{materieDetails.specializare}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Profesor:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.profesorNume}</p>
+                    <h3 className="text-sm font-medium text-[#024A76]">Profesor:</h3>
+                    <p className="text-sm text-[#024A76]/80">{materieDetails.profesorNume}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#034a76]">Credite:</h3>
-                    <p className="text-sm text-[#034a76]/80">{materieDetails.credite}</p>
+                    <h3 className="text-sm font-medium text-[#024A76]">Credite:</h3>
+                    <p className="text-sm text-[#024A76]/80">{materieDetails.credite}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-[#034a76] mb-1">Descriere:</h3>
-                  <div className="max-h-32 overflow-y-auto bg-[#034a76]/10 p-3 rounded-lg">
-                    <p className="text-sm text-[#034a76]/80 whitespace-pre-wrap">
+                  <h3 className="text-sm font-medium text-[#024A76] mb-1">Descriere:</h3>
+                  <div className="max-h-32 overflow-y-auto bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 p-3 rounded-lg border border-[#024A76]/20">
+                    <p className="text-sm text-[#024A76]/80 whitespace-pre-wrap">
                       {materieDetails.descriere || 'Nicio descriere disponibilă.'}
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-[#e3ab23]/20 p-3 rounded-lg border border-[#e3ab23]/30">
-                  <h3 className="text-sm font-medium text-[#034a76] mb-1">Locuri disponibile:</h3>
-                  <p className="text-sm text-[#034a76]">
+                <div className="bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 p-3 rounded-lg border border-[#E3AB23]/30 shadow-sm">
+                  <h3 className="text-sm font-medium text-[#024A76] mb-1">Locuri disponibile:</h3>
+                  <p className="text-sm text-[#024A76] font-semibold">
                     {materieDetails.locuriDisponibile - (materieDetails.studentiInscrisi?.length || 0)} / {materieDetails.locuriDisponibile}
                   </p>
                 </div>
@@ -1297,7 +1190,7 @@ const InscriereMateriiPage = () => {
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => handleMaterieClick(materieDetails.id)}
-                    className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
+                    className="px-4 py-2 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-lg hover:from-[#024A76]/90 hover:to-[#3471B8]/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     {loading ? "Se procesează..." : "Înscrie-te la această materie"}
                   </button>

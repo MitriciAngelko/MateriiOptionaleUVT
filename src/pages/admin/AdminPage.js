@@ -490,71 +490,83 @@ const AdminPage = () => {
 
   if (!hasAccess) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-red-600">Acces Interzis</h2>
-        <p className="mt-2 text-gray-600">Nu aveți permisiunea de a accesa această pagină.</p>
-        <button 
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557]"
-        >
-          Înapoi la Home
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-xl shadow-lg border border-red-200">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent mb-4">Acces Interzis</h2>
+          <p className="mt-2 text-gray-600 mb-6">Nu aveți permisiunea de a accesa această pagină.</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
+          >
+            Înapoi la Home
+          </button>
+        </div>
       </div>
     );
   }
 
   const renderUserTable = (users) => (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-[#f5f5f5] rounded-lg overflow-hidden shadow-lg border border-[#034a76]/20">
-        <thead className="bg-[#034a76] text-[#f5f5f5]">
+      <table className="min-w-full bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200">
+        <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8]">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
               Nume
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
               Email
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
               Tip
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
               Acțiuni
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#034a76]/10">
+        <tbody className="divide-y divide-gray-200">
           {users.map(user => (
             <tr 
               key={user.id} 
-              className="hover:bg-[#e3ab23]/10 cursor-pointer transition-colors"
+              className="hover:bg-gradient-to-r hover:from-[#E3AB23]/10 hover:to-[#E3AB23]/5 cursor-pointer transition-all duration-300"
               onClick={() => setSelectedUser(user)}
             >
-              <td className="px-6 py-4 whitespace-nowrap text-[#034a76]">
-                {user.nume} {user.prenume}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="font-semibold text-[#024A76]">{user.nume} {user.prenume}</div>
+                {user.facultate && (
+                  <div className="text-sm text-gray-600">{user.facultate}</div>
+                )}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-[#034a76]/80">
+              <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                 {user.email}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap capitalize text-[#034a76]">
-                {user.tip}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  user.tip === 'student' ? 'bg-blue-100 text-blue-800' :
+                  user.tip === 'profesor' ? 'bg-green-100 text-green-800' :
+                  user.tip === 'secretar' ? 'bg-purple-100 text-purple-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {user.tip}
+                </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
                   onClick={(e) => {
-                    e.stopPropagation(); // Previne propagarea click-ului
+                    e.stopPropagation();
                     setEditingUser(user);
                     setShowUserModal(true);
                   }}
-                  className="text-[#034a76] hover:text-[#023557] mr-4"
+                  className="text-[#024A76] hover:text-[#3471B8] mr-4 transition-colors duration-200"
                 >
                   Editează
                 </button>
                 <button
                   onClick={(e) => {
-                    e.stopPropagation(); // Previne propagarea click-ului
+                    e.stopPropagation();
                     handleDeleteUser(user.id);
                   }}
-                  className="text-red-600 hover:text-red-900"
+                  className="text-red-500 hover:text-red-700 transition-colors duration-200"
                 >
                   Șterge
                 </button>
@@ -567,9 +579,11 @@ const AdminPage = () => {
   );
 
   const renderFilters = () => (
-    <div className="mb-6 bg-[#f5f5f5] p-4 rounded-lg shadow border border-[#034a76]/20">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-[#034a76]">Filtre</h2>
+    <div className="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+          Filtre
+        </h2>
         <button
           onClick={() => {
             setFilters({
@@ -580,22 +594,22 @@ const AdminPage = () => {
               materie: ''
             });
           }}
-          className="text-sm text-[#034a76] hover:text-[#023557]"
+          className="text-sm text-[#024A76] hover:text-[#3471B8] transition-colors duration-200 font-medium"
         >
           Resetează filtrele
         </button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div>
-          <label className="block text-sm font-medium text-[#034a76] mb-1">
+          <label className="block text-sm font-semibold text-[#024A76] mb-2">
             Tip Utilizator
           </label>
           <select
             value={filters.tip}
             onChange={handleFilterChange}
             name="tip"
-            className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+            className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
           >
             {tipuriUtilizatori.map(tip => (
               <option key={tip} value={tip}>
@@ -608,12 +622,12 @@ const AdminPage = () => {
         {filters.tip === 'student' && (
           <>
             <div>
-              <label className="block text-sm font-medium text-[#034a76] mb-1">Facultate</label>
+              <label className="block text-sm font-semibold text-[#024A76] mb-2">Facultate</label>
               <select
                 value={filters.facultate}
                 onChange={handleFilterChange}
                 name="facultate"
-                className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
               >
                 <option value="">Toate facultățile</option>
                 {facultati.map(fac => (
@@ -623,12 +637,12 @@ const AdminPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#034a76] mb-1">Specializare</label>
+              <label className="block text-sm font-semibold text-[#024A76] mb-2">Specializare</label>
               <select
                 value={filters.specializare}
                 onChange={handleFilterChange}
                 name="specializare"
-                className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md disabled:bg-gray-100"
                 disabled={!filters.facultate}
               >
                 <option value="">Toate specializările</option>
@@ -639,12 +653,12 @@ const AdminPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#034a76] mb-1">An</label>
+              <label className="block text-sm font-semibold text-[#024A76] mb-2">An</label>
               <select
                 value={filters.an}
                 onChange={handleFilterChange}
                 name="an"
-                className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+                className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
               >
                 <option value="">Toți anii</option>
                 {ani.map(an => (
@@ -657,12 +671,12 @@ const AdminPage = () => {
 
         {filters.tip === 'profesor' && (
           <div>
-            <label className="block text-sm font-medium text-[#034a76] mb-1">Materie Predată</label>
+            <label className="block text-sm font-semibold text-[#024A76] mb-2">Materie Predată</label>
             <select
               value={filters.materie}
               onChange={handleFilterChange}
               name="materie"
-              className="w-full rounded-md border-[#034a76]/30 shadow-sm focus:border-[#034a76] focus:ring-[#034a76]"
+              className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
             >
               <option value="">Toate materiile</option>
               {materiiList.map(materie => (
@@ -678,45 +692,75 @@ const AdminPage = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[#034a76]">Administrare Utilizatori</h1>
-        <button
-          onClick={() => {
-            setEditingUser(null);
-            setShowUserModal(true);
-          }}
-          className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
-        >
-          + Adaugă Utilizator
-        </button>
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">
+            Administrare Utilizatori
+          </h1>
+          <button
+            onClick={() => {
+              setEditingUser(null);
+              setShowUserModal(true);
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
+          >
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Adaugă Utilizator
+          </button>
+        </div>
+
+        {renderFilters()}
+
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-[#024A76] flex items-center">
+              <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+              </svg>
+              Lista Utilizatori
+            </h2>
+            <div className="text-sm text-gray-600">
+              Total: {users.length} utilizatori
+            </div>
+          </div>
+          
+          {getFilteredUsers().length === 0 ? (
+            <div className="text-center py-12">
+              <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              </svg>
+              <p className="text-gray-500 font-medium text-lg">Nu există utilizatori care să corespundă filtrelor</p>
+            </div>
+          ) : (
+            renderUserTable(getFilteredUsers())
+          )}
+        </div>
+
+        {selectedUser && (
+          <UserDetailsModal 
+            user={selectedUser} 
+            onClose={() => setSelectedUser(null)} 
+          />
+        )}
+
+        {showUserModal && (
+          <AdminUserForm 
+            onClose={() => {
+              setShowUserModal(false);
+              setEditingUser(null);
+            }}
+            onUserCreated={handleFormSubmit}
+            editingUser={editingUser}
+            onRoleChange={handleRoleChange}
+            onSpecializareChange={handleSpecializareChange}
+            onFacultateChange={handleFacultateChange}
+            onAnChange={handleAnChange}
+          />
+        )}
       </div>
-
-      {renderFilters()}
-
-      {renderUserTable(getFilteredUsers())}
-
-      {selectedUser && (
-        <UserDetailsModal 
-          user={selectedUser} 
-          onClose={() => setSelectedUser(null)} 
-        />
-      )}
-
-      {showUserModal && (
-        <AdminUserForm 
-          onClose={() => {
-            setShowUserModal(false);
-            setEditingUser(null);
-          }}
-          onUserCreated={handleFormSubmit}
-          editingUser={editingUser}
-          onRoleChange={handleRoleChange}
-          onSpecializareChange={handleSpecializareChange}
-          onFacultateChange={handleFacultateChange}
-          onAnChange={handleAnChange}
-        />
-      )}
     </div>
   );
 };

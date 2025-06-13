@@ -1239,7 +1239,7 @@ const SecretarAlocareAutomataPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Alocare Automată Pachete</h1>
+      <h1 className="text-2xl font-bold mb-6 text-[#024A76]">Alocare Automată Pachete</h1>
       
       {/* Toast Notification */}
       {toast && (
@@ -1251,16 +1251,16 @@ const SecretarAlocareAutomataPage = () => {
       )}
       
       {/* Search Input and Button */}
-      <div className="flex mb-4">
+      <div className="flex mb-6 shadow-md rounded-lg overflow-hidden">
         <input
           type="text"
-          className="flex-grow p-2 border rounded-l"
+          className="flex-grow p-3 border-0 bg-white text-[#024A76] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3471B8] transition-all duration-200"
           placeholder="Caută după nume, specializare sau facultate..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
         <button 
-          className="bg-blue-500 text-white px-4 py-2 rounded-r"
+          className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold"
           onClick={handleSearch}
         >
           Caută
@@ -1280,9 +1280,9 @@ const SecretarAlocareAutomataPage = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="col-span-1 bg-white rounded-lg shadow overflow-hidden">
-          <div className="bg-[#034a76] text-white p-4">
-            <h2 className="text-lg font-semibold">Pachete disponibile</h2>
+        <div className="col-span-1 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+          <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4">
+            <h2 className="text-lg font-semibold drop-shadow-sm">Pachete disponibile</h2>
           </div>
           
           <div className="divide-y">
@@ -1294,15 +1294,19 @@ const SecretarAlocareAutomataPage = () => {
               filteredPachete.map(pachet => (
                 <div 
                   key={pachet.id} 
-                  className={`p-4 cursor-pointer ${
+                  className={`p-4 cursor-pointer transition-all duration-200 ${
                     pachet.statusInscriere === 'activ' 
-                      ? (selectedPachet === pachet.id ? 'bg-green-200 hover:bg-green-300' : 'bg-green-100 hover:bg-green-200')
-                      : (selectedPachet === pachet.id ? 'bg-gray-100 hover:bg-gray-50' : 'hover:bg-gray-50')
+                      ? (selectedPachet === pachet.id 
+                          ? 'bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 border-l-4 border-[#E3AB23] hover:from-[#E3AB23]/30 hover:to-[#E3AB23]/15' 
+                          : 'bg-green-50 hover:bg-gradient-to-r hover:from-green-100 hover:to-green-50')
+                      : (selectedPachet === pachet.id 
+                          ? 'bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/5 border-l-4 border-[#024A76] hover:from-[#024A76]/15 hover:to-[#3471B8]/10' 
+                          : 'hover:bg-gray-50')
                   }`}
                   onClick={() => handleSelectPachet(pachet)}
                 >
                   <div>
-                    <h3 className="font-medium text-[#034a76]">{pachet.nume || 'Pachet fără nume'}</h3>
+                    <h3 className="font-semibold text-[#024A76] drop-shadow-sm">{pachet.nume || 'Pachet fără nume'}</h3>
                     <div className="mt-1 text-xs text-gray-500">
                       {pachet.facultate && <span className="block">Facultate: {pachet.facultate}</span>}
                       {pachet.specializare && <span className="block">Specializare: {pachet.specializare}</span>}
@@ -1345,7 +1349,7 @@ const SecretarAlocareAutomataPage = () => {
                   
                   <div className="mt-2 flex space-x-2">
                     <button
-                      className="text-xs text-blue-600 hover:text-blue-800"
+                      className="text-xs bg-gradient-to-r from-[#3471B8] to-[#024A76] text-white px-3 py-1 rounded-full hover:from-[#024A76] hover:to-[#3471B8] transition-all duration-300 font-medium shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedPachetData(pachet);
@@ -1373,9 +1377,9 @@ const SecretarAlocareAutomataPage = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="bg-[#034a76] text-white p-4 flex justify-between items-center">
-                <h2 className="text-lg font-semibold">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+              <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4 flex justify-between items-center">
+                <h2 className="text-lg font-semibold drop-shadow-sm">
                   {pachete.find(p => p.id === selectedPachet)?.nume || 'Pachet selectat'}
                 </h2>
                 
@@ -1393,20 +1397,20 @@ const SecretarAlocareAutomataPage = () => {
               <div className="border-b border-gray-200">
                 <nav className="flex -mb-px">
                   <button
-                    className={`py-3 px-4 text-sm font-medium ${
+                    className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
                       activeTab === 'info'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
+                        : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
                     }`}
                     onClick={() => setActiveTab('info')}
                   >
                     Informații
                   </button>
                   <button
-                    className={`py-3 px-4 text-sm font-medium ${
+                    className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
                       activeTab === 'perioadaInscriere'
-                        ? 'border-b-2 border-blue-500 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
+                        : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
                     }`}
                     onClick={() => {
                       setActiveTab('perioadaInscriere');
@@ -1433,9 +1437,11 @@ const SecretarAlocareAutomataPage = () => {
                       <button
                         onClick={handleAlocareAutomata}
                         disabled={processingPachet !== null}
-                        className={`px-4 py-2 rounded text-white ${
-                          processingPachet === null ? 'bg-[#e3ab23] hover:bg-[#c49520]' : 'bg-gray-400'
-                        } transition-colors`}
+                        className={`px-6 py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl ${
+                          processingPachet === null 
+                            ? 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 text-[#024A76]' 
+                            : 'bg-gray-400 cursor-not-allowed'
+                        }`}
                       >
                         {processingPachet === selectedPachet ? (
                           <span className="flex items-center">
@@ -1453,40 +1459,40 @@ const SecretarAlocareAutomataPage = () => {
                     
                     {rezultateAlocare && (
                       <div className="mt-6 border-t pt-6">
-                        <h3 className="text-lg font-medium text-[#034a76] mb-4">Rezultate alocare</h3>
+                        <h3 className="text-lg font-semibold text-[#024A76] mb-4 drop-shadow-sm">Rezultate alocare</h3>
                         
                         {/* Sumar rapid */}
-                        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                        <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 p-6 rounded-lg mb-6 border border-gray-200">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div className="bg-white p-3 rounded-lg border">
-                              <div className="text-2xl font-bold text-green-600">{rezultateAlocare.studentiAlocati.length}</div>
-                              <div className="text-sm text-gray-600">Studenți alocați</div>
+                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
+                              <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">{rezultateAlocare.studentiAlocati.length}</div>
+                              <div className="text-sm text-gray-600 font-medium">Studenți alocați</div>
                             </div>
-                            <div className="bg-white p-3 rounded-lg border">
-                              <div className="text-2xl font-bold text-red-600">{rezultateAlocare.studentiNealocati.length}</div>
-                              <div className="text-sm text-gray-600">Studenți nealocați</div>
+                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-500">
+                              <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">{rezultateAlocare.studentiNealocati.length}</div>
+                              <div className="text-sm text-gray-600 font-medium">Studenți nealocați</div>
                             </div>
-                            <div className="bg-white p-3 rounded-lg border">
-                              <div className="text-2xl font-bold text-blue-600">
+                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#3471B8]">
+                              <div className="text-2xl font-bold bg-gradient-to-r from-[#3471B8] to-[#024A76] bg-clip-text text-transparent">
                                 {rezultateAlocare.studentiAlocati.filter(s => s.pozitiePrioritate === 1).length}
                               </div>
-                              <div className="text-sm text-gray-600">Prima alegere</div>
+                              <div className="text-sm text-gray-600 font-medium">Prima alegere</div>
                             </div>
-                            <div className="bg-white p-3 rounded-lg border">
-                              <div className="text-2xl font-bold text-purple-600">
+                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#E3AB23]">
+                              <div className="text-2xl font-bold bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 bg-clip-text text-transparent">
                                 {rezultateAlocare.studentiAlocati.length > 0 ? 
                                   (rezultateAlocare.studentiAlocati.reduce((sum, s) => sum + s.media, 0) / rezultateAlocare.studentiAlocati.length).toFixed(2) :
                                   '0.00'
                                 }
                               </div>
-                              <div className="text-sm text-gray-600">Media pentru alocare</div>
+                              <div className="text-sm text-gray-600 font-medium">Media pentru alocare</div>
                             </div>
                           </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
-                            <h4 className="text-md font-medium text-[#034a76] mb-2">Studenți alocați ({rezultateAlocare.studentiAlocati.length})</h4>
+                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți alocați ({rezultateAlocare.studentiAlocati.length})</h4>
                             <div className="bg-green-50 p-4 rounded-md h-64 overflow-y-auto">
                               {rezultateAlocare.studentiAlocati.length === 0 ? (
                                 <p className="text-sm text-gray-500">Nu există studenți alocați</p>
@@ -1541,7 +1547,7 @@ const SecretarAlocareAutomataPage = () => {
                           </div>
                           
                           <div>
-                            <h4 className="text-md font-medium text-[#034a76] mb-2">Studenți nealocați ({rezultateAlocare.studentiNealocati.length})</h4>
+                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți nealocați ({rezultateAlocare.studentiNealocati.length})</h4>
                             <div className="bg-red-50 p-4 rounded-md h-64 overflow-y-auto">
                               {rezultateAlocare.studentiNealocati.length === 0 ? (
                                 <p className="text-sm text-gray-500">Nu există studenți nealocați</p>
@@ -1588,7 +1594,7 @@ const SecretarAlocareAutomataPage = () => {
                         </div>
                         
                         <div className="mt-6">
-                          <h4 className="text-md font-medium text-[#034a76] mb-2">Materii cu locuri rămase ({rezultateAlocare.materiiCuLocuriRamase.length})</h4>
+                          <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Materii cu locuri rămase ({rezultateAlocare.materiiCuLocuriRamase.length})</h4>
                           <div className="bg-blue-50 p-4 rounded-md overflow-x-auto">
                             {rezultateAlocare.materiiCuLocuriRamase.length === 0 ? (
                               <p className="text-sm text-gray-500">Nu există materii cu locuri rămase</p>

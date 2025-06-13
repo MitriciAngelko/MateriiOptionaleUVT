@@ -12,6 +12,9 @@ const AdminIstoricAcademicPage = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedStudentData, setSelectedStudentData] = useState(null);
   const [filter, setFilter] = useState('');
+  const [facultateFilter, setFacultateFilter] = useState('');
+  const [specializareFilter, setSpecializareFilter] = useState('');
+  const [anFilter, setAnFilter] = useState('');
   const [hasAccess, setHasAccess] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [activeYear, setActiveYear] = useState('I');
@@ -469,6 +472,25 @@ const AdminIstoricAcademicPage = () => {
     setEditingNoteId(`${anualIndex}-${noteIndex}`);
   };
 
+  // Anulează editarea unei note
+  const handleCancelEdit = () => {
+    setEditingNoteId(null);
+    setEditNoteForm({
+      id: '',
+      nume: '',
+      credite: 0,
+      nota: 0,
+      status: 'neevaluat',
+      profesor: '',
+      obligatorie: false
+    });
+  };
+
+  // Salvează nota editată
+  const handleSaveNote = async (anualIndex, noteIndex) => {
+    await handleSaveEditedNote();
+  };
+
   // Salvează nota editată
   const handleSaveEditedNote = async () => {
     if (!selectedStudent || !editingNoteId) return;
@@ -649,14 +671,33 @@ const AdminIstoricAcademicPage = () => {
     setShowAddNoteForm(true);
   };
 
-  // Filtrarea studenților după nume sau prenume
+  // Filtrarea studenților în funcție de termenul de căutare și filtre
   const filteredStudents = students.filter(student => {
     const searchTerm = filter.toLowerCase();
-    return (
+    const matchesSearch = !filter || (
       student.nume?.toLowerCase().includes(searchTerm) ||
-      student.prenume?.toLowerCase().includes(searchTerm)
+      student.prenume?.toLowerCase().includes(searchTerm) ||
+      student.email?.toLowerCase().includes(searchTerm) ||
+      (student.numarMatricol && student.numarMatricol.toLowerCase().includes(searchTerm))
     );
+    
+    const matchesFacultate = !facultateFilter || student.facultate === facultateFilter;
+    const matchesSpecializare = !specializareFilter || student.specializare === specializareFilter;
+    const matchesAn = !anFilter || student.an === anFilter;
+    
+    return matchesSearch && matchesFacultate && matchesSpecializare && matchesAn;
   });
+
+  // Obține listele unice pentru filtre
+  const facultati = [...new Set(students.map(s => s.facultate).filter(Boolean))];
+  const specializari = [...new Set(students.filter(s => !facultateFilter || s.facultate === facultateFilter).map(s => s.specializare).filter(Boolean))];
+  const ani = [...new Set(students.map(s => s.an).filter(Boolean))];
+
+  // Resetează filtrele dependente când se schimbă facultatea
+  const handleFacultateChange = (value) => {
+    setFacultateFilter(value);
+    setSpecializareFilter(''); // Resetează specializarea când se schimbă facultatea
+  };
 
   // Filtrează istoricul în funcție de anul selectat
   const getFilteredIstoricAnual = () => {
@@ -711,398 +752,564 @@ const AdminIstoricAcademicPage = () => {
 
   if (!hasAccess) {
     return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-red-600">Acces Interzis</h2>
-        <p className="mt-2 text-gray-600">Nu aveți permisiunea de a accesa această pagină.</p>
-        <button 
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-[#034a76] text-white rounded hover:bg-[#023557]"
-        >
-          Înapoi la Home
-        </button>
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-xl shadow-lg border border-red-200">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent mb-4">Acces Interzis</h2>
+          <p className="mt-2 text-gray-600 mb-6">Nu aveți permisiunea de a accesa această pagină.</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
+          >
+            Înapoi la Home
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-[#034a76] mb-6">Administrare Istoric Academic</h1>
-      
-      {errorMessage && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4">
-          {errorMessage}
-        </div>
-      )}
-      
-      {successMessage && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4">
-          {successMessage}
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <div className="bg-[#f5f5f5] rounded-lg shadow p-6 border border-[#034a76]/20">
-            <h2 className="text-xl font-semibold text-[#034a76] mb-4">Studenți</h2>
-            
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Caută"
-                className="w-full px-4 py-2 border border-[#034a76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-              />
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent mb-8 drop-shadow-sm">
+          Administrare Istoric Academic
+        </h1>
+        
+        {errorMessage && (
+          <div className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {errorMessage}
             </div>
-            
-            {/* {loading ? (
-              <div className="text-center py-4">Se încarcă...</div>
-            ) : ( */}
-              <div className="max-h-[600px] overflow-y-auto">
+          </div>
+        )}
+        
+        {successMessage && (
+          <div className="bg-gradient-to-r from-green-50 to-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              {successMessage}
+            </div>
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+                  Studenți
+                </h2>
+                <div className="text-sm text-gray-600">
+                  {filteredStudents.length} din {students.length}
+                </div>
+              </div>
+              
+              {/* Search și Filtre */}
+              <div className="mb-6 space-y-4">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Caută student..."
+                    className="w-full px-4 py-3 pl-10 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  />
+                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                
+                {/* Filtre */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#024A76] mb-1">Facultate</label>
+                    <select
+                      value={facultateFilter}
+                      onChange={(e) => handleFacultateChange(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                    >
+                      <option value="">Toate facultățile</option>
+                      {facultati.map(facultate => (
+                        <option key={facultate} value={facultate}>{facultate}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-[#024A76] mb-1">Specializare</label>
+                    <select
+                      value={specializareFilter}
+                      onChange={(e) => setSpecializareFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 disabled:bg-gray-100"
+                      disabled={!facultateFilter}
+                    >
+                      <option value="">Toate specializările</option>
+                      {specializari.map(specializare => (
+                        <option key={specializare} value={specializare}>{specializare}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-[#024A76] mb-1">An</label>
+                    <select
+                      value={anFilter}
+                      onChange={(e) => setAnFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                    >
+                      <option value="">Toți anii</option>
+                      {ani.map(an => (
+                        <option key={an} value={an}>Anul {an}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {(facultateFilter || specializareFilter || anFilter) && (
+                    <button
+                      onClick={() => {
+                        setFacultateFilter('');
+                        setSpecializareFilter('');
+                        setAnFilter('');
+                      }}
+                      className="w-full px-3 py-2 text-xs text-[#024A76] hover:text-[#3471B8] transition-colors duration-200 font-medium border border-[#024A76]/30 rounded-lg hover:bg-[#024A76]/5"
+                    >
+                      Resetează filtrele
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
                 {filteredStudents.length === 0 ? (
-                  <p className="text-center text-[#034a76]/70">Nu există studenți</p>
+                  <div className="text-center py-8">
+                    <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                    <p className="text-gray-500 font-medium">Nu există studenți</p>
+                  </div>
                 ) : (
-                  <ul className="divide-y divide-[#e3ab23]/10">
+                  <div className="space-y-2">
                     {filteredStudents.map((student) => (
-                      <li 
+                      <div 
                         key={student.id}
-                        className={`py-3 px-2 cursor-pointer hover:bg-[#034a76]/10 rounded ${
-                          selectedStudent === student.id ? 'bg-[#e3ab23]/10 border-l-4 border-[#e3ab23]' : ''
+                        className={`p-4 cursor-pointer rounded-lg transition-all duration-300 hover:shadow-md border ${
+                          selectedStudent === student.id 
+                            ? 'bg-gradient-to-r from-[#E3AB23]/10 to-[#E3AB23]/5 border-[#E3AB23] shadow-md' 
+                            : 'bg-gray-50 border-gray-200 hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 hover:border-[#024A76]/30'
                         }`}
                         onClick={() => handleSelectStudent(student.id)}
                       >
-                        <div className="font-medium text-[#034a76]">{student.nume} {student.prenume}</div>
-                        <div className="text-sm text-[#034a76]/70">
+                        <div className="font-semibold text-[#024A76] mb-1">{student.nume} {student.prenume}</div>
+                        <div className="text-sm text-gray-600 flex items-center">
+                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                          </svg>
                           {student.facultate} - {student.specializare}
                         </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            {/* )} */}
-          </div>
-        </div>
-        
-        <div className="md:col-span-2">
-          {selectedStudentData ? (
-            <div className="bg-[#f5f5f5] rounded-lg shadow p-6 border border-[#034a76]/20">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-[#034a76]">
-                  Istoric Academic: {selectedStudentData.nume} {selectedStudentData.prenume}
-                </h2>
-        </div>
-              
-              {/* Detalii student */}
-              <div className="bg-[#034a76]/5 p-4 rounded-md mb-6 border border-[#034a76]/10">
-                <h3 className="font-medium mb-2 text-[#034a76]">Informații Student</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[#034a76]/70">Facultate:</span> <span className="text-[#034a76]">{selectedStudentData.facultate}</span>
-                  </div>
-                  <div>
-                    <span className="text-[#034a76]/70">Specializare:</span> <span className="text-[#034a76]">{selectedStudentData.specializare}</span>
-                  </div>
-                  <div>
-                    <span className="text-[#034a76]/70">An:</span> <span className="text-[#034a76]">{selectedStudentData.an}</span>
-                  </div>
-                  <div>
-                    <span className="text-[#034a76]/70">Număr Matricol:</span> <span className="text-[#034a76]">{selectedStudentData.numarMatricol || 'N/A'}</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Filtre pentru istoric */}
-              <div className="mb-6">
-                <div className="flex space-x-4 border-b border-[#034a76]/20 pb-2">
-                  <button
-                    className={`px-4 py-2 font-medium rounded-t transition-colors ${
-                      activeYear === 'I' ? 'bg-[#034a76] text-[#f5f5f5]' : 'text-[#034a76] hover:bg-[#034a76]/10'
-                    }`}
-                    onClick={() => setActiveYear('I')}
-                  >
-                    Anul I
-                  </button>
-                  <button
-                    className={`px-4 py-2 font-medium rounded-t transition-colors ${
-                      activeYear === 'II' ? 'bg-[#034a76] text-[#f5f5f5]' : 'text-[#034a76] hover:bg-[#034a76]/10'
-                    }`}
-                    onClick={() => setActiveYear('II')}
-                  >
-                    Anul II
-                  </button>
-                  <button
-                    className={`px-4 py-2 font-medium rounded-t transition-colors ${
-                      activeYear === 'III' ? 'bg-[#034a76] text-[#f5f5f5]' : 'text-[#034a76] hover:bg-[#034a76]/10'
-                    }`}
-                    onClick={() => setActiveYear('III')}
-                  >
-                    Anul III
-                  </button>
-                </div>
-              </div>
-              
-              {/* Istoric în tabel grupat pe semestre */}
-              <div className="overflow-x-auto">
-                {selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
-                  <div>
-                    {getAllCursuri().map((semestru, semestruIndex) => (
-                      <div key={semestruIndex} className="mb-8">
-                        <h3 className="text-lg font-semibold mb-2 text-[#034a76] bg-[#e3ab23]/20 py-1 px-3 rounded-md border-l-4 border-[#e3ab23]">
-                          Anul {semestru.anStudiu}, Semestrul {semestru.semestru} ({semestru.anUniversitar})
-                        </h3>
-                        <table className="min-w-full border border-[#034a76]/20 rounded-lg overflow-hidden">
-                          <thead>
-                            <tr className="bg-[#034a76] text-[#f5f5f5]">
-                              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Materie</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Credite</th>
-                              <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider">Notă</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Acțiuni</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#034a76]/10">
-                            {semestru.cursuri.map((curs, courseIndex) => {
-                              // Găsim indexul anual și al notei pentru această notă
-                              const anualIndex = selectedStudentData.istoric.istoricAnual.findIndex(a => 
-                                a.anStudiu === curs.anStudiu && a.semestru === curs.semestru && a.anUniversitar === curs.anUniversitar
-                              );
-                              
-                              const noteIndex = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri.findIndex(c => 
-                                c.id === curs.id
-                              );
-                              
-                              const isEditing = editingNoteId === `${anualIndex}-${noteIndex}`;
-                              
-                              return (
-                                <tr key={courseIndex} className={curs.nota >= 5 ? "bg-green-50" : (curs.nota === 0 ? "bg-[#f5f5f5]" : "bg-red-50")}>
-                                  {isEditing ? (
-                                    <>
-                                      <td className="px-4 py-2">
-                                        {curs.nume}
-                                      </td>
-                                      <td className="px-4 py-2">
-                                        {curs.credite}
-                                      </td>
-                                      <td className="px-4 py-2">
-                                        <input
-                                          type="number"
-                                          min="1"
-                                          max="10"
-                                          className="w-full px-2 py-1 border border-[#034a76]/30 rounded focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
-                                          value={editNoteForm.nota}
-                                          onChange={(e) => setEditNoteForm({...editNoteForm, nota: parseInt(e.target.value)})}
-                                          required
-                                        />
-                                      </td>
-                                      <td className="px-4 py-2">
-                                        <div className="flex space-x-2">
-                                          <button
-                                            onClick={handleSaveEditedNote}
-                                            className="text-green-600 hover:text-green-800"
-                                            title="Salvează"
-                                          >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                          </button>
-                                          <button
-                                            onClick={() => setEditingNoteId(null)}
-                                            className="text-gray-600 hover:text-gray-800"
-                                            title="Anulează"
-                                          >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <td className="px-4 py-2">
-                                        <span className="font-medium text-[#034a76]">{curs.nume}</span>
-                                      </td>
-                                      <td className="px-4 py-2 text-[#034a76]">{curs.credite}</td>
-                                      <td className="px-4 py-2 text-center font-medium">
-                                        {curs.nota === 0 ? 
-                                          <span className="text-[#034a76]/70">Neevaluat</span> : 
-                                          <span className={curs.nota >= 5 ? "text-green-600" : "text-red-600"}>
-                                            {curs.nota}
-                                          </span>
-                                        }
-                                      </td>
-                                      <td className="px-4 py-2">
-                                        <div className="flex space-x-2">
-                                          <button
-                                            onClick={() => startEditingNote(anualIndex, noteIndex)}
-                                            className="text-[#034a76] hover:text-[#023557]"
-                                            title="Editează"
-                                          >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                            </svg>
-                                          </button>
-                                          <button
-                                            onClick={() => handleDeleteNote(anualIndex, noteIndex)}
-                                            className="text-red-600 hover:text-red-800"
-                                            title="Șterge"
-                                          >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                            </svg>
-                                          </button>
-                                        </div>
-                                      </td>
-                                    </>
-                                  )}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-[#034a76]/70">Nu există date pentru anul {activeYear} în istoricul academic</p>
-                  </div>
                 )}
               </div>
             </div>
-          ) : (
-            <div className="bg-[#f5f5f5] rounded-lg shadow p-6 text-center text-[#034a76]/70 border border-[#034a76]/20">
-              Selectați un student pentru a vedea istoricul academic
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Formular pentru adăugarea notelor */}
-      {showAddNoteForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#f5f5f5] rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-[#034a76]">Adaugă Notă Nouă</h3>
-              <button
-                onClick={() => setShowAddNoteForm(false)}
-                className="text-[#034a76]/70 hover:text-[#034a76]"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <form onSubmit={handleAddNote} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#034a76] mb-1">An de Studiu</label>
-                  <select
-                    className="w-full px-3 py-2 border border-[#034a76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
-                    value={noteFormData.anStudiu}
-                    onChange={(e) => setNoteFormData({...noteFormData, anStudiu: e.target.value})}
-                    required
-                  >
-                    <option value="">Selectează</option>
-                    <option value="I">Anul I</option>
-                    <option value="II">Anul II</option>
-                    <option value="III">Anul III</option>
-                  </select>
+          </div>
+          
+          <div className="lg:col-span-2">
+            {selectedStudentData ? (
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 backdrop-blur-sm">
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+                    Istoric Academic: {selectedStudentData.nume} {selectedStudentData.prenume}
+                  </h2>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-[#034a76] mb-1">Semestru</label>
-                  <select
-                    className="w-full px-3 py-2 border border-[#034a76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
-                    value={noteFormData.semestru}
-                    onChange={(e) => setNoteFormData({...noteFormData, semestru: parseInt(e.target.value)})}
-                    required
-                  >
-                    <option value="1">Semestrul 1</option>
-                    <option value="2">Semestrul 2</option>
-                  </select>
+                {/* Detalii student */}
+                <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 p-6 rounded-lg mb-6 border border-gray-200">
+                  <h3 className="font-semibold mb-4 text-[#024A76] flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                    Informații Student
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <span className="text-gray-600 font-medium w-20">Facultate:</span> 
+                        <span className="text-[#024A76] font-semibold">{selectedStudentData.facultate}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-600 font-medium w-20">An:</span> 
+                        <span className="px-2 py-1 bg-[#E3AB23]/20 text-[#024A76] rounded-md font-semibold text-sm">{selectedStudentData.an}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <span className="text-gray-600 font-medium w-24">Specializare:</span> 
+                        <span className="text-[#024A76] font-semibold">{selectedStudentData.specializare}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-600 font-medium w-24">Nr. Matricol:</span> 
+                        <span className="text-[#024A76] font-semibold">{selectedStudentData.numarMatricol || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-[#034a76] mb-1">Materie</label>
-                  <select
-                    className="w-full px-3 py-2 border border-[#034a76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
-                    value={noteFormData.materieId}
-                    onChange={(e) => {
-                      const selectedCourse = availableCourses.find(course => course.id === e.target.value);
-                      setNoteFormData({
-                        ...noteFormData, 
-                        materieId: e.target.value,
-                        materieNume: selectedCourse?.nume || '',
-                        credite: selectedCourse?.credite || 0,
-                        obligatorie: selectedCourse?.obligatorie || false
-                      });
-                    }}
-                    required
-                  >
-                    <option value="">Selectează o materie</option>
-                    {availableCourses
-                      .filter(course => 
-                        course.facultate === selectedStudentData?.facultate && 
-                        course.specializare === selectedStudentData?.specializare
-                      )
-                      .map(course => (
-                        <option key={course.id} value={course.id}>
-                          {course.nume} {course.obligatorie ? "(Obligatorie)" : ""}
-                        </option>
+                {/* Filtre pentru istoric */}
+                <div className="mb-6">
+                  <div className="flex space-x-2 border-b border-gray-200 pb-2">
+                    {['I', 'II', 'III'].map((year) => (
+                      <button
+                        key={year}
+                        className={`px-6 py-3 font-semibold rounded-t-lg transition-all duration-300 ${
+                          activeYear === year 
+                            ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white shadow-lg' 
+                            : 'text-[#024A76] hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10'
+                        }`}
+                        onClick={() => setActiveYear(year)}
+                      >
+                        Anul {year}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Istoric în tabel grupat pe semestre */}
+                <div className="overflow-x-auto">
+                  {selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
+                    <div className="space-y-8">
+                      {getAllCursuri().map((semestru, semestruIndex) => (
+                        <div key={semestruIndex} className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                          <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 px-6 py-4">
+                            <h3 className="text-lg font-semibold text-[#024A76] flex items-center">
+                              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Anul {semestru.anStudiu}, Semestrul {semestru.semestru} ({semestru.anUniversitar})
+                            </h3>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full">
+                              <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8]">
+                                <tr>
+                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Materie</th>
+                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Credite</th>
+                                  <th className="px-6 py-4 text-center text-xs font-semibold text-white uppercase tracking-wider">Notă</th>
+                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Acțiuni</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {semestru.cursuri.map((curs, courseIndex) => {
+                                  // Găsim indexul anual și al notei pentru această notă
+                                  const anualIndex = selectedStudentData.istoric.istoricAnual.findIndex(a => 
+                                    a.anStudiu === curs.anStudiu && a.semestru === curs.semestru && a.anUniversitar === curs.anUniversitar
+                                  );
+                                  
+                                  const noteIndex = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri.findIndex(c => 
+                                    c.id === curs.id
+                                  );
+                                  
+                                  const isEditing = editingNoteId === `${anualIndex}-${noteIndex}`;
+                                  
+                                  return (
+                                    <tr key={courseIndex} className="group hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all duration-200">
+                                      <td className="px-6 py-4">
+                                        {isEditing ? (
+                                          <input
+                                            type="text"
+                                            value={editNoteForm.nume}
+                                            onChange={(e) => setEditNoteForm({...editNoteForm, nume: e.target.value})}
+                                            className="w-full px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23]"
+                                          />
+                                        ) : (
+                                          <span className="font-semibold text-[#024A76]">{curs.nume}</span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        {isEditing ? (
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            max="30"
+                                            value={editNoteForm.credite}
+                                            onChange={(e) => setEditNoteForm({...editNoteForm, credite: parseInt(e.target.value)})}
+                                            className="w-20 px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23]"
+                                          />
+                                        ) : (
+                                          <span className="px-2 py-1 bg-[#3471B8]/10 text-[#024A76] rounded-md font-semibold text-sm">
+                                            {curs.credite}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4 text-center">
+                                        {isEditing ? (
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            max="10"
+                                            step="0.01"
+                                            value={editNoteForm.nota}
+                                            onChange={(e) => setEditNoteForm({...editNoteForm, nota: parseFloat(e.target.value)})}
+                                            className="w-20 px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23] text-center"
+                                          />
+                                        ) : (
+                                          curs.nota === 0 ? 
+                                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">Neevaluat</span> : 
+                                            <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                              curs.nota >= 5 
+                                                ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800" 
+                                                : "bg-gradient-to-r from-red-100 to-red-200 text-red-800"
+                                            }`}>
+                                              {curs.nota}
+                                            </span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4">
+                                        {isEditing ? (
+                                          <div className="flex space-x-2">
+                                            <button
+                                              onClick={() => handleSaveNote(anualIndex, noteIndex)}
+                                              className="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-md hover:shadow-md transition-all duration-200 text-sm font-medium"
+                                            >
+                                              Salvează
+                                            </button>
+                                            <button
+                                              onClick={handleCancelEdit}
+                                              className="px-3 py-1 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-md hover:shadow-md transition-all duration-200 text-sm font-medium"
+                                            >
+                                              Anulează
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            <button
+                                              onClick={() => startEditingNote(anualIndex, noteIndex)}
+                                              className="text-[#024A76] hover:text-[#3471B8] transition-colors duration-200"
+                                              title="Editează"
+                                            >
+                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                              </svg>
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteNote(anualIndex, noteIndex)}
+                                              className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                                              title="Șterge"
+                                            >
+                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                              </svg>
+                                            </button>
+                                          </div>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
                       ))}
-                      <option value="alta">Altă materie...</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-[#034a76] mb-1">Notă</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    step="1"
-                    className="w-full px-3 py-2 border border-[#034a76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#034a76]/40"
-                    value={noteFormData.nota}
-                    onChange={(e) => setNoteFormData({...noteFormData, nota: parseInt(e.target.value)})}
-                    required
-                  />
-                </div>
-                
-                <div className="flex items-center mt-4">
-                  <input
-                    type="checkbox"
-                    id="obligatorie"
-                    className="mr-2 accent-[#034a76]"
-                    checked={noteFormData.obligatorie}
-                    onChange={(e) => setNoteFormData({...noteFormData, obligatorie: e.target.checked})}
-                  />
-                  <label htmlFor="obligatorie" className="text-sm font-medium text-[#034a76]">
-                    Materie Obligatorie
-                  </label>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                      <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="text-gray-500 font-medium text-lg">Nu există date pentru anul {activeYear} în istoricul academic</p>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddNoteForm(false)}
-                  className="px-4 py-2 bg-gray-200 text-[#034a76] rounded hover:bg-gray-300"
-                >
-                  Anulează
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#034a76] text-[#f5f5f5] rounded hover:bg-[#023557] transition-colors"
-                >
-                  Adaugă Notă
-                </button>
+            ) : (
+              <div className="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200 backdrop-blur-sm">
+                <svg className="mx-auto h-16 w-16 text-gray-400 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                <p className="text-gray-500 font-medium text-lg">Selectați un student pentru a vedea istoricul academic</p>
               </div>
-            </form>
+            )}
           </div>
         </div>
-      )}
+        
+        {/* Custom scrollbar styles */}
+        <style jsx>{`
+          .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #024A76, #3471B8);
+            border-radius: 3px;
+          }
+          .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #3471B8, #024A76);
+          }
+        `}</style>
+
+        {/* Formular pentru adăugarea notelor */}
+        {showAddNoteForm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+                  Adaugă Notă Nouă
+                </h3>
+                <button
+                  onClick={() => setShowAddNoteForm(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddNote} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#024A76] mb-2">An de Studiu</label>
+                    <select
+                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      value={noteFormData.anStudiu}
+                      onChange={(e) => setNoteFormData({...noteFormData, anStudiu: e.target.value})}
+                      required
+                    >
+                      <option value="">Selectează</option>
+                      <option value="I">Anul I</option>
+                      <option value="II">Anul II</option>
+                      <option value="III">Anul III</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Semestru</label>
+                    <select
+                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      value={noteFormData.semestru}
+                      onChange={(e) => setNoteFormData({...noteFormData, semestru: parseInt(e.target.value)})}
+                      required
+                    >
+                      <option value="1">Semestrul 1</option>
+                      <option value="2">Semestrul 2</option>
+                    </select>
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Materie</label>
+                    <select
+                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      value={noteFormData.materieId}
+                      onChange={(e) => {
+                        const selectedCourse = availableCourses.find(course => course.id === e.target.value);
+                        setNoteFormData({
+                          ...noteFormData, 
+                          materieId: e.target.value,
+                          materieNume: selectedCourse?.nume || '',
+                          credite: selectedCourse?.credite || 0,
+                          obligatorie: selectedCourse?.obligatorie || false
+                        });
+                      }}
+                      required
+                    >
+                      <option value="">Selectează materia</option>
+                      {availableCourses.map(course => (
+                        <option key={course.id} value={course.id}>
+                          {course.nume} ({course.credite} credite)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Credite</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      value={noteFormData.credite}
+                      onChange={(e) => setNoteFormData({...noteFormData, credite: parseInt(e.target.value)})}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Nota</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="10"
+                      step="0.01"
+                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      value={noteFormData.nota}
+                      onChange={(e) => setNoteFormData({...noteFormData, nota: parseFloat(e.target.value)})}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="obligatorie"
+                        checked={noteFormData.obligatorie}
+                        onChange={(e) => setNoteFormData({...noteFormData, obligatorie: e.target.checked})}
+                        className="h-4 w-4 text-[#E3AB23] focus:ring-[#E3AB23] border-[#024A76]/30 rounded"
+                      />
+                      <label htmlFor="obligatorie" className="ml-2 block text-sm font-medium text-[#024A76]">
+                        Materie obligatorie
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddNoteForm(false)}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-300 font-semibold"
+                  >
+                    Anulează
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold disabled:opacity-50"
+                  >
+                    {loading ? 'Se salvează...' : 'Adaugă Nota'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #024A76, #3471B8);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(to bottom, #3471B8, #024A76);
+        }
+      `}</style>
     </div>
   );
 };
