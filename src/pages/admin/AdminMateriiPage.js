@@ -941,8 +941,14 @@ const AdminMateriiPage = () => {
     };
 
     return (
-      <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl p-8 w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+      <div 
+        className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+        onClick={onClose}
+      >
+        <div 
+          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl p-8 w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
               Adaugă Pachet Nou
@@ -1109,17 +1115,6 @@ const AdminMateriiPage = () => {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
             Administrare Materii
           </h1>
-          <div className="flex items-center space-x-4">
-            <Link
-              to="/admin/istoric-academic"
-              className="px-6 py-3 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
-            >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
-              </svg>
-              Istoric Academic
-            </Link>
-          </div>
         </div>
 
         {/* Tab Navigation */}
@@ -1128,8 +1123,8 @@ const AdminMateriiPage = () => {
             onClick={() => setActiveTab('materii')}
             className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
               activeTab === 'materii'
-                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent text-white shadow-lg'
-                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 border border-gray-200 dark:border-gray-700'
+                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
+                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
             }`}
           >
             <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
@@ -1141,8 +1136,8 @@ const AdminMateriiPage = () => {
             onClick={() => setActiveTab('pachete')}
             className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
               activeTab === 'pachete'
-                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent text-white shadow-lg'
-                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 border border-gray-200 dark:border-gray-700'
+                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
+                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
             }`}
           >
             <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
@@ -1169,7 +1164,7 @@ const AdminMateriiPage = () => {
             <div className="flex justify-between items-center mb-6">
               <button
                 onClick={() => setShowPachetModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-[#E3AB23] dark:to-[#E3AB23]/80 text-[#024A76] dark:text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
               >
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />

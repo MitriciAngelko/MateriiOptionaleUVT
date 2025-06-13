@@ -1106,7 +1106,7 @@ const InscriereMateriiPage = () => {
         {/* Modale pentru detaliile materiei */}
         {materieDetails && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setMaterieDetails(null);
@@ -1114,7 +1114,7 @@ const InscriereMateriiPage = () => {
               }
             }}
           >
-            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg max-w-2xl w-full overflow-y-auto p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-lg max-w-2xl w-full overflow-y-auto p-6 shadow-xl border border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">{materieDetails.nume}</h2>
                 <button 
@@ -1171,18 +1171,18 @@ const InscriereMateriiPage = () => {
                     {error}
                   </div>
                 )}
-
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => handleMaterieClick(materieDetails.id)}
-                    className="px-4 py-2 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-lg hover:from-[#024A76]/90 hover:to-[#3471B8]/90 transition-all duration-300 shadow-lg hover:shadow-xl"
-                  >
-                    {loading ? "Se procesează..." : "Înscrie-te la această materie"}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Toast Notification */}
+        {toastMessage && (
+          <ToastNotification
+            message={toastMessage.message}
+            type={toastMessage.type}
+            onClose={closeToast}
+          />
         )}
       </div>
     </div>

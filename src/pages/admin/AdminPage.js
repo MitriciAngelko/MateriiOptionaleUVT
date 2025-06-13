@@ -681,17 +681,17 @@ const AdminPage = () => {
       <table className="min-w-full bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
         <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80">
           <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
+            <th className="w-2/5 px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
               Nume
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
-              Email
+            <th className="w-1/5 px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
+              Număr Matricol
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
+            <th className="w-1/5 px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
               Tip
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
-              Acțiuni
+            <th className="w-1/5 px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
+              {/* Actions column - no title */}
             </th>
           </tr>
         </thead>
@@ -699,20 +699,18 @@ const AdminPage = () => {
           {users.map(user => (
             <tr 
               key={user.id} 
-              className="hover:bg-gradient-to-r hover:from-[#E3AB23]/10 hover:to-[#E3AB23]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-300"
+              className="group hover:bg-gradient-to-r hover:from-[#E3AB23]/10 hover:to-[#E3AB23]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-300"
               onClick={() => setSelectedUser(user)}
             >
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="font-semibold text-[#024A76] dark:text-blue-light">{user.nume} {user.prenume}</div>
-                {user.facultate && (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">{user.facultate}</div>
-                )}
+                <div className="text-sm text-gray-600 dark:text-gray-400">{user.email}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
-                {user.email}
+              <td className="px-6 py-4 whitespace-nowrap text-center text-gray-700 dark:text-gray-300 font-medium">
+                {user.numarMatricol || '-'}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                   user.tip === 'student' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
                   user.tip === 'profesor' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
                   user.tip === 'secretar' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
@@ -721,26 +719,34 @@ const AdminPage = () => {
                   {user.tip}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingUser(user);
-                    setShowUserModal(true);
-                  }}
-                  className="text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent mr-4 transition-colors duration-200"
-                >
-                  Editează
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteUser(user.id);
-                  }}
-                  className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200"
-                >
-                  Șterge
-                </button>
+              <td className="px-6 py-4 whitespace-nowrap text-center">
+                <div className="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingUser(user);
+                      setShowUserModal(true);
+                    }}
+                    className="p-2 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10 rounded-lg transition-all duration-200"
+                    title="Editează utilizator"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteUser(user.id);
+                    }}
+                    className="p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
+                    title="Șterge utilizator"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
