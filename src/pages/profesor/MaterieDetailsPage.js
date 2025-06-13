@@ -472,6 +472,7 @@ const MaterieDetailsPage = () => {
               <tr className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900">
                 <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">ID</th>
                 <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">Nume</th>
+                <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">Nr. Matricol</th>
                 <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">Email</th>
                 <th className="py-3 px-6 text-center font-semibold w-40 drop-shadow-sm">Nota</th>
               </tr>
@@ -483,7 +484,7 @@ const MaterieDetailsPage = () => {
                 return (
                   <tr 
                     key={student.id} 
-                    className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-200`}
+                    className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-200 group`}
                   >
                     <td className="py-3 px-6 text-[#024A76] dark:text-blue-light">
                       {index + 1}
@@ -493,10 +494,13 @@ const MaterieDetailsPage = () => {
                         {student.nume} {student.prenume}
                       </div>
                     </td>
+                    <td className="py-3 px-6 text-[#024A76] dark:text-gray-200 font-mono">
+                      {student.numarMatricol}
+                    </td>
                     <td className="py-3 px-6 text-[#024A76] dark:text-gray-300">
                       {student.email}
                     </td>
-                    <td className="py-3 px-6 text-center relative group w-40">
+                    <td className="py-3 px-6 text-center relative w-40">
                       {isEditing ? (
                         <div className="flex items-center justify-center space-x-1 min-h-[2.5rem]">
                           <input

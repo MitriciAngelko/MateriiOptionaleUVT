@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
 import DeleteIcon from '../../components/icons/DeleteIcon';
 import { Link } from 'react-router-dom';
@@ -31,6 +31,17 @@ const AdminMateriiPage = () => {
   const [selectedMaterie, setSelectedMaterie] = useState(null);
   const [pachete, setPachete] = useState([]);
   const [showPachetModal, setShowPachetModal] = useState(false);
+  
+  // State pentru filtrarea pachetelor
+  const [searchTermPachete, setSearchTermPachete] = useState('');
+  const [filtersPachete, setFiltersPachete] = useState({
+    facultate: '',
+    specializare: '',
+    an: ''
+  });
+
+  // State pentru profesori
+  const [availableProfessors, setAvailableProfessors] = useState([]);
 
   const facultati = [
     "Facultatea de Matematică și Informatică",
@@ -62,7 +73,25 @@ const AdminMateriiPage = () => {
     };
 
     fetchPachete();
+    fetchAvailableProfessors();
   }, []);
+
+  const fetchAvailableProfessors = async () => {
+    try {
+      const profesorsQuery = query(
+        collection(db, 'users'),
+        where('tip', '==', 'profesor')
+      );
+      const profesorsSnapshot = await getDocs(profesorsQuery);
+      const profesorsList = profesorsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setAvailableProfessors(profesorsList);
+    } catch (error) {
+      console.error('Eroare la încărcarea profesorilor:', error);
+    }
+  };
 
   const fetchMaterii = async () => {
     try {
@@ -144,6 +173,25 @@ const AdminMateriiPage = () => {
         const normalizedSearchTerm = removeDiacritics(searchTerm.toLowerCase());
         const normalizedMaterieName = removeDiacritics(materie.nume.toLowerCase());
         if (!normalizedMaterieName.includes(normalizedSearchTerm)) return false;
+      }
+      return true;
+    });
+  };
+
+  const getFilteredPachete = () => {
+    // Funcție helper pentru eliminarea diacriticelor
+    const removeDiacritics = (str) => {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    };
+
+    return pachete.filter(pachet => {
+      if (filtersPachete.facultate && pachet.facultate !== filtersPachete.facultate) return false;
+      if (filtersPachete.specializare && pachet.specializare !== filtersPachete.specializare) return false;
+      if (filtersPachete.an && pachet.an !== filtersPachete.an) return false;
+      if (searchTermPachete) {
+        const normalizedSearchTerm = removeDiacritics(searchTermPachete.toLowerCase());
+        const normalizedPachetName = removeDiacritics(pachet.nume.toLowerCase());
+        if (!normalizedPachetName.includes(normalizedSearchTerm)) return false;
       }
       return true;
     });
@@ -339,90 +387,142 @@ const AdminMateriiPage = () => {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-6">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editedMaterie.nume}
-                  onChange={(e) => setEditedMaterie({...editedMaterie, nume: e.target.value})}
-                  className="text-2xl font-bold text-gray-800 w-full border rounded px-2 py-1"
-                />
-              ) : (
-                <h2 className="text-2xl font-bold text-gray-800">{materie.nume}</h2>
-              )}
-              <button 
-                onClick={onClose}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+      <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 overflow-y-auto">
+                  <div className="min-h-screen w-full">
+            {/* Header fix cu gradient background */}
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-gray-800 dark:to-gray-900 shadow-lg">
+              <div className="container mx-auto px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <button 
+                      onClick={onClose}
+                      className="flex items-center space-x-2 text-white hover:bg-white/10 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-all duration-200"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                      </svg>
+                      <span className="font-medium">Înapoi</span>
+                    </button>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editedMaterie.nume}
+                        onChange={(e) => setEditedMaterie({...editedMaterie, nume: e.target.value})}
+                        className="text-2xl font-bold bg-white/90 dark:bg-gray-800/90 text-[#024A76] dark:text-gray-200 border border-white/30 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-yellow-accent backdrop-blur-sm"
+                      />
+                    ) : (
+                      <h1 className="text-2xl font-bold text-white">{materie.nume}</h1>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center space-x-4">
+                    {isEditing ? (
+                      <>
+                        <button
+                          onClick={handleCancel}
+                          className="px-4 py-2 text-white border border-white/30 rounded-lg hover:bg-white/10 transition-all duration-200 flex items-center space-x-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span>Anulează</span>
+                        </button>
+                        <button
+                          onClick={handleSave}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 flex items-center space-x-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Salvează</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={handleEdit}
+                        className="px-4 py-2 bg-[#E3AB23] hover:bg-[#E3AB23]/80 text-[#024A76] font-medium rounded-lg transition-all duration-200 flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>Editează</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-700 mb-3">Informații Generale</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                        {/* Content */}
+            <div className="container mx-auto px-6 py-8">
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-8">
+                <div className="bg-gray-50/50 dark:bg-gray-700/30 p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <h3 className="font-semibold text-[#024A76] dark:text-blue-light mb-6 text-lg flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 8a1 1 0 011-1h4a1 1 0 011 1v4H7v-4z" clipRule="evenodd" />
+                    </svg>
+                    Informații Generale
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                     <div>
-                      <p className="font-medium text-gray-600">Facultate</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</p>
                       {isEditing ? (
                         <select
                           value={editedMaterie.facultate}
                           onChange={(e) => setEditedMaterie({...editedMaterie, facultate: e.target.value})}
-                          className="w-full border rounded px-2 py-1"
+                          className="w-full px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
                         >
                           {facultati.map(facultate => (
                             <option key={facultate} value={facultate}>{facultate}</option>
                           ))}
                         </select>
                       ) : (
-                        <p>{materie.facultate}</p>
+                        <p className="text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-600/30 px-3 py-2 rounded-md">{materie.facultate}</p>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-600">Specializare</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</p>
                       {isEditing ? (
                         <select
                           value={editedMaterie.specializare}
                           onChange={(e) => setEditedMaterie({...editedMaterie, specializare: e.target.value})}
-                          className="w-full border rounded px-2 py-1"
+                          className="w-full px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
                         >
                           {specializari[editedMaterie.facultate]?.map(spec => (
                             <option key={spec} value={spec}>{spec}</option>
                           ))}
                         </select>
                       ) : (
-                        <p>{materie.specializare}</p>
+                        <p className="text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-600/30 px-3 py-2 rounded-md">{materie.specializare}</p>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-600">An</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">An</p>
                       {isEditing ? (
                         <select
                           value={editedMaterie.an}
                           onChange={(e) => setEditedMaterie({...editedMaterie, an: e.target.value})}
-                          className="w-full border rounded px-2 py-1"
+                          className="w-full px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
                         >
                           {ani.map(an => (
                             <option key={an} value={an}>{an}</option>
                           ))}
                         </select>
                       ) : (
-                        <p>{materie.an}</p>
+                        <span className="inline-block bg-[#E3AB23]/20 dark:bg-yellow-accent/20 text-[#024A76] dark:text-yellow-accent px-3 py-1 rounded-full text-xs font-semibold">
+                          An {materie.an}
+                        </span>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-600">Semestru</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">Semestru</p>
                       {isEditing ? (
                         <select
                           value={editedMaterie.semestru || ''}
                           onChange={(e) => setEditedMaterie({...editedMaterie, semestru: e.target.value})}
-                          className="w-full border rounded px-2 py-1"
+                          className="w-full px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
                         >
                           <option value="">Selectează semestrul</option>
                           {semestre.map(sem => (
@@ -430,11 +530,13 @@ const AdminMateriiPage = () => {
                           ))}
                         </select>
                       ) : (
-                        <p>{materie.semestru || 'Nedefinit'}</p>
+                        <span className="inline-block bg-[#3471B8]/20 dark:bg-blue-light/20 text-[#024A76] dark:text-blue-light px-3 py-1 rounded-full text-xs font-semibold">
+                          Semestrul {materie.semestru || 'Nedefinit'}
+                        </span>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-600">Credite</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">Credite</p>
                       {isEditing ? (
                         <input
                           type="number"
@@ -442,14 +544,19 @@ const AdminMateriiPage = () => {
                           max="30"
                           value={editedMaterie.credite}
                           onChange={(e) => setEditedMaterie({...editedMaterie, credite: e.target.value})}
-                          className="w-full border rounded px-2 py-1"
+                          className="w-full px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
                         />
                       ) : (
-                        <p>{materie.credite}</p>
+                        <span className="inline-flex items-center bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 px-3 py-1 rounded-full text-xs font-semibold">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          {materie.credite} ECTS
+                        </span>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-600">Materie Obligatorie</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">Tip Materie</p>
                       {isEditing ? (
                         <div className="flex items-center">
                           <input
@@ -463,16 +570,22 @@ const AdminMateriiPage = () => {
                                 locuriDisponibile: isObligatorie ? null : editedMaterie.locuriDisponibile
                               });
                             }}
-                            className="h-4 w-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500"
+                            className="h-4 w-4 text-[#E3AB23] dark:text-yellow-accent focus:ring-[#E3AB23] dark:focus:ring-yellow-accent border-[#024A76]/30 dark:border-gray-600 rounded"
                           />
-                          <span className="ml-2">{editedMaterie.obligatorie ? 'Da' : 'Nu'}</span>
+                          <span className="ml-2 text-gray-700 dark:text-gray-300">{editedMaterie.obligatorie ? 'Obligatorie' : 'Opțională'}</span>
                         </div>
                       ) : (
-                        <p>{materie.obligatorie ? 'Da' : 'Nu'}</p>
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                          materie.obligatorie 
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' 
+                            : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
+                        }`}>
+                          {materie.obligatorie ? 'Obligatorie' : 'Opțională'}
+                        </span>
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-600">Locuri Disponibile</p>
+                      <p className="font-semibold text-[#024A76] dark:text-blue-light mb-2">Locuri Disponibile</p>
                       {isEditing ? (
                         !editedMaterie.obligatorie ? (
                           <input
@@ -480,92 +593,229 @@ const AdminMateriiPage = () => {
                             min="1"
                             value={editedMaterie.locuriDisponibile || 0}
                             onChange={(e) => setEditedMaterie({...editedMaterie, locuriDisponibile: parseInt(e.target.value)})}
-                            className="w-full border rounded px-2 py-1"
+                            className="w-full px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
                           />
                         ) : (
-                          <p className="italic text-gray-500">Nelimitat (materie obligatorie)</p>
+                          <p className="italic text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-600/30 px-3 py-2 rounded-md">Nelimitat (materie obligatorie)</p>
                         )
                       ) : (
-                        <p>{materie.obligatorie ? 'Nelimitat (materie obligatorie)' : (materie.locuriDisponibile || 0)}</p>
+                        <span className="inline-flex items-center bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 px-3 py-1 rounded-full text-xs font-semibold">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                          {materie.obligatorie ? 'Nelimitat' : `${materie.locuriDisponibile || 0} locuri`}
+                        </span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-700 mb-3">Descriere</h3>
+                <div className="bg-gray-50/50 dark:bg-gray-700/30 p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <h3 className="font-semibold text-[#024A76] dark:text-blue-light mb-4 text-lg flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                    Descriere
+                  </h3>
                   {isEditing ? (
                     <textarea
                       value={editedMaterie.descriere || ''}
                       onChange={(e) => setEditedMaterie({...editedMaterie, descriere: e.target.value})}
                       rows="6"
-                      className="w-full border rounded px-2 py-1"
+                      placeholder="Adaugă o descriere pentru materie..."
+                      className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 resize-none"
                     />
                   ) : (
                     <div className="max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                      <p className="text-gray-800 whitespace-pre-wrap">{materie.descriere || 'Nicio descriere disponibilă.'}</p>
+                      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap bg-white/50 dark:bg-gray-600/30 px-4 py-3 rounded-lg">
+                        {materie.descriere || (
+                          <span className="italic text-gray-500 dark:text-gray-400">Nicio descriere disponibilă.</span>
+                        )}
+                      </p>
                     </div>
                   )}
                 </div>
 
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-gray-700 mb-3">Profesori</h3>
-                  {materie.profesori?.length > 0 ? (
-                    <ul className="space-y-2">
-                      {materie.profesori.map((profesor, index) => (
-                        <li key={index} className="text-gray-600">
-                          {profesor.nume}
-                        </li>
-                      ))}
-                    </ul>
+                <div className="bg-gray-50/50 dark:bg-gray-700/30 p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+                  <h3 className="font-semibold text-[#024A76] dark:text-blue-light mb-4 text-lg flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                    Profesori Asignați
+                  </h3>
+                  
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      {/* Lista profesorilor actuali cu opțiune de ștergere */}
+                      {editedMaterie.profesori?.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Profesori actuali:</h4>
+                          {editedMaterie.profesori.map((profesor, index) => (
+                            <div key={index} className="flex items-center justify-between bg-white/50 dark:bg-gray-600/30 px-4 py-2 rounded-lg">
+                              <div className="flex items-center">
+                                <svg className="w-4 h-4 mr-2 text-[#024A76] dark:text-blue-light" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-gray-700 dark:text-gray-200 font-medium">{profesor.nume}</span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const updatedProfesori = editedMaterie.profesori.filter((_, i) => i !== index);
+                                  setEditedMaterie({...editedMaterie, profesori: updatedProfesori});
+                                }}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1 rounded transition-all duration-200"
+                                title="Elimină profesor"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Form pentru adăugarea unui nou profesor */}
+                      <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                        <h4 className="text-sm font-medium text-[#024A76] dark:text-blue-light mb-3">Adaugă profesor nou:</h4>
+                        <div className="flex gap-2">
+                          <select
+                            className="flex-1 px-3 py-2 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 text-sm"
+                            onChange={(e) => {
+                              const selectedProfesorId = e.target.value;
+                              if (selectedProfesorId) {
+                                const selectedProfesor = availableProfessors.find(prof => prof.id === selectedProfesorId);
+                                if (selectedProfesor) {
+                                  const updatedProfesori = [...(editedMaterie.profesori || []), { 
+                                    id: selectedProfesor.id,
+                                    nume: `${selectedProfesor.prenume} ${selectedProfesor.nume}` 
+                                  }];
+                                  setEditedMaterie({...editedMaterie, profesori: updatedProfesori});
+                                  e.target.value = ''; // Reset selection
+                                }
+                              }
+                            }}
+                            defaultValue=""
+                          >
+                            <option value="">Selectează profesor...</option>
+                            {availableProfessors
+                              .filter(profesor => {
+                                // Filtrează doar profesorii de la aceeași facultate ca materia
+                                return profesor.facultate === editedMaterie.facultate &&
+                                       // Verifică dacă profesorul nu este deja adăugat
+                                       !(editedMaterie.profesori || []).some(p => p.id === profesor.id);
+                              })
+                              .map(profesor => (
+                                <option key={profesor.id} value={profesor.id}>
+                                  {profesor.prenume} {profesor.nume} ({profesor.facultate})
+                                </option>
+                              ))
+                            }
+                          </select>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Selectează un profesor din lista profesorilor de la {editedMaterie.facultate || 'această facultate'}
+                        </p>
+                        {availableProfessors.filter(profesor => 
+                          profesor.facultate === editedMaterie.facultate &&
+                          !(editedMaterie.profesori || []).some(p => p.id === profesor.id)
+                        ).length === 0 && (
+                          <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                            Nu există profesori disponibili de la această facultate sau toți profesorii sunt deja asignați.
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   ) : (
-                    <p className="text-gray-500 italic">Nu există profesori asignați</p>
+                    <>
+                      {materie.profesori?.length > 0 ? (
+                        <div className="space-y-2">
+                          {materie.profesori.map((profesor, index) => (
+                            <div key={index} className="flex items-center bg-white/50 dark:bg-gray-600/30 px-4 py-2 rounded-lg">
+                              <svg className="w-4 h-4 mr-2 text-[#024A76] dark:text-blue-light" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-gray-700 dark:text-gray-200 font-medium">{profesor.nume}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-6">
+                          <svg className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                          <p className="text-gray-500 dark:text-gray-400 italic">Nu există profesori asignați</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-gray-700 mb-3">
-                  Studenți Înscriși ({studentiAftati?.length || 0}/{materie.locuriDisponibile || 0})
-                </h3>
-                {studentiAftati?.length > 0 ? (
-                  <ul className="space-y-2">
-                    {studentiAftati.map((student) => (
-                      <li key={student.id} className="text-gray-600">
-                        {student.nume} | {student.nrMatricol || student.numarMatricol || 'N/A'}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500 italic">Nu există studenți înscriși</p>
-                )}
+              <div className="bg-gray-50/50 dark:bg-gray-700/30 p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+                <div className="sticky top-24 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-[#024A76] dark:text-blue-light text-lg flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                      </svg>
+                      Studenți Înscriși
+                    </h3>
+                    <span className="bg-[#E3AB23]/20 dark:bg-yellow-accent/20 text-[#024A76] dark:text-yellow-accent px-3 py-1 rounded-full text-sm font-bold">
+                      {studentiAftati?.length || 0}/{materie.obligatorie ? '∞' : materie.locuriDisponibile || 0}
+                    </span>
+                  </div>
+                  
+                  {/* Search studenți */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Caută student..."
+                      className="w-full px-4 py-2 pl-10 text-sm border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200"
+                    />
+                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+
+                  {studentiAftati?.length > 0 ? (
+                    <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                      {studentiAftati.map((student, index) => (
+                        <div key={student.id} className="bg-white/70 dark:bg-gray-600/50 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-600/70 transition-all duration-200 cursor-pointer group">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                  #{index + 1}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                                  {student.nrMatricol || student.numarMatricol || 'N/A'}
+                                </span>
+                              </div>
+                              <p className="text-gray-800 dark:text-gray-200 font-medium text-sm leading-tight">
+                                {student.nume}
+                              </p>
+                            </div>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <svg className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <p className="text-gray-500 dark:text-gray-400 font-medium">Nu există studenți înscriși</p>
+                      <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">Această materie nu are încă studenți înregistrați</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            
-            <div className="flex justify-end mt-6 space-x-3">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleCancel}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  >
-                    Anulează
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Salvează
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleEdit}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  Editează Detalii
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -622,27 +872,40 @@ const AdminMateriiPage = () => {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-          <h2 className="text-2xl font-bold mb-4">Adaugă Pachet Nou</h2>
+      <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-xl shadow-2xl p-8 w-full max-w-2xl border border-gray-200 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
+              Adaugă Pachet Nou
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Nume Pachet</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Nume Pachet</label>
               <input
                 type="text"
                 value={newPachet.nume}
                 onChange={(e) => setNewPachet({...newPachet, nume: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                placeholder="Introdu numele pachetului"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Facultate</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
               <select
                 value={newPachet.facultate}
                 onChange={(e) => setNewPachet({...newPachet, facultate: e.target.value, specializare: ''})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
               >
                 <option value="">Toate facultățile</option>
                 {facultati.map(facultate => (
@@ -652,11 +915,11 @@ const AdminMateriiPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Specializare</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
               <select
                 value={newPachet.specializare}
                 onChange={(e) => setNewPachet({...newPachet, specializare: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md disabled:bg-gray-100 dark:disabled:bg-gray-700"
                 disabled={!newPachet.facultate}
               >
                 <option value="">Toate specializările</option>
@@ -667,11 +930,11 @@ const AdminMateriiPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">An</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">An</label>
               <select
                 value={newPachet.an}
                 onChange={(e) => setNewPachet({...newPachet, an: e.target.value})}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
               >
                 <option value="">Toți anii</option>
                 {ani.map(an => (
@@ -681,40 +944,72 @@ const AdminMateriiPage = () => {
             </div>
 
             <div>
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Selectează Materii</h3>
-              <div className="max-h-60 overflow-y-auto border rounded-md p-4">
-                {filteredMaterii.map((materie) => (
-                  <label key={materie.id} className="flex items-center space-x-3 py-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedMaterii.some(m => m.id === materie.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedMaterii([...selectedMaterii, materie]);
-                        } else {
-                          setSelectedMaterii(selectedMaterii.filter(m => m.id !== materie.id));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span>{materie.nume}</span>
-                  </label>
-                ))}
+              <h3 className="text-lg font-semibold text-[#024A76] dark:text-blue-light mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Selectează Materii
+              </h3>
+              <div className="max-h-60 overflow-y-auto border border-[#024A76]/30 dark:border-gray-600 rounded-lg p-4 bg-gray-50/50 dark:bg-gray-700/30">
+                {filteredMaterii.length > 0 ? (
+                  filteredMaterii.map((materie) => (
+                    <label key={materie.id} className="flex items-center space-x-3 py-3 hover:bg-white/50 dark:hover:bg-gray-600/30 rounded-md px-2 transition-colors cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedMaterii.some(m => m.id === materie.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMaterii([...selectedMaterii, materie]);
+                          } else {
+                            setSelectedMaterii(selectedMaterii.filter(m => m.id !== materie.id));
+                          }
+                        }}
+                        className="h-4 w-4 text-[#E3AB23] dark:text-yellow-accent focus:ring-[#E3AB23] dark:focus:ring-yellow-accent border-[#024A76]/30 dark:border-gray-600 rounded"
+                      />
+                      <div className="flex-1">
+                        <span className="text-[#024A76] dark:text-gray-200 font-medium">{materie.nume}</span>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          {materie.facultate} • {materie.specializare} • An {materie.an}
+                        </div>
+                      </div>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-gray-500 dark:text-gray-400">
+                      Nu există materii disponibile pentru criteriile selectate.
+                    </p>
+                  </div>
+                )}
               </div>
+              {selectedMaterii.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm text-[#024A76] dark:text-blue-light font-medium">
+                    {selectedMaterii.length} {selectedMaterii.length === 1 ? 'materie selectată' : 'materii selectate'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
+          <div className="mt-8 flex justify-end space-x-4">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              className="px-6 py-3 text-sm font-medium text-[#024A76] dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-300 border border-gray-300 dark:border-gray-600"
             >
               Anulează
             </button>
             <button
               onClick={handleAddPachet}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              disabled={!newPachet.nume || selectedMaterii.length === 0}
+              className="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-blue-dark rounded-lg hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none flex items-center"
             >
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
               Adaugă Pachet
             </button>
           </div>
@@ -755,16 +1050,37 @@ const AdminMateriiPage = () => {
               </svg>
               Istoric Academic
             </Link>
-            <button
-              onClick={() => setShowPachetModal(true)}
-              className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
-            >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-              Adaugă Pachet
-            </button>
           </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex space-x-2 mb-8">
+          <button
+            onClick={() => setActiveTab('materii')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+              activeTab === 'materii'
+                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent text-white shadow-lg'
+                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 border border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+            Materii
+          </button>
+          <button
+            onClick={() => setActiveTab('pachete')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
+              activeTab === 'pachete'
+                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent text-white shadow-lg'
+                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 border border-gray-200 dark:border-gray-700'
+            }`}
+          >
+            <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 13a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+            Pachete
+          </button>
         </div>
 
         {error && (
@@ -780,42 +1096,136 @@ const AdminMateriiPage = () => {
 
         {activeTab === 'pachete' && (
           <div>
-            <button
-              onClick={() => setShowPachetModal(true)}
-              className="mb-6 px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
-            >
-              + Adaugă Pachet Nou
-            </button>
+            {/* Header cu buton și căutare */}
+            <div className="flex justify-between items-center mb-6">
+              <button
+                onClick={() => setShowPachetModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
+              >
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
+                Adaugă Pachet Nou
+              </button>
+
+              {/* Căutare pachete */}
+              <div className="relative w-80">
+                <input
+                  type="text"
+                  placeholder="Caută pachete..."
+                  value={searchTermPachete}
+                  onChange={(e) => setSearchTermPachete(e.target.value)}
+                  className="w-full px-4 py-3 pl-10 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                />
+                <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchTermPachete && (
+                  <button
+                    onClick={() => setSearchTermPachete('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filtre pachete */}
+            <div className="mb-8 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
+                  Filtre Pachete
+                </h2>
+                <button
+                  onClick={() => setFiltersPachete({ facultate: '', specializare: '', an: '' })}
+                  className="text-sm text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200 font-medium"
+                >
+                  Resetează filtrele
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
+                  <select
+                    value={filtersPachete.facultate}
+                    onChange={(e) => setFiltersPachete(prev => ({ 
+                      ...prev, 
+                      facultate: e.target.value,
+                      specializare: ''
+                    }))}
+                    className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                  >
+                    <option value="">Toate facultățile</option>
+                    {facultati.map(fac => (
+                      <option key={fac} value={fac}>{fac}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
+                  <select
+                    value={filtersPachete.specializare}
+                    onChange={(e) => setFiltersPachete(prev => ({ ...prev, specializare: e.target.value }))}
+                    className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md disabled:bg-gray-100 dark:disabled:bg-gray-700"
+                    disabled={!filtersPachete.facultate}
+                  >
+                    <option value="">Toate specializările</option>
+                    {filtersPachete.facultate && specializari[filtersPachete.facultate]?.map(spec => (
+                      <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">An</label>
+                  <select
+                    value={filtersPachete.an}
+                    onChange={(e) => setFiltersPachete(prev => ({ ...prev, an: e.target.value }))}
+                    className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                  >
+                    <option value="">Toți anii</option>
+                    {ani.map(an => (
+                      <option key={an} value={an}>{an}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pachete.map((pachet) => (
-                <div key={pachet.id} className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 relative shadow-lg hover:shadow-xl transition-all duration-300">
+              {getFilteredPachete().map((pachet) => (
+                <div key={pachet.id} className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 relative shadow-lg hover:shadow-xl transition-all duration-300 hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10">
                   <button
                     onClick={() => handleDeletePachet(pachet.id)}
-                    className="absolute top-4 right-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
+                    className="absolute top-4 right-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all duration-200"
                     title="Șterge pachet"
                   >
                     <DeleteIcon />
                   </button>
-                  <h3 className="text-lg font-bold pr-8 text-[#024A76] mb-4">{pachet.nume}</h3>
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <h3 className="text-lg font-bold pr-8 text-[#024A76] dark:text-blue-light mb-4">{pachet.nume}</h3>
+                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
                     <div className="flex items-center">
-                      <span className="font-medium w-20">Facultate:</span>
+                      <span className="font-medium w-20 text-[#024A76] dark:text-blue-light">Facultate:</span>
                       <span>{pachet.facultate || 'Toate'}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="font-medium w-20">Specializare:</span>
+                      <span className="font-medium w-20 text-[#024A76] dark:text-blue-light">Specializare:</span>
                       <span>{pachet.specializare || 'Toate'}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="font-medium w-20">An:</span>
-                      <span className="px-2 py-1 bg-[#E3AB23]/20 text-[#024A76] rounded-md font-semibold text-xs">
+                      <span className="font-medium w-20 text-[#024A76] dark:text-blue-light">An:</span>
+                      <span className="px-2 py-1 bg-[#E3AB23]/20 dark:bg-yellow-accent/20 text-[#024A76] dark:text-yellow-accent rounded-md font-semibold text-xs">
                         {pachet.an || 'Toți'}
                       </span>
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-3 text-[#024A76] flex items-center">
+                    <h4 className="font-semibold mb-3 text-[#024A76] dark:text-blue-light flex items-center">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -823,7 +1233,7 @@ const AdminMateriiPage = () => {
                     </h4>
                     <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
                       {pachet.materii.map((materie) => (
-                        <div key={materie.id} className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-md">
+                        <div key={materie.id} className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-md">
                           {materie.nume}
                         </div>
                       ))}
@@ -831,256 +1241,271 @@ const AdminMateriiPage = () => {
                   </div>
                 </div>
               ))}
+              
+              {getFilteredPachete().length === 0 && (
+                <div className="col-span-full text-center py-12">
+                  <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2m13-8V5a2 2 0 00-2-2H6a2 2 0 00-2 2v0h16z" />
+                  </svg>
+                  <h3 className="mt-4 text-lg font-medium text-[#024A76] dark:text-blue-light">Nu s-au găsit pachete</h3>
+                  <p className="mt-2 text-[#024A76]/60 dark:text-gray-300">
+                    {searchTermPachete || filtersPachete.facultate || filtersPachete.specializare || filtersPachete.an 
+                      ? 'Niciun pachet nu corespunde criteriilor de căutare.' 
+                      : 'Nu există pachete create încă.'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {activeTab === 'materii' && (
+                {activeTab === 'materii' && (
           <div className="space-y-8">
-            {renderFilters()}
+            {!selectedMaterie && renderFilters()}
 
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold mb-6 text-[#024A76] dark:text-blue-light flex items-center">
-                  <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  Adaugă Materie Nouă
-                </h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Nume Materie</label>
-                    <input
-                      type="text"
-                      value={newMaterie.nume}
-                      onChange={(e) => setNewMaterie({...newMaterie, nume: e.target.value})}
-                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Facultate</label>
-                    <select
-                      value={newMaterie.facultate}
-                      onChange={(e) => setNewMaterie({...newMaterie, facultate: e.target.value})}
-                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
-                      required
-                    >
-                      <option value="">Selectează facultatea</option>
-                      {facultati.map(facultate => (
-                        <option key={facultate} value={facultate}>{facultate}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Specializare</label>
-                    <select
-                      value={newMaterie.specializare}
-                      onChange={(e) => setNewMaterie({...newMaterie, specializare: e.target.value})}
-                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md disabled:bg-gray-100"
-                      required
-                      disabled={!newMaterie.facultate}
-                    >
-                      <option value="">Selectează specializarea</option>
-                      {newMaterie.facultate && specializari[newMaterie.facultate]?.map(spec => (
-                        <option key={spec} value={spec}>{spec}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+            {!selectedMaterie ? (
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+                  <h2 className="text-xl font-semibold mb-6 text-[#024A76] dark:text-blue-light flex items-center">
+                    <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    Adaugă Materie Nouă
+                  </h2>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                      <label className="block text-sm font-semibold text-[#024A76] mb-2">An</label>
-                      <select
-                        value={newMaterie.an}
-                        onChange={(e) => setNewMaterie({...newMaterie, an: e.target.value})}
-                        className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
-                        required
-                      >
-                        <option value="">Selectează anul</option>
-                        {ani.map(an => (
-                          <option key={an} value={an}>{an}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-[#024A76] mb-2">Semestru</label>
-                      <select
-                        value={newMaterie.semestru}
-                        onChange={(e) => setNewMaterie({...newMaterie, semestru: e.target.value})}
-                        className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
-                        required
-                      >
-                        <option value="">Selectează semestrul</option>
-                        {semestre.map(sem => (
-                          <option key={sem} value={sem}>{sem}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Credite</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={newMaterie.credite}
-                      onChange={(e) => setNewMaterie({...newMaterie, credite: e.target.value})}
-                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      id="obligatorie-checkbox"
-                      type="checkbox"
-                      checked={newMaterie.obligatorie}
-                      onChange={(e) => setNewMaterie({
-                        ...newMaterie, 
-                        obligatorie: e.target.checked
-                      })}
-                      className="h-4 w-4 text-[#E3AB23] focus:ring-[#E3AB23] border-[#024A76]/30 rounded"
-                    />
-                    <label htmlFor="obligatorie-checkbox" className="ml-2 block text-sm font-semibold text-[#024A76]">
-                      Materie obligatorie
-                    </label>
-                  </div>
-
-                  {!newMaterie.obligatorie && (
-                    <div>
-                      <label className="block text-sm font-semibold text-[#024A76] mb-2">Locuri Disponibile</label>
+                      <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Nume Materie</label>
                       <input
-                        type="number"
-                        min="1"
-                        value={newMaterie.locuriDisponibile}
-                        onChange={(e) => setNewMaterie({...newMaterie, locuriDisponibile: e.target.value})}
-                        className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                        type="text"
+                        value={newMaterie.nume}
+                        onChange={(e) => setNewMaterie({...newMaterie, nume: e.target.value})}
+                        className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
                         required
                       />
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-sm font-semibold text-[#024A76] mb-2">Descriere</label>
-                    <textarea
-                      value={newMaterie.descriere}
-                      onChange={(e) => setNewMaterie({...newMaterie, descriere: e.target.value})}
-                      className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md resize-none"
-                      rows="3"
-                      placeholder="Descrierea materiei..."
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
-                  >
-                    Adaugă Materie
-                  </button>
-                </form>
-              </div>
-
-              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold mb-6 text-[#024A76] dark:text-blue-light flex items-center">
-                  <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Materii Existente
-                </h2>
-                
-                <div className="mb-6">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Caută după numele materiei..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full px-4 py-3 pl-10 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
-                    />
-                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    <div>
+                      <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
+                      <select
+                        value={newMaterie.facultate}
+                        onChange={(e) => setNewMaterie({...newMaterie, facultate: e.target.value})}
+                        className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                        required
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                  {getFilteredMaterii().map((materie) => (
-                    <div 
-                      key={materie.id} 
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 cursor-pointer transition-all duration-300 hover:shadow-md"
-                      onClick={() => setSelectedMaterie(materie)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg text-[#024A76] mb-2">{materie.nume}</h3>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            <span className="px-2 py-1 bg-[#3471B8]/10 text-[#024A76] rounded-md text-xs font-medium">
-                              {materie.facultate}
-                            </span>
-                            <span className="px-2 py-1 bg-[#E3AB23]/20 text-[#024A76] rounded-md text-xs font-medium">
-                              {materie.specializare}
-                            </span>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
-                              Anul {materie.an}
-                            </span>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
-                              {materie.credite} ECTS
-                            </span>
-                          </div>
-                          {materie.obligatorie && (
-                            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                              Obligatorie
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(materie.id);
-                          }}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
-                          title="Șterge materie"
+                        <option value="">Selectează facultatea</option>
+                        {facultati.map(facultate => (
+                          <option key={facultate} value={facultate}>{facultate}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
+                      <select
+                        value={newMaterie.specializare}
+                        onChange={(e) => setNewMaterie({...newMaterie, specializare: e.target.value})}
+                        className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md disabled:bg-gray-100 dark:disabled:bg-gray-700"
+                        required
+                        disabled={!newMaterie.facultate}
+                      >
+                        <option value="">Selectează specializarea</option>
+                        {newMaterie.facultate && specializari[newMaterie.facultate]?.map(spec => (
+                          <option key={spec} value={spec}>{spec}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">An</label>
+                        <select
+                          value={newMaterie.an}
+                          onChange={(e) => setNewMaterie({...newMaterie, an: e.target.value})}
+                          className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                          required
                         >
-                          <DeleteIcon />
-                        </button>
+                          <option value="">Selectează anul</option>
+                          {ani.map(an => (
+                            <option key={an} value={an}>{an}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Semestru</label>
+                        <select
+                          value={newMaterie.semestru}
+                          onChange={(e) => setNewMaterie({...newMaterie, semestru: e.target.value})}
+                          className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                          required
+                        >
+                          <option value="">Selectează semestrul</option>
+                          {semestre.map(sem => (
+                            <option key={sem} value={sem}>{sem}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  ))}
+
+                    <div>
+                      <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Credite</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={newMaterie.credite}
+                        onChange={(e) => setNewMaterie({...newMaterie, credite: e.target.value})}
+                        className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex items-center">
+                      <input
+                        id="obligatorie-checkbox"
+                        type="checkbox"
+                        checked={newMaterie.obligatorie}
+                        onChange={(e) => setNewMaterie({
+                          ...newMaterie, 
+                          obligatorie: e.target.checked
+                        })}
+                        className="h-4 w-4 text-[#E3AB23] dark:text-yellow-accent focus:ring-[#E3AB23] dark:focus:ring-yellow-accent border-[#024A76]/30 dark:border-gray-600 rounded"
+                      />
+                      <label htmlFor="obligatorie-checkbox" className="ml-2 block text-sm font-semibold text-[#024A76] dark:text-blue-light">
+                        Materie obligatorie
+                      </label>
+                    </div>
+
+                    {!newMaterie.obligatorie && (
+                      <div>
+                        <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Locuri Disponibile</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={newMaterie.locuriDisponibile}
+                          onChange={(e) => setNewMaterie({...newMaterie, locuriDisponibile: e.target.value})}
+                          className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                          required
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Descriere</label>
+                      <textarea
+                        value={newMaterie.descriere}
+                        onChange={(e) => setNewMaterie({...newMaterie, descriere: e.target.value})}
+                        className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md resize-none"
+                        rows="3"
+                        placeholder="Descrierea materiei..."
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
+                    >
+                      Adaugă Materie
+                    </button>
+                  </form>
                 </div>
 
-                {selectedMaterie && (
-                  <MaterieModal 
-                    materie={selectedMaterie} 
-                    onClose={() => setSelectedMaterie(null)} 
-                  />
-                )}
+                <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-semibold mb-6 text-[#024A76] dark:text-blue-light flex items-center">
+                    <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                    Materii Existente
+                  </h2>
+                  
+                  <div className="mb-6">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Caută după numele materiei..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-4 py-3 pl-10 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
+                      />
+                      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {getFilteredMaterii().map((materie) => (
+                      <div 
+                        key={materie.id} 
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-300 hover:shadow-md"
+                        onClick={() => setSelectedMaterie(materie)}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg text-[#024A76] dark:text-blue-light mb-2">{materie.nume}</h3>
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              <span className="px-2 py-1 bg-[#3471B8]/10 dark:bg-blue-light/20 text-[#024A76] dark:text-blue-light rounded-md text-xs font-medium">
+                                {materie.facultate}
+                              </span>
+                              <span className="px-2 py-1 bg-[#E3AB23]/20 dark:bg-yellow-accent/20 text-[#024A76] dark:text-yellow-accent rounded-md text-xs font-medium">
+                                {materie.specializare}
+                              </span>
+                              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium">
+                                Anul {materie.an}
+                              </span>
+                              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium">
+                                {materie.credite} ECTS
+                              </span>
+                            </div>
+                            {materie.obligatorie && (
+                              <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Obligatorie
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(materie.id);
+                            }}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
+                            title="Șterge materie"
+                          >
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <MaterieModal 
+                materie={selectedMaterie} 
+                onClose={() => setSelectedMaterie(null)} 
+              />
+            )}
           </div>
         )}
 
         {showPachetModal && <PachetModal onClose={() => setShowPachetModal(false)} />}
       </div>
       
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }

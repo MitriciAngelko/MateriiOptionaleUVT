@@ -395,12 +395,12 @@ const MateriileMelePage = () => {
                                   </td>
                                   <td className="py-3 px-6 text-center text-gray-900 dark:text-gray-200">{materie.credite}</td>
                                   <td className="py-3 px-6 text-center">
-                                    <span className={`font-semibold px-2 py-1 rounded-full text-sm ${
+                                    <span className={`font-bold text-lg ${
                                       materie.nota >= 5 
-                                        ? 'bg-green-100 text-green-700 border border-green-300' 
+                                        ? 'text-green-600 dark:text-green-400' 
                                         : materie.nota > 0 
-                                        ? 'bg-red-100 text-red-700 border border-red-300' 
-                                        : 'bg-gray-100 text-gray-500 border border-gray-300'
+                                        ? 'text-red-600 dark:text-red-400' 
+                                        : 'text-gray-500 dark:text-gray-400'
                                     }`}>
                                       {materie.nota > 0 ? materie.nota : '-'}
                                     </span>
