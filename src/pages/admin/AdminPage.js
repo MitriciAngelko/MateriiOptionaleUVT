@@ -2,12 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useAuth } from '../../providers/AuthProvider';
-import { db } from '../../firebase';
-import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../../firebase';
+import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import AdminUserForm from '../../components/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
+import CSVImportModal from '../../components/CSVImportModal';
 import { isAdmin } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
+import { generateUserCSVTemplate, downloadCSV } from '../../utils/csvUtils';
 import axios from 'axios';
 
 const AdminPage = () => {
@@ -31,6 +34,7 @@ const AdminPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [materiiList, setMateriiList] = useState([]);
   const [hasAccess, setHasAccess] = useState(false);
+  const [showCSVImportModal, setShowCSVImportModal] = useState(false);
   const { allMaterii, loading: materiiLoading } = useMaterii();
 
   const facultati = [
@@ -484,6 +488,190 @@ const AdminPage = () => {
     }
   };
 
+  // CSV Template Download
+  const handleDownloadCSVTemplate = () => {
+    const templateData = generateUserCSVTemplate();
+    downloadCSV('template_utilizatori.csv', templateData);
+  };
+
+  // CSV Import Handler
+  const handleCSVImport = async (usersData) => {
+    const results = {
+      success: 0,
+      errors: []
+    };
+
+    for (let i = 0; i < usersData.length; i++) {
+      const userData = usersData[i];
+      try {
+        // Generate default password (user can change it later)
+        const defaultPassword = 'TempPass123!';
+        
+        // Create user in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          userData.email.toLowerCase(),
+          defaultPassword
+        );
+
+        // Prepare user data for Firestore
+        const firestoreData = {
+          email: userData.email.toLowerCase(),
+          uid: userCredential.user.uid,
+          nume: userData.nume,
+          prenume: userData.prenume,
+          tip: userData.tip,
+          facultate: userData.facultate,
+          createdAt: new Date(),
+        };
+
+        // Add type-specific data
+        if (userData.tip === 'student') {
+          // Generate matricol number
+          const numarMatricol = await getNextMatricolNumber(userData.specializare);
+          
+          firestoreData.specializare = userData.specializare;
+          firestoreData.an = userData.an;
+          firestoreData.anNastere = userData.anNastere;
+          firestoreData.numarMatricol = numarMatricol;
+        } else if (userData.tip === 'profesor') {
+          firestoreData.materiiPredate = [];
+        }
+
+        // Save to Firestore
+        await setDoc(doc(db, 'users', userCredential.user.uid), firestoreData);
+
+        // For students, assign mandatory courses
+        if (userData.tip === 'student') {
+          await assignMandatoryCoursesAndCreateIstoric(userCredential.user.uid, firestoreData);
+        }
+
+        results.success++;
+      } catch (error) {
+        console.error(`Error creating user ${userData.nume} ${userData.prenume}:`, error);
+        results.errors.push(`${userData.nume} ${userData.prenume}: ${error.message}`);
+      }
+    }
+
+    // Refresh users list
+    await fetchUsers();
+    
+    return results;
+  };
+
+  // Helper function to get next matricol number
+  const getNextMatricolNumber = async (specializare) => {
+    try {
+      const prefixMap = {
+        'IR': 'I',
+        'IG': 'G', 
+        'MI': 'M',
+        'MA': 'A'
+      };
+
+      const prefix = prefixMap[specializare];
+      if (!prefix) return null;
+
+      const q = query(
+        collection(db, 'users'),
+        where('specializare', '==', specializare)
+      );
+      const querySnapshot = await getDocs(q);
+      
+      let maxNumber = 0;
+      querySnapshot.forEach(doc => {
+        const matricol = doc.data().numarMatricol;
+        if (matricol) {
+          const number = parseInt(matricol.substring(1));
+          if (!isNaN(number) && number > maxNumber) {
+            maxNumber = number;
+          }
+        }
+      });
+
+      const nextNumber = maxNumber + 1;
+      return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
+    } catch (error) {
+      console.error('Error generating matricol number:', error);
+      return null;
+    }
+  };
+
+  // Helper function for assigning mandatory courses
+  const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentData) => {
+    try {
+      // Find mandatory courses for the student's specialization and year
+      const materiiSnapshot = await getDocs(collection(db, 'materii'));
+      const mandatoryCourses = [];
+      
+      materiiSnapshot.docs.forEach(doc => {
+        const materie = doc.data();
+        if (materie.facultate === studentData.facultate && 
+            materie.specializare === studentData.specializare && 
+            materie.an === studentData.an && 
+            materie.obligatorie === true) {
+          mandatoryCourses.push({
+            id: doc.id,
+            nume: materie.nume
+          });
+        }
+      });
+
+      // Add student to mandatory courses
+      for (const course of mandatoryCourses) {
+        const materieRef = doc(db, 'materii', course.id);
+        const materieDoc = await getDoc(materieRef);
+        
+        if (materieDoc.exists()) {
+          const materieData = materieDoc.data();
+          const studentiInscrisi = materieData.studentiInscrisi || [];
+          
+          // Check if student is not already enrolled
+          if (!studentiInscrisi.some(student => student.id === studentId)) {
+            studentiInscrisi.push({
+              id: studentId,
+              nume: `${studentData.nume} ${studentData.prenume}`
+            });
+            
+            await updateDoc(materieRef, {
+              studentiInscrisi: studentiInscrisi
+            });
+          }
+        }
+      }
+
+      // Update student's materiiInscrise
+      const studentRef = doc(db, 'users', studentId);
+      await updateDoc(studentRef, {
+        materiiInscrise: mandatoryCourses.map(course => course.id)
+      });
+
+      // Create academic history
+      const istoricData = {
+        studentId: studentId,
+        facultate: studentData.facultate,
+        specializare: studentData.specializare,
+        anCurent: studentData.an,
+        [studentData.an]: {
+          semestru1: mandatoryCourses.map(course => ({
+            id: course.id,
+            nume: course.nume,
+            credite: 6, // Default credits
+            nota: null,
+            status: 'nenotat',
+            obligatorie: true
+          })),
+          semestru2: []
+        }
+      };
+
+      await setDoc(doc(db, 'istoricAcademic', studentId), istoricData);
+      
+    } catch (error) {
+      console.error('Error assigning mandatory courses:', error);
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -681,18 +869,44 @@ const AdminPage = () => {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
             Administrare Utilizatori
           </h1>
-          <button
-            onClick={() => {
-              setEditingUser(null);
-              setShowUserModal(true);
-            }}
-            className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
-          >
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-            </svg>
-            Adaugă Utilizator
-          </button>
+          <div className="flex space-x-3">
+            {/* CSV Template Download Button */}
+            <button
+              onClick={handleDownloadCSVTemplate}
+              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-all duration-300 font-semibold flex items-center"
+              title="Descarcă template CSV pentru import utilizatori"
+            >
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+              Template CSV
+            </button>
+
+            {/* CSV Import Button */}
+            <button
+              onClick={() => setShowCSVImportModal(true)}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 font-semibold flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 11-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              Import CSV
+            </button>
+
+            {/* Existing Add User Button */}
+            <button
+              onClick={() => {
+                setEditingUser(null);
+                setShowUserModal(true);
+              }}
+              className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
+            >
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Adaugă Utilizator
+            </button>
+          </div>
         </div>
 
         {renderFilters()}
@@ -741,6 +955,13 @@ const AdminPage = () => {
             onSpecializareChange={handleSpecializareChange}
             onFacultateChange={handleFacultateChange}
             onAnChange={handleAnChange}
+          />
+        )}
+
+        {showCSVImportModal && (
+          <CSVImportModal 
+            onClose={() => setShowCSVImportModal(false)}
+            onImport={handleCSVImport}
           />
         )}
       </div>
