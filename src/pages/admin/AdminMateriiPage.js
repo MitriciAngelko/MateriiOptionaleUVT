@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import DeleteIcon from '../../components/icons/DeleteIcon';
-import MaterieDetailsModal from '../../components/student/MaterieDetailsModal';
-import AdminMateriiModal from '../../components/admin/AdminMateriiModal';
 
 const AdminMateriiPage = () => {
   const [activeTab, setActiveTab] = useState('materii'); // 'materii' sau 'pachete'

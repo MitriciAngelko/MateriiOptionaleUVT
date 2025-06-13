@@ -225,12 +225,12 @@ const MaterieDetailsPage = () => {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => navigate('/profesor/materiile-mele')}
-              className="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium"
+              className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 rounded-lg border border-gray-300 shadow-sm transition-colors duration-200"
+              title="Back to Courses"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              <span>Back to Courses</span>
             </button>
             <h1 className="text-3xl font-bold text-gray-900">{materie?.nume}</h1>
           </div>
@@ -254,13 +254,6 @@ const MaterieDetailsPage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               <span>Export</span>
-            </button>
-            
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>Add Student</span>
             </button>
           </div>
         </div>
