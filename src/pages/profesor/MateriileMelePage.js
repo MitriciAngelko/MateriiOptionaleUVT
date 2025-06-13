@@ -66,34 +66,21 @@ const MateriileMelePage = () => {
     navigate(`/profesor/materie/${materieId}`);
   };
 
-  const getCourseCode = (nume, index) => {
-    // Generate a course code based on the course name
-    const words = nume.split(' ');
-    let code = '';
-    
-    if (words.length >= 2) {
-      code = words[0].substring(0, 3).toUpperCase() + words[1].substring(0, 2).toUpperCase();
-    } else {
-      code = nume.substring(0, 5).toUpperCase();
-    }
-    
-    // Add a number
-    code += String(index + 1).padStart(2, '0');
-    
-    return code;
-  };
+
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034a76]"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen p-8" style={{ backgroundColor: '#f5f5f5' }}>
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
             <p className="text-red-700">{error}</p>
@@ -104,11 +91,12 @@ const MateriileMelePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">My Courses</h1>
+          <h1 className="text-2xl font-bold text-[#034a76] mb-1">Materiile Mele</h1>
+          <div className="h-0.5 w-16 bg-[#e3ab23] rounded"></div>
         </div>
 
         {/* Courses Grid */}
@@ -118,8 +106,8 @@ const MateriileMelePage = () => {
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No courses found</h3>
-              <p className="mt-2 text-gray-500">Nu aveți materii asociate momentan.</p>
+              <h3 className="mt-4 text-lg font-medium text-[#034a76]">Nu s-au găsit cursuri</h3>
+              <p className="mt-2 text-[#034a76]/60">Nu aveți materii asociate momentan.</p>
             </div>
           </div>
         ) : (
@@ -128,44 +116,41 @@ const MateriileMelePage = () => {
               <div
                 key={materie.id}
                 onClick={() => handleCourseClick(materie.id)}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden"
+                className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden border border-[#034a76]/10"
               >
-                {/* Course Header with Code */}
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900 leading-tight">
+                {/* Course Header */}
+                <div className="p-6 border-b border-[#034a76]/10">
+                  <div className="mb-4">
+                    <h3 className="text-xl font-semibold text-[#034a76] leading-tight">
                       {materie.nume}
                     </h3>
-                    <span className="bg-blue-600 text-white text-xs font-medium px-2 py-1 rounded">
-                      {getCourseCode(materie.nume, index)}
-                    </span>
                   </div>
 
                   {/* Student Count */}
-                  <div className="flex items-center text-gray-700">
+                  <div className="flex items-center text-[#034a76]/80">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                     <span className="font-medium">
-                      {materie.studentiInscrisi?.length || 0} Students
+                      {materie.studentiInscrisi?.length || 0} Studenți
                     </span>
                   </div>
                 </div>
 
                 {/* Course Details */}
-                <div className="px-6 py-4 bg-gray-50">
+                <div className="px-6 py-4" style={{ backgroundColor: '#f5f5f5' }}>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500 font-medium">An</p>
-                      <p className="text-gray-900">{materie.an}</p>
+                      <p className="text-[#034a76]/60 font-medium">An</p>
+                      <p className="text-[#034a76] font-semibold">{materie.an}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 font-medium">Credite</p>
-                      <p className="text-gray-900">{materie.credite}</p>
+                      <p className="text-[#034a76]/60 font-medium">Credite</p>
+                      <p className="text-[#034a76] font-semibold">{materie.credite}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 font-medium">Locuri</p>
-                      <p className="text-gray-900">{materie.locuriDisponibile || 'N/A'}</p>
+                      <p className="text-[#034a76]/60 font-medium">Locuri</p>
+                      <p className="text-[#034a76] font-semibold">{materie.locuriDisponibile || 'N/A'}</p>
                     </div>
                   </div>
                 </div>

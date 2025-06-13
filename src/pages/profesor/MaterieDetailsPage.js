@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useSelector } from 'react-redux';
 import { isProfesor } from '../../utils/userRoles';
@@ -15,6 +15,18 @@ const MaterieDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // States for inline grading functionality
+  const [editingStudentId, setEditingStudentId] = useState(null);
+  const [editGradeForm, setEditGradeForm] = useState({
+    nota: 0,
+    anStudiu: 'I',
+    semestru: 1
+  });
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     const fetchMaterieDetails = async () => {
@@ -141,6 +153,36 @@ const MaterieDetailsPage = () => {
     fetchMaterieDetails();
   }, [materieId, user, navigate]);
 
+  // Auto-dismiss messages after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Toast auto-dismiss after 3 seconds
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        setToastMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage('');
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
   const getGradeColor = (nota) => {
     if (nota === 'Not graded') return 'bg-gray-100 text-gray-600';
     const grade = parseFloat(nota);
@@ -151,12 +193,13 @@ const MaterieDetailsPage = () => {
   };
 
   const getGradeDisplay = (nota) => {
-    if (nota === 'Not graded') return 'Not graded';
-    const grade = parseFloat(nota);
-    if (grade >= 9) return `A${grade >= 9.5 ? '+' : grade >= 9.2 ? '' : '-'}`;
-    if (grade >= 7) return `B${grade >= 8.5 ? '+' : grade >= 7.5 ? '' : grade >= 7.2 ? '' : '+'}`;
-    if (grade >= 5) return 'A';
-    return 'B';
+    if (nota === 'Not graded') return 'Nenotat';
+    return nota;
+  };
+
+  const showToastMessage = (message) => {
+    setToastMessage(message);
+    setShowToast(true);
   };
 
   const filteredStudenti = studenti.filter(student => {
@@ -175,12 +218,12 @@ const MaterieDetailsPage = () => {
 
   const handleExport = () => {
     // Create CSV content
-    const headers = ['ID', 'Name', 'Email', 'Grade', 'Matriculation Number'];
+    const headers = ['ID', 'Nume', 'Email', 'Nota', 'Număr Matricol'];
     const rows = studenti.map((student, index) => [
       index + 1,
       `${student.nume} ${student.prenume}`,
       student.email,
-      student.nota,
+      student.nota === 'Not graded' ? 'Nenotat' : student.nota,
       student.numarMatricol
     ]);
     
@@ -197,17 +240,149 @@ const MaterieDetailsPage = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  // Handle starting inline editing
+  const startEditingGrade = (student) => {
+    setEditingStudentId(student.id);
+    setEditGradeForm({
+      nota: student.nota !== 'Not graded' ? parseFloat(student.nota) : 0,
+      anStudiu: 'I', // Default, can be adjusted based on student data
+      semestru: 1
+    });
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  // Handle saving the inline edited grade
+  const handleSaveEditedGrade = async () => {
+    if (!editingStudentId) return;
+    
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      if (editGradeForm.nota < 1 || editGradeForm.nota > 10) {
+        throw new Error('Nota trebuie să fie între 1 și 10');
+      }
+
+      // Find the student being edited
+      const selectedStudent = studenti.find(s => s.id === editingStudentId);
+      if (!selectedStudent) {
+        throw new Error('Studentul nu a fost găsit');
+      }
+
+      // Get reference to academic history document
+      const istoricRef = doc(db, 'istoricAcademic', editingStudentId);
+      
+      // Get current academic history
+      const istoricDoc = await getDoc(istoricRef);
+      
+      let istoricData;
+      if (!istoricDoc.exists()) {
+        // Create new academic history if it doesn't exist
+        istoricData = {
+          studentId: editingStudentId,
+          nume: selectedStudent.nume || '',
+          prenume: selectedStudent.prenume || '',
+          specializare: selectedStudent.specializare || '',
+          facultate: selectedStudent.facultate || '',
+          istoricAnual: []
+        };
+        await setDoc(istoricRef, istoricData);
+      } else {
+        istoricData = istoricDoc.data();
+      }
+
+      // Determine current academic year
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-11
+      const anUniversitar = month < 9 ? 
+        `${year-1}-${year}` : 
+        `${year}-${year+1}`;
+
+      // Determine status based on grade
+      const status = editGradeForm.nota >= 5 ? 'promovat' : 'nepromovat';
+
+      // Create new grade entry
+      const newGrade = {
+        id: materieId,
+        nume: materie.nume,
+        credite: materie.credite || 0,
+        nota: parseInt(editGradeForm.nota),
+        dataNota: new Date().getTime(),
+        profesor: `${user.nume} ${user.prenume}` || 'Nespecificat',
+        obligatorie: materie.obligatorie || false,
+        status: status
+      };
+
+      // Check if an entry already exists for this year/semester
+      const anualIndex = istoricData.istoricAnual.findIndex(
+        item => item.anUniversitar === anUniversitar && 
+               item.anStudiu === editGradeForm.anStudiu &&
+               item.semestru === parseInt(editGradeForm.semestru)
+      );
+
+      if (anualIndex >= 0) {
+        // Check if the course already exists in this year/semester
+        const existingCourseIndex = istoricData.istoricAnual[anualIndex].cursuri.findIndex(
+          curs => curs.id === materieId
+        );
+
+        if (existingCourseIndex >= 0) {
+          // Update existing grade
+          istoricData.istoricAnual[anualIndex].cursuri[existingCourseIndex] = newGrade;
+        } else {
+          // Add new course to existing year/semester
+          istoricData.istoricAnual[anualIndex].cursuri.push(newGrade);
+        }
+      } else {
+        // Create new year/semester entry
+        const newAnualRecord = {
+          anUniversitar: anUniversitar,
+          anStudiu: editGradeForm.anStudiu,
+          semestru: parseInt(editGradeForm.semestru),
+          cursuri: [newGrade]
+        };
+        istoricData.istoricAnual.push(newAnualRecord);
+      }
+
+      // Update the document
+      await updateDoc(istoricRef, istoricData);
+
+      // Update the local state to reflect the new grade
+      setStudenti(prevStudenti => 
+        prevStudenti.map(student => 
+          student.id === editingStudentId 
+            ? { ...student, nota: editGradeForm.nota }
+            : student
+        )
+      );
+
+      showToastMessage('Nota a fost salvată cu succes!');
+      setEditingStudentId(null);
+
+    } catch (error) {
+      console.error('Eroare la salvarea notei:', error);
+      setErrorMessage('Eroare la salvarea notei: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034a76]"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen p-8" style={{ backgroundColor: '#f5f5f5' }}>
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
             <p className="text-red-700">{error}</p>
@@ -218,100 +393,167 @@ const MaterieDetailsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out">
+          <div className="flex items-center space-x-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Success/Error Messages */}
+        {successMessage && (
+          <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded">
+            {successMessage}
+          </div>
+        )}
+        
+        {errorMessage && (
+          <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+            {errorMessage}
+          </div>
+        )}
+        
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
+        <div className="mb-4">
+          <div className="flex items-center space-x-4 mb-2">
             <button
               onClick={() => navigate('/profesor/materiile-mele')}
-              className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 rounded-lg border border-gray-300 shadow-sm transition-colors duration-200"
-              title="Back to Courses"
+              className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gray-50 text-[#034a76] hover:text-[#024A76] rounded-lg border border-[#034a76]/30 shadow-sm transition-colors duration-200"
+              title="Înapoi la cursuri"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">{materie?.nume}</h1>
+            <h1 className="text-2xl font-bold text-[#034a76]">{materie?.nume}</h1>
           </div>
-          
-          <div className="flex space-x-3">
-            <button
-              onClick={handleEmailAll}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Email All</span>
-            </button>
-            
-            <button
-              onClick={handleExport}
-              className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-medium border border-gray-300 flex items-center space-x-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>Export</span>
-            </button>
-          </div>
+          <div className="h-0.5 w-16 bg-[#e3ab23] rounded ml-14"></div>
+        </div>
+        
+        <div className="flex justify-end space-x-3 mb-6">
+          <button
+            onClick={handleExport}
+            className="bg-white hover:bg-gray-50 text-[#034a76] px-4 py-2 rounded-lg font-medium border border-[#034a76]/30 flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Exportă</span>
+          </button>
         </div>
 
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-md">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#034a76]/60 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
-              placeholder="Search students..."
+              placeholder="Caută studenți..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 w-full border border-[#034a76]/30 rounded-lg focus:ring-2 focus:ring-[#034a76] focus:border-[#034a76]"
             />
           </div>
         </div>
 
         {/* Students Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-[#034a76] text-white">
+                <th className="py-3 px-6 text-left font-semibold">ID</th>
+                <th className="py-3 px-6 text-left font-semibold">Nume</th>
+                <th className="py-3 px-6 text-left font-semibold">Email</th>
+                <th className="py-3 px-6 text-center font-semibold w-40">Nota</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredStudenti.map((student, index) => (
-                <tr key={student.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {index + 1}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {student.nume} {student.prenume}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {student.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getGradeColor(student.nota)}`}>
-                      {getGradeDisplay(student.nota)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                    <button className="hover:text-blue-800 font-medium">
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
+            <tbody>
+              {filteredStudenti.map((student, index) => {
+                const isEditing = editingStudentId === student.id;
+                
+                return (
+                  <tr 
+                    key={student.id} 
+                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 cursor-pointer`}
+                  >
+                    <td className="py-3 px-6 text-[#034a76]">
+                      {index + 1}
+                    </td>
+                    <td className="py-3 px-6 text-[#034a76]">
+                      <div className="font-medium">
+                        {student.nume} {student.prenume}
+                      </div>
+                    </td>
+                    <td className="py-3 px-6 text-[#034a76]">
+                      {student.email}
+                    </td>
+                    <td className="py-3 px-6 text-center relative group w-40">
+                      {isEditing ? (
+                        <div className="flex items-center justify-center space-x-1 min-h-[2.5rem]">
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            step="1"
+                            className="w-12 px-1 py-1 text-center border border-[#034a76]/30 rounded focus:outline-none focus:ring-2 focus:ring-[#034a76] focus:border-[#034a76]"
+                            value={editGradeForm.nota}
+                            onChange={(e) => setEditGradeForm({...editGradeForm, nota: parseInt(e.target.value)})}
+                            autoFocus
+                          />
+                          <button
+                            onClick={handleSaveEditedGrade}
+                            className="text-green-600 hover:text-green-800 flex-shrink-0 p-1"
+                            title="Salvează"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => setEditingStudentId(null)}
+                            className="text-[#034a76] hover:text-[#024A76] flex-shrink-0 p-1"
+                            title="Anulează"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center min-h-[2.5rem]">
+                          <span className={`font-semibold ${
+                            student.nota === 'Not graded' 
+                              ? 'text-gray-500' 
+                              : student.nota >= 5 
+                              ? 'text-green-600' 
+                              : 'text-red-600'
+                          }`}>
+                            {getGradeDisplay(student.nota)}
+                          </span>
+                          <button
+                            onClick={() => startEditingGrade(student)}
+                            className="opacity-0 group-hover:opacity-100 text-[#034a76] hover:text-[#024A76] transition-opacity ml-2"
+                            title="Editează nota"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           
@@ -320,21 +562,16 @@ const MaterieDetailsPage = () => {
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No students found</h3>
-              <p className="mt-2 text-gray-500">
-                {searchTerm ? 'No students match your search criteria.' : 'Nu există studenți înscriși la această materie.'}
+              <h3 className="mt-4 text-lg font-medium text-[#034a76]">Nu s-au găsit studenți</h3>
+              <p className="mt-2 text-[#034a76]/60">
+                {searchTerm ? 'Niciun student nu corespunde criteriilor de căutare.' : 'Nu există studenți înscriși la această materie.'}
               </p>
             </div>
           )}
         </div>
-
-        {/* Footer Info */}
-        {filteredStudenti.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredStudenti.length} of {studenti.length} students
-          </div>
-        )}
       </div>
+
+
     </div>
   );
 };

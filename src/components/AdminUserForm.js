@@ -443,8 +443,7 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
             updateData.numarMatricol = editingUser.numarMatricol;
           }
         } else if (formType === 'secretar') {
-          // Pentru secretari, actualizăm funcția
-          updateData.functie = formData.functie;
+          // Pentru secretari, nu sunt câmpuri suplimentare
         }
 
         // Actualizăm documentul utilizatorului
@@ -506,7 +505,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
         // Adăugăm date specifice pentru secretar
         else if (formType === 'secretar') {
           userData.facultate = formData.facultate;
-          userData.functie = formData.functie;
         }
 
         // Salvăm utilizatorul în Firestore
@@ -774,19 +772,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
                       <option key={fac} value={fac}>{fac}</option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Funcție</label>
-                  <input
-                    type="text"
-                    name="functie"
-                    value={formData.functie}
-                    onChange={handleChange}
-                    placeholder="ex: Secretar șef, Secretar facultate, etc."
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
                 </div>
               </>
             )}

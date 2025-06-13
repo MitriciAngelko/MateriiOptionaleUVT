@@ -270,14 +270,6 @@ const ProfilePage = () => {
                       {profileData?.facultate}
                     </p>
                   </div>
-                  <div className="bg-white p-4 rounded-lg shadow-sm">
-                    <label className="block text-sm font-medium mb-2" style={{ color: '#034a76' }}>
-                      Funcție
-                    </label>
-                    <p className="text-lg font-semibold" style={{ color: '#333' }}>
-                      {profileData?.functie}
-                    </p>
-                  </div>
                 </div>
               </div>
             )}
