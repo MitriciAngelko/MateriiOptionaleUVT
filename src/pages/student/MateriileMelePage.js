@@ -5,12 +5,14 @@ import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
 import { useMaterii } from '../../contexts/MateriiContext';
 import { isStudent } from '../../utils/userRoles';
+import MaterieDetailsModal from '../../components/student/MaterieDetailsModal';
 
 const MateriileMelePage = () => {
   const [materiiInscrise, setMateriiInscrise] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedMaterieId, setExpandedMaterieId] = useState(null);
+  const [selectedMaterieForModal, setSelectedMaterieForModal] = useState(null);
   const [stats, setStats] = useState({ totalCredite: 0, medieGenerala: 0, crediteTrecute: 0 });
   const [materiiByAn, setMateriiByAn] = useState({
     'I': [],
@@ -367,21 +369,15 @@ const MateriileMelePage = () => {
                               {courses.map((materie, index) => (
                                 <tr 
                                   key={materie.id}
-                                  className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-blue-light/10 dark:hover:to-yellow-accent/10 cursor-pointer transition-all duration-200`}
-                                  onClick={() => setExpandedMaterieId(expandedMaterieId === materie.id ? null : materie.id)}
+                                  className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-blue-light/10 dark:hover:to-yellow-accent/10 transition-all duration-200`}
                                 >
                                   <td className="py-3 px-6 text-gray-900 dark:text-gray-200">
-                                    <div>
-                                      <div className="font-medium">{materie.nume}</div>
-                                      {expandedMaterieId === materie.id && (
-                                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                          <div><span className="font-semibold">Profesor:</span> {materie.profesor?.nume || 'Nealocat'}</div>
-                                          <div><span className="font-semibold">Specializare:</span> {materie.specializare}</div>
-                                          {materie.descriere && (
-                                            <div className="mt-1"><span className="font-semibold">Descriere:</span> {materie.descriere}</div>
-                                          )}
-                                        </div>
-                                      )}
+                                    <div 
+                                      className="font-medium cursor-pointer hover:text-[#024A76] dark:hover:text-yellow-accent hover:underline transition-all duration-200"
+                                      onClick={() => setSelectedMaterieForModal(materie)}
+                                      title="Apasă pentru a vedea detaliile complete"
+                                    >
+                                      {materie.nume}
                                     </div>
                                   </td>
                                   <td className="py-3 px-6 text-center text-gray-900 dark:text-gray-200">{materie.credite}</td>
@@ -401,8 +397,8 @@ const MateriileMelePage = () => {
                               
                               {/* Semester Total Row */}
                               <tr className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/50 dark:to-gray-600/50 border-t-2 border-[#E3AB23] dark:border-yellow-accent">
-                                <td className="py-2 px-6 font-semibold text-[#024A76] dark:text-blue-light">Total</td>
-                                <td className="py-2 px-6 text-center font-semibold text-[#024A76] dark:text-blue-light">{semesterCredits} credite</td>
+                                <td className="py-2 px-6 font-semibold text-[#024A76] dark:text-blue-light"></td>
+                                <td className="py-2 px-6 text-center font-semibold text-[#024A76] dark:text-blue-light">{semesterCredits}</td>
                                 <td className="py-2 px-6 text-center">
                                   <span className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] px-3 py-1 rounded-full font-semibold text-sm shadow-sm">
                                     {semesterAverage > 0 ? semesterAverage : '-'}
@@ -429,6 +425,14 @@ const MateriileMelePage = () => {
               )}
             </div>
           </div>
+        )}
+
+        {/* Modal pentru detaliile materiei */}
+        {selectedMaterieForModal && (
+          <MaterieDetailsModal
+            materie={selectedMaterieForModal}
+            onClose={() => setSelectedMaterieForModal(null)}
+          />
         )}
       </div>
     </div>
