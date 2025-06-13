@@ -90,6 +90,12 @@ const Navbar = () => {
       items.push({ path: '/inscriere-anul-urmator', label: 'Înscrierea în Anul Următor' });
     }
     
+    // Elemente pentru secretari
+    if (roles.isSecretar && !isMainAdmin && !roles.isAdmin) {
+      items.push({ path: '/secretar/alocare-automata', label: 'Alocare Automată' });
+      items.push({ path: '/secretar/inscriere-anul-urmator', label: 'Înscrierea în Anul Următor' });
+    }
+    
     // Elemente pentru studenți (când nu sunt admin)
     if (roles.isStudent && !isMainAdmin && !roles.isAdmin) {
       items.push({ path: '/materiile-mele', label: 'Materiile Mele' });
