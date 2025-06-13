@@ -488,23 +488,6 @@ const AdminPage = () => {
     return <div>Loading...</div>;
   }
 
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-xl shadow-lg border border-red-200">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent mb-4">Acces Interzis</h2>
-          <p className="mt-2 text-gray-600 mb-6">Nu aveți permisiunea de a accesa această pagină.</p>
-          <button 
-            onClick={() => navigate('/')}
-            className="px-6 py-3 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold"
-          >
-            Înapoi la Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const renderUserTable = (users) => (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">

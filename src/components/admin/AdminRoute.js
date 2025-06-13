@@ -41,9 +41,16 @@ const AdminRoute = ({ children }) => {
     checkAdmin();
   }, [user, isMainAdmin]);
 
-  // Show loading state while checking
-  if (loading && !isMainAdmin) {
-    return <div className="flex justify-center items-center h-screen">Verificare autorizare...</div>;
+  // Show loading state while checking for all users
+  if (loading) {
+    return (
+      <div className="flex flex-col justify-center items-center h-screen bg-gray-50 dark:bg-dark-bg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#024A76] dark:border-blue-light mx-auto mb-4"></div>
+          <p className="text-[#024A76] dark:text-blue-light font-medium">Se încarcă...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!user) {

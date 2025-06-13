@@ -265,6 +265,7 @@ const AdminMateriiPage = () => {
   const MaterieModal = ({ materie, onClose }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedMaterie, setEditedMaterie] = useState({...materie});
+    const [currentMaterie, setCurrentMaterie] = useState({...materie});
     const [studentiAftati, setStudentiAfisati] = useState([]);
     
     useEffect(() => {
@@ -347,7 +348,14 @@ const AdminMateriiPage = () => {
             // 2. ȘI nu este dintr-un an mai mic decât materia (adică să nu fie din an viitor)
             // 3. ȘI (este nepromovat SAU este neevaluat SAU nu este dintr-un an mai mare)
             if (!esteCursulPromovat && !esteDinAnMaiMic && (esteNepromovat || esteNeevaluat || !esteDinAnMaiMare)) {
-              studentiAfisati.push(student);
+              // Include the complete user data with numarMatricol
+              studentiAfisati.push({
+                ...student,
+                nume: userData.nume ? `${userData.prenume || ''} ${userData.nume}`.trim() : student.nume,
+                numarMatricol: userData.numarMatricol,
+                prenume: userData.prenume,
+                email: userData.email
+              });
             }
           } catch (error) {
             console.error(`Eroare la verificarea istoricului pentru studentul ${student.id}:`, error);
@@ -364,16 +372,86 @@ const AdminMateriiPage = () => {
       setIsEditing(true);
     };
     
+    // Function to update professor's materiiPredate when removing them from course
+    const updateProfessorMateriiPredate = async (professorId, materieId, action = 'remove') => {
+      try {
+        const professorRef = doc(db, 'users', professorId);
+        const professorDoc = await getDoc(professorRef);
+        
+        if (professorDoc.exists()) {
+          const professorData = professorDoc.data();
+          let materiiPredate = professorData.materiiPredate || [];
+          
+          if (action === 'remove') {
+            // Remove the course from professor's materiiPredate
+            materiiPredate = materiiPredate.filter(materieObj => 
+              materieObj.id !== materieId
+            );
+          } else if (action === 'add') {
+            // Add the course to professor's materiiPredate if not already present
+            const materieExists = materiiPredate.some(materieObj => materieObj.id === materieId);
+            if (!materieExists) {
+              materiiPredate.push({
+                id: materieId,
+                nume: editedMaterie.nume
+              });
+            }
+          }
+          
+          await updateDoc(professorRef, {
+            materiiPredate: materiiPredate
+          });
+        }
+      } catch (error) {
+        console.error('Eroare la actualizarea materiiPredate pentru profesor:', error);
+      }
+    };
+
     const handleSave = async () => {
       try {
         const materieRef = doc(db, 'materii', materie.id);
+        
+        // Check for removed professors and update their materiiPredate
+        const originalProfessors = currentMaterie.profesori || [];
+        const newProfessors = editedMaterie.profesori || [];
+        
+        // Find removed professors
+        const removedProfessors = originalProfessors.filter(origProf => 
+          !newProfessors.some(newProf => newProf.id === origProf.id)
+        );
+        
+        // Find added professors
+        const addedProfessors = newProfessors.filter(newProf => 
+          !originalProfessors.some(origProf => origProf.id === newProf.id)
+        );
+        
+        // Update materiiPredate for removed professors
+        for (const professor of removedProfessors) {
+          if (professor.id) {
+            await updateProfessorMateriiPredate(professor.id, materie.id, 'remove');
+          }
+        }
+        
+        // Update materiiPredate for added professors
+        for (const professor of addedProfessors) {
+          if (professor.id) {
+            await updateProfessorMateriiPredate(professor.id, materie.id, 'add');
+          }
+        }
+        
+        // Update the course document
         await updateDoc(materieRef, editedMaterie);
         
+        // Update parent component's state
         setMaterii(prevMaterii => 
           prevMaterii.map(m => 
             m.id === materie.id ? {...m, ...editedMaterie} : m
           )
         );
+        
+        // Update current materie in modal to show fresh data
+        const updatedMaterie = {...materie, ...editedMaterie};
+        setCurrentMaterie(updatedMaterie);
         
         setIsEditing(false);
       } catch (error) {
@@ -382,7 +460,7 @@ const AdminMateriiPage = () => {
     };
     
     const handleCancel = () => {
-      setEditedMaterie({...materie});
+      setEditedMaterie({...currentMaterie});
       setIsEditing(false);
     };
 
@@ -411,7 +489,7 @@ const AdminMateriiPage = () => {
                         className="text-2xl font-bold bg-white/90 dark:bg-gray-800/90 text-[#024A76] dark:text-gray-200 border border-white/30 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-yellow-accent backdrop-blur-sm"
                       />
                     ) : (
-                      <h1 className="text-2xl font-bold text-white">{materie.nume}</h1>
+                      <h1 className="text-2xl font-bold text-white">{currentMaterie.nume}</h1>
                     )}
                   </div>
                   
@@ -479,7 +557,7 @@ const AdminMateriiPage = () => {
                           ))}
                         </select>
                       ) : (
-                        <p className="text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-600/30 px-3 py-2 rounded-md">{materie.facultate}</p>
+                        <p className="text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-600/30 px-3 py-2 rounded-md">{currentMaterie.facultate}</p>
                       )}
                     </div>
                     <div>
@@ -495,7 +573,7 @@ const AdminMateriiPage = () => {
                           ))}
                         </select>
                       ) : (
-                        <p className="text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-600/30 px-3 py-2 rounded-md">{materie.specializare}</p>
+                        <p className="text-gray-700 dark:text-gray-300 bg-white/50 dark:bg-gray-600/30 px-3 py-2 rounded-md">{currentMaterie.specializare}</p>
                       )}
                     </div>
                     <div>
@@ -512,7 +590,7 @@ const AdminMateriiPage = () => {
                         </select>
                       ) : (
                         <span className="inline-block bg-[#E3AB23]/20 dark:bg-yellow-accent/20 text-[#024A76] dark:text-yellow-accent px-3 py-1 rounded-full text-xs font-semibold">
-                          An {materie.an}
+                          An {currentMaterie.an}
                         </span>
                       )}
                     </div>
@@ -531,7 +609,7 @@ const AdminMateriiPage = () => {
                         </select>
                       ) : (
                         <span className="inline-block bg-[#3471B8]/20 dark:bg-blue-light/20 text-[#024A76] dark:text-blue-light px-3 py-1 rounded-full text-xs font-semibold">
-                          Semestrul {materie.semestru || 'Nedefinit'}
+                          Semestrul {currentMaterie.semestru || 'Nedefinit'}
                         </span>
                       )}
                     </div>
@@ -551,7 +629,7 @@ const AdminMateriiPage = () => {
                           <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          {materie.credite} ECTS
+                          {currentMaterie.credite} ECTS
                         </span>
                       )}
                     </div>
@@ -576,11 +654,11 @@ const AdminMateriiPage = () => {
                         </div>
                       ) : (
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                          materie.obligatorie 
+                          currentMaterie.obligatorie 
                             ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' 
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
                         }`}>
-                          {materie.obligatorie ? 'Obligatorie' : 'Opțională'}
+                          {currentMaterie.obligatorie ? 'Obligatorie' : 'Opțională'}
                         </span>
                       )}
                     </div>
@@ -603,7 +681,7 @@ const AdminMateriiPage = () => {
                           <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                           </svg>
-                          {materie.obligatorie ? 'Nelimitat' : `${materie.locuriDisponibile || 0} locuri`}
+                          {currentMaterie.obligatorie ? 'Nelimitat' : `${currentMaterie.locuriDisponibile || 0} locuri`}
                         </span>
                       )}
                     </div>
@@ -628,7 +706,7 @@ const AdminMateriiPage = () => {
                   ) : (
                     <div className="max-h-40 overflow-y-auto pr-2 custom-scrollbar">
                       <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap bg-white/50 dark:bg-gray-600/30 px-4 py-3 rounded-lg">
-                        {materie.descriere || (
+                        {currentMaterie.descriere || (
                           <span className="italic text-gray-500 dark:text-gray-400">Nicio descriere disponibilă.</span>
                         )}
                       </p>
@@ -728,9 +806,9 @@ const AdminMateriiPage = () => {
                     </div>
                   ) : (
                     <>
-                      {materie.profesori?.length > 0 ? (
+                      {currentMaterie.profesori?.length > 0 ? (
                         <div className="space-y-2">
-                          {materie.profesori.map((profesor, index) => (
+                                                      {currentMaterie.profesori.map((profesor, index) => (
                             <div key={index} className="flex items-center bg-white/50 dark:bg-gray-600/30 px-4 py-2 rounded-lg">
                               <svg className="w-4 h-4 mr-2 text-[#024A76] dark:text-blue-light" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
@@ -779,28 +857,19 @@ const AdminMateriiPage = () => {
                   </div>
 
                   {studentiAftati?.length > 0 ? (
-                    <div className="space-y-2 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
+                    <div className="space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar pr-2">
                       {studentiAftati.map((student, index) => (
-                        <div key={student.id} className="bg-white/70 dark:bg-gray-600/50 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-600/70 transition-all duration-200 cursor-pointer group">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                                  #{index + 1}
-                                </span>
-                                <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                  {student.nrMatricol || student.numarMatricol || 'N/A'}
-                                </span>
-                              </div>
-                              <p className="text-gray-800 dark:text-gray-200 font-medium text-sm leading-tight">
-                                {student.nume}
-                              </p>
-                            </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                              </svg>
-                            </div>
+                        <div key={student.id} className="bg-white/70 dark:bg-gray-600/50 p-3 rounded-lg border border-gray-200/50 dark:border-gray-600/50 hover:bg-white dark:hover:bg-gray-600/70 transition-all duration-200">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded min-w-[40px] text-center">
+                              #{index + 1}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded">
+                              {student.numarMatricol || 'N/A'}
+                            </span>
+                            <span className="text-gray-800 dark:text-gray-200 font-medium text-sm flex-1">
+                              {student.nume}
+                            </span>
                           </div>
                         </div>
                       ))}

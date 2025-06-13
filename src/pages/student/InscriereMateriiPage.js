@@ -998,9 +998,6 @@ const InscriereMateriiPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent text-center mb-8 drop-shadow-sm">
-          {user?.an !== 3 ? 'Înscrierea la materii este închisă' : 'Înscriere la Materii Opționale'}
-        </h1>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300 shadow-sm">
