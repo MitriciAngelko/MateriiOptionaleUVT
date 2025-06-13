@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useAuth } from '../../providers/AuthProvider';
 import { db } from '../../firebase';
-import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import AdminUserForm from '../../components/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import { isAdmin } from '../../utils/userRoles';
@@ -93,12 +93,26 @@ const AdminPage = () => {
   }, [user, navigate, allMaterii, materiiLoading]);
 
   const handleDeleteUser = async (userId) => {
-    if (window.confirm('Ești sigur că vrei să ștergi acest utilizator?')) {
+    if (window.confirm('Ești sigur că vrei să ștergi acest utilizator? Aceasta va șterge complet toate urmele utilizatorului din sistem (utilizator, istoric academic, înscrieri la materii, etc.)')) {
       try {
-        // 1. Delete user from Firestore users collection
-        await deleteDoc(doc(db, 'users', userId));
+        console.log(`🚀 Starting comprehensive deletion for user: ${userId}`);
         
-        // 2. Delete user from istoricAcademic collection if exists
+        // Get user data before deletion for logging
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        const userData = userDoc.exists() ? userDoc.data() : null;
+        console.log('👤 User data to be deleted:', userData);
+
+        // 1. Remove user from all materii documents (studentiInscrisi and profesori arrays)
+        console.log('🎯 Step 1: Removing user from all materii documents');
+        await removeUserFromAllMaterii(userId);
+        console.log('✅ Step 1 completed: User removed from materii documents');
+
+        // 2. Clean up user references from other users' preference data
+        console.log('🎯 Step 2: Cleaning up user references from other users');
+        await cleanupUserPreferences(userId);
+        console.log('✅ Step 2 completed: User references cleaned up');
+
+        // 3. Delete user from istoricAcademic collection if exists
         try {
           await deleteDoc(doc(db, 'istoricAcademic', userId));
           console.log('Istoric academic șters cu succes');
@@ -106,7 +120,11 @@ const AdminPage = () => {
           console.log('Nu s-a găsit istoric academic pentru acest utilizator sau a apărut o eroare:', istoricError);
         }
 
-        // 3. Delete user from Firebase Authentication
+        // 4. Delete user from Firestore users collection
+        await deleteDoc(doc(db, 'users', userId));
+        console.log('User document deleted from Firestore');
+
+        // 5. Delete user from Firebase Authentication
         // This requires server-side admin SDK, so we'll make an API call to our server
         try {
           // Get the current user and token from localStorage
@@ -134,7 +152,7 @@ const AdminPage = () => {
           console.log('Utilizator șters din Firebase Authentication');
           
           // Show confirmation to the user
-          alert('Utilizator șters cu succes din sistem!');
+          alert('Utilizator șters cu succes din sistem! Toate urmele utilizatorului au fost eliminate.');
         } catch (authError) {
           console.error('Eroare la ștergerea utilizatorului din Firebase Authentication:', authError);
           
@@ -161,6 +179,216 @@ const AdminPage = () => {
         console.error('Eroare la ștergerea utilizatorului:', error);
         alert(`Eroare la ștergerea utilizatorului: ${error.message}`);
       }
+    }
+  };
+
+  // Function to remove user from all materii documents
+  const removeUserFromAllMaterii = async (userId) => {
+    try {
+      console.log(`🔍 Starting removal of user ${userId} from all materii documents...`);
+      
+      // Get all materii documents
+      const materiiSnapshot = await getDocs(collection(db, 'materii'));
+      console.log(`📚 Found ${materiiSnapshot.docs.length} materii documents to check`);
+      
+      let materiiUpdated = 0;
+      let totalStudentsFound = 0;
+      let totalProfessorsFound = 0;
+
+      // Process each materie document individually to catch individual errors
+      for (const materieDoc of materiiSnapshot.docs) {
+        try {
+          const materieData = materieDoc.data();
+          const materieId = materieDoc.id;
+          let needsUpdate = false;
+          const updates = {};
+
+          console.log(`🔍 Checking materie: ${materieData.nume} (ID: ${materieId})`);
+
+          // Check and remove user from studentiInscrisi array
+          if (materieData.studentiInscrisi && Array.isArray(materieData.studentiInscrisi)) {
+            console.log(`  📋 Found ${materieData.studentiInscrisi.length} students in this materie`);
+            
+            // Log current students for debugging
+            materieData.studentiInscrisi.forEach((student, index) => {
+              console.log(`    Student ${index + 1}: ID = "${student.id}", Name = "${student.nume}"`);
+              if (student.id === userId) {
+                console.log(`    🎯 FOUND TARGET USER TO REMOVE!`);
+              }
+            });
+
+            const originalLength = materieData.studentiInscrisi.length;
+            const updatedStudenti = materieData.studentiInscrisi.filter(student => {
+              const shouldKeep = student.id !== userId;
+              if (!shouldKeep) {
+                console.log(`    ❌ Removing student: ${student.nume} (ID: ${student.id})`);
+                totalStudentsFound++;
+              }
+              return shouldKeep;
+            });
+
+            if (updatedStudenti.length !== originalLength) {
+              updates.studentiInscrisi = updatedStudenti;
+              needsUpdate = true;
+              console.log(`  ✅ Will update studentiInscrisi: ${originalLength} -> ${updatedStudenti.length}`);
+            } else {
+              console.log(`  ⏭️ No changes needed for studentiInscrisi`);
+            }
+          } else {
+            console.log(`  ⏭️ No studentiInscrisi array found`);
+          }
+
+          // Check and remove user from profesori array
+          if (materieData.profesori && Array.isArray(materieData.profesori)) {
+            console.log(`  👨‍🏫 Found ${materieData.profesori.length} professors in this materie`);
+            
+            // Log current professors for debugging
+            materieData.profesori.forEach((profesor, index) => {
+              console.log(`    Professor ${index + 1}: ID = "${profesor.id}", Name = "${profesor.nume}"`);
+              if (profesor.id === userId) {
+                console.log(`    🎯 FOUND TARGET USER TO REMOVE!`);
+              }
+            });
+
+            const originalLength = materieData.profesori.length;
+            const updatedProfesori = materieData.profesori.filter(profesor => {
+              const shouldKeep = profesor.id !== userId;
+              if (!shouldKeep) {
+                console.log(`    ❌ Removing professor: ${profesor.nume} (ID: ${profesor.id})`);
+                totalProfessorsFound++;
+              }
+              return shouldKeep;
+            });
+
+            if (updatedProfesori.length !== originalLength) {
+              updates.profesori = updatedProfesori;
+              needsUpdate = true;
+              console.log(`  ✅ Will update profesori: ${originalLength} -> ${updatedProfesori.length}`);
+            } else {
+              console.log(`  ⏭️ No changes needed for profesori`);
+            }
+          } else {
+            console.log(`  ⏭️ No profesori array found`);
+          }
+
+          // If updates are needed, execute them immediately
+          if (needsUpdate) {
+            console.log(`  💾 Updating materie: ${materieData.nume}`);
+            await updateDoc(doc(db, 'materii', materieId), updates);
+            materiiUpdated++;
+            console.log(`  ✅ Successfully updated materie: ${materieData.nume}`);
+          } else {
+            console.log(`  ⏭️ No updates needed for materie: ${materieData.nume}`);
+          }
+
+        } catch (materieError) {
+          console.error(`❌ Error processing materie ${materieDoc.id}:`, materieError);
+          // Continue with other materii even if one fails
+        }
+      }
+
+      console.log(`📊 Summary:`);
+      console.log(`  - Materii updated: ${materiiUpdated}`);
+      console.log(`  - Students removed: ${totalStudentsFound}`);
+      console.log(`  - Professors removed: ${totalProfessorsFound}`);
+
+      if (materiiUpdated > 0) {
+        console.log(`✅ Successfully updated ${materiiUpdated} materii documents`);
+      } else {
+        console.log(`ℹ️ No materii documents needed updates`);
+      }
+
+    } catch (error) {
+      console.error('❌ Error removing user from materii documents:', error);
+      throw error;
+    }
+  };
+
+  // Function to clean up user references from all other users' preference data
+  const cleanupUserPreferences = async (userId) => {
+    try {
+      console.log(`Cleaning up preferences that reference user ${userId}...`);
+      
+      // Get all users to check for any preference references to the deleted user
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const updatePromises = [];
+      let usersUpdated = 0;
+
+      usersSnapshot.docs.forEach(userDoc => {
+        if (userDoc.id === userId) {
+          // Skip the user being deleted
+          return;
+        }
+
+        const userData = userDoc.data();
+        let needsUpdate = false;
+        const updates = {};
+
+        // Clean up any references in preferinteMateriiOptionale if they contain user IDs instead of materii IDs
+        if (userData.preferinteMateriiOptionale && typeof userData.preferinteMateriiOptionale === 'object') {
+          const cleanedPreferinte = {};
+          let preferencesChanged = false;
+
+          Object.keys(userData.preferinteMateriiOptionale).forEach(pachetId => {
+            const preferinte = userData.preferinteMateriiOptionale[pachetId];
+            if (Array.isArray(preferinte)) {
+              // Remove any references to the deleted user ID
+              const cleanedPreferinteArray = preferinte.filter(preferinta => preferinta !== userId);
+              if (cleanedPreferinteArray.length !== preferinte.length) {
+                preferencesChanged = true;
+                console.log(`Found user reference in preferences of user: ${userData.nume} ${userData.prenume}`);
+              }
+              cleanedPreferinte[pachetId] = cleanedPreferinteArray;
+            } else {
+              cleanedPreferinte[pachetId] = preferinte;
+            }
+          });
+
+          if (preferencesChanged) {
+            updates.preferinteMateriiOptionale = cleanedPreferinte;
+            needsUpdate = true;
+          }
+        }
+
+        // Clean up materiiInscrise array if it contains references to the deleted user
+        if (userData.materiiInscrise && Array.isArray(userData.materiiInscrise)) {
+          const cleanedMateriiInscrise = userData.materiiInscrise.filter(materieId => materieId !== userId);
+          if (cleanedMateriiInscrise.length !== userData.materiiInscrise.length) {
+            updates.materiiInscrise = cleanedMateriiInscrise;
+            needsUpdate = true;
+            console.log(`Found user reference in materiiInscrise of user: ${userData.nume} ${userData.prenume}`);
+          }
+        }
+
+        // Clean up any other fields that might reference the user
+        ['pachetAlocat', 'prefPachet'].forEach(field => {
+          if (userData[field] === userId) {
+            updates[field] = null;
+            needsUpdate = true;
+            console.log(`Found user reference in ${field} of user: ${userData.nume} ${userData.prenume}`);
+          }
+        });
+
+        // If updates are needed, add to promises array
+        if (needsUpdate) {
+          updatePromises.push(
+            updateDoc(doc(db, 'users', userDoc.id), updates)
+          );
+          usersUpdated++;
+        }
+      });
+
+      // Execute all updates
+      if (updatePromises.length > 0) {
+        await Promise.all(updatePromises);
+        console.log(`Successfully cleaned up preferences in ${usersUpdated} user documents`);
+      } else {
+        console.log('No user preferences needed cleanup');
+      }
+
+    } catch (error) {
+      console.error('Error cleaning up user preferences:', error);
+      throw error;
     }
   };
 

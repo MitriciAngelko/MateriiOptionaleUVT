@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { collection, getDocs, doc, getDoc, updateDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, query, where, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { isAdmin } from '../../utils/userRoles';
 
@@ -180,6 +180,226 @@ const StudentNextYearRegistrationPage = () => {
     setSelectedStudents([]);
   };
 
+  // Remove student from passed courses (grade 5 or higher)
+  const removeFromPassedCourses = async (studentId, studentData) => {
+    try {
+      console.log('Starting removal from passed courses for student:', studentId);
+      
+      // Get student's academic history
+      const istoricRef = doc(db, 'istoricAcademic', studentId);
+      const istoricDoc = await getDoc(istoricRef);
+      
+      if (!istoricDoc.exists()) {
+        console.log('No academic history found - skipping removal');
+        return [];
+      }
+      
+      const istoricData = istoricDoc.data();
+      const passedCourseIds = [];
+      
+      // Find all courses where student got grade 5 or higher
+      if (istoricData.istoricAnual) {
+        istoricData.istoricAnual.forEach(entry => {
+          if (entry.cursuri) {
+            entry.cursuri.forEach(curs => {
+              if (curs.nota >= 5 && curs.status === 'promovat') {
+                passedCourseIds.push(curs.id);
+              }
+            });
+          }
+        });
+      }
+      
+      console.log(`Found ${passedCourseIds.length} passed courses to remove student from:`, passedCourseIds);
+      
+      if (passedCourseIds.length === 0) {
+        return [];
+      }
+      
+      // Remove student from each passed course
+      for (const courseId of passedCourseIds) {
+        try {
+          const materieRef = doc(db, 'materii', courseId);
+          const materieDoc = await getDoc(materieRef);
+          
+          if (materieDoc.exists()) {
+            const materieData = materieDoc.data();
+            const studentiActuali = materieData.studentiInscrisi || [];
+            
+            // Remove student from the enrolled students list
+            const studentiActualizati = studentiActuali.filter(student => student.id !== studentId);
+            
+            if (studentiActualizati.length !== studentiActuali.length) {
+              await updateDoc(materieRef, {
+                studentiInscrisi: studentiActualizati
+              });
+              console.log(`Removed student from passed course: ${materieData.nume}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Error removing student from course ${courseId}:`, error);
+        }
+      }
+      
+      console.log('Successfully completed removal from passed courses');
+      return passedCourseIds;
+      
+    } catch (error) {
+      console.error('Error in removal from passed courses:', error);
+      return [];
+    }
+  };
+
+  // Assign mandatory courses for students progressing to next year
+  const assignMandatoryCoursesForNextYear = async (studentId, studentData, nextYear, nextAcademicYear) => {
+    try {
+      console.log('Starting assignment of mandatory courses for next year:', studentId);
+      
+      // 1. Find all mandatory courses for the student's new year
+      const materiiQuery = query(
+        collection(db, 'materii'),
+        where('facultate', '==', studentData.facultate),
+        where('specializare', '==', studentData.specializare),
+        where('an', '==', nextYear),
+        where('obligatorie', '==', true)
+      );
+      
+      const materiiSnapshot = await getDocs(materiiQuery);
+      const materiiObligatorii = materiiSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log(`Found ${materiiObligatorii.length} mandatory courses for ${studentData.facultate}, ${studentData.specializare}, year ${nextYear}`);
+      
+      if (materiiObligatorii.length === 0) {
+        console.log('No mandatory courses found - skipping assignment');
+        return [];
+      }
+      
+      // 2. Update/Create academic history for the new year
+      const istoricRef = doc(db, 'istoricAcademic', studentId);
+      const existingIstoric = await getDoc(istoricRef);
+      
+      let istoricData;
+      if (existingIstoric.exists()) {
+        istoricData = existingIstoric.data();
+        // Ensure istoricAnual exists
+        if (!istoricData.istoricAnual) {
+          istoricData.istoricAnual = [];
+        }
+      } else {
+        // Create new academic history if doesn't exist
+        istoricData = {
+          studentId: studentId,
+          nume: studentData.nume || '',
+          prenume: studentData.prenume || '',
+          specializare: studentData.specializare || '',
+          facultate: studentData.facultate || '',
+          istoricAnual: []
+        };
+      }
+      
+      // Group courses by semester
+      const cursuriBySemestru = {};
+      
+      materiiObligatorii.forEach(materie => {
+        const semestru = materie.semestru || 1;
+        if (!cursuriBySemestru[semestru]) {
+          cursuriBySemestru[semestru] = [];
+        }
+        
+        // Create course record for the new academic year
+        const courseRecord = {
+          id: materie.id,
+          nume: materie.nume,
+          credite: materie.credite || 0,
+          nota: 0, // Grade 0 - not evaluated yet
+          dataNota: new Date().getTime(),
+          profesor: 'Nespecificat', // Professor will be assigned when available
+          obligatorie: true,
+          status: 'neevaluat',
+          dataInregistrare: new Date().toISOString()
+        };
+        
+        cursuriBySemestru[semestru].push(courseRecord);
+      });
+      
+      // Add annual records for each semester
+      Object.keys(cursuriBySemestru).forEach(semestru => {
+        const anualRecord = {
+          anUniversitar: nextAcademicYear,
+          anStudiu: nextYear,
+          semestru: parseInt(semestru),
+          cursuri: cursuriBySemestru[semestru]
+        };
+        
+        // Check if record for this year and semester already exists
+        const existingRecordIndex = istoricData.istoricAnual.findIndex(record => 
+          record.anUniversitar === nextAcademicYear && 
+          record.anStudiu === nextYear && 
+          record.semestru === parseInt(semestru)
+        );
+        
+        if (existingRecordIndex >= 0) {
+          // Update existing record
+          istoricData.istoricAnual[existingRecordIndex] = anualRecord;
+        } else {
+          // Add new record
+          istoricData.istoricAnual.push(anualRecord);
+        }
+      });
+      
+      // Save academic history
+      await setDoc(istoricRef, istoricData);
+      console.log('Updated academic history for student');
+      
+      // 3. Add student to each mandatory course
+      const studentInfo = {
+        id: studentId,
+        nume: `${studentData.prenume} ${studentData.nume}`,
+        numarMatricol: studentData.numarMatricol || 'N/A'
+      };
+      
+      const materiiInscrises = [];
+      
+      for (const materie of materiiObligatorii) {
+        try {
+          const materieRef = doc(db, 'materii', materie.id);
+          const materieDoc = await getDoc(materieRef);
+          
+          if (materieDoc.exists()) {
+            const materieData = materieDoc.data();
+            const studentiActuali = materieData.studentiInscrisi || [];
+            
+            // Check if student is not already enrolled
+            if (!studentiActuali.some(student => student.id === studentId)) {
+              await updateDoc(materieRef, {
+                studentiInscrisi: [...studentiActuali, studentInfo]
+              });
+              
+              materiiInscrises.push(materie.id);
+              console.log(`Added student to mandatory course: ${materie.nume}`);
+            } else {
+              // If already enrolled, still add to the list
+              materiiInscrises.push(materie.id);
+            }
+          }
+        } catch (error) {
+          console.error(`Error adding student to course ${materie.id}:`, error);
+        }
+      }
+      
+      console.log('Successfully completed assignment of mandatory courses for next year');
+      return materiiInscrises;
+      
+    } catch (error) {
+      console.error('Error in assignment of mandatory courses for next year:', error);
+      // Don't throw error to avoid interrupting the registration process
+      return [];
+    }
+  };
+
   // Bulk register selected students to next year
   const bulkRegisterStudents = async () => {
     if (selectedStudents.length === 0) {
@@ -202,6 +422,22 @@ const StudentNextYearRegistrationPage = () => {
           const student = eligibleStudents.find(s => s.id === studentId);
           if (!student) continue;
 
+          // Remove student from courses they've already passed (grade 5+)
+          const passedCourseIds = await removeFromPassedCourses(studentId, student);
+
+          // Assign mandatory courses for the new year
+          const materiiInscrises = await assignMandatoryCoursesForNextYear(
+            studentId, 
+            student, 
+            student.nextYear, 
+            nextAcademicYear
+          );
+
+          // Filter out passed courses from the enrolled courses list
+          const finalMateriiInscrise = materiiInscrises.filter(courseId => 
+            !passedCourseIds.includes(courseId)
+          );
+
           const studentRef = doc(db, 'users', studentId);
           
           // Update student record
@@ -209,7 +445,7 @@ const StudentNextYearRegistrationPage = () => {
             an: student.nextYear,
             lastRegistrationYear: currentAcademicYear,
             lastRegistrationDate: new Date().toISOString(),
-            materiiInscrise: [] // Reset enrolled subjects for new year
+            materiiInscrise: finalMateriiInscrise // Set enrolled subjects excluding passed courses
           });
 
           successCount++;
@@ -220,7 +456,7 @@ const StudentNextYearRegistrationPage = () => {
       }
 
       if (successCount > 0) {
-        setSuccessMessage(`Au fost înregistrați cu succes ${successCount} studenți în anul următor.`);
+        setSuccessMessage(`Au fost înregistrați cu succes ${successCount} studenți în anul următor. Aceștia au fost înscriși automat la cursurile obligatorii și au fost eliminați din cursurile deja promovate.`);
         // Refresh the list
         await fetchEligibleStudents();
       }
