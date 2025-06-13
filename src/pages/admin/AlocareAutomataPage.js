@@ -1238,8 +1238,9 @@ const AlocareAutomataPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-[#024A76]">Alocare Automată Pachete</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6 text-[#024A76] dark:text-blue-light">Alocare Automată Pachete</h1>
       
       {/* Toast Notification */}
       {toast && (
@@ -1254,7 +1255,7 @@ const AlocareAutomataPage = () => {
       <div className="flex mb-6 shadow-md rounded-lg overflow-hidden">
         <input
           type="text"
-          className="flex-grow p-3 border-0 bg-white text-[#024A76] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3471B8] transition-all duration-200"
+          className="flex-grow p-3 border-0 bg-white dark:bg-gray-800/50 text-[#024A76] dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3471B8] dark:focus:ring-yellow-accent transition-all duration-200"
           placeholder="Caută după nume, specializare sau facultate..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -1268,20 +1269,20 @@ const AlocareAutomataPage = () => {
       </div>
       
       {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+        <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-300 px-4 py-3 rounded relative mb-4">
           {successMessage}
         </div>
       )}
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded relative mb-4">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="col-span-1 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-          <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4">
+        <div className="col-span-1 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900 p-4">
             <h2 className="text-lg font-semibold drop-shadow-sm">Pachete disponibile</h2>
           </div>
           
@@ -1367,7 +1368,7 @@ const AlocareAutomataPage = () => {
         
         <div className="col-span-1 lg:col-span-2">
           {!selectedPachet ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500 h-full flex items-center justify-center">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow p-8 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
               <div>
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -1377,8 +1378,8 @@ const AlocareAutomataPage = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-              <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4 flex justify-between items-center">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900 p-4 flex justify-between items-center">
                 <h2 className="text-lg font-semibold drop-shadow-sm">
                   {pachete.find(p => p.id === selectedPachet)?.nume || 'Pachet selectat'}
                 </h2>
@@ -1458,41 +1459,10 @@ const AlocareAutomataPage = () => {
                     </div>
                     
                     {rezultateAlocare && (
-                      <div className="mt-6 border-t pt-6">
-                        <h3 className="text-lg font-semibold text-[#024A76] mb-4 drop-shadow-sm">Rezultate alocare</h3>
-                        
-                        {/* Sumar rapid */}
-                        <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 p-6 rounded-lg mb-6 border border-gray-200">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">{rezultateAlocare.studentiAlocati.length}</div>
-                              <div className="text-sm text-gray-600 font-medium">Studenți alocați</div>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-500">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">{rezultateAlocare.studentiNealocati.length}</div>
-                              <div className="text-sm text-gray-600 font-medium">Studenți nealocați</div>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#3471B8]">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-[#3471B8] to-[#024A76] bg-clip-text text-transparent">
-                                {rezultateAlocare.studentiAlocati.filter(s => s.pozitiePrioritate === 1).length}
-                              </div>
-                              <div className="text-sm text-gray-600 font-medium">Prima alegere</div>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#E3AB23]">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 bg-clip-text text-transparent">
-                                {rezultateAlocare.studentiAlocati.length > 0 ? 
-                                  (rezultateAlocare.studentiAlocati.reduce((sum, s) => sum + s.media, 0) / rezultateAlocare.studentiAlocati.length).toFixed(2) :
-                                  '0.00'
-                                }
-                              </div>
-                              <div className="text-sm text-gray-600 font-medium">Media pentru alocare</div>
-                            </div>
-                          </div>
-                        </div>
-                        
+                      <div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
-                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți alocați ({rezultateAlocare.studentiAlocati.length})</h4>
+                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți alocați</h4>
                             <div className="bg-green-50 p-4 rounded-md h-64 overflow-y-auto">
                               {rezultateAlocare.studentiAlocati.length === 0 ? (
                                 <p className="text-sm text-gray-500">Nu există studenți alocați</p>
@@ -1545,56 +1515,10 @@ const AlocareAutomataPage = () => {
                               )}
                             </div>
                           </div>
-                          
-                          <div>
-                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți nealocați ({rezultateAlocare.studentiNealocati.length})</h4>
-                            <div className="bg-red-50 p-4 rounded-md h-64 overflow-y-auto">
-                              {rezultateAlocare.studentiNealocati.length === 0 ? (
-                                <p className="text-sm text-gray-500">Nu există studenți nealocați</p>
-                              ) : (
-                                <ul className="space-y-2">
-                                  {rezultateAlocare.studentiNealocati.map(student => (
-                                    <li key={student.id} className="text-sm border-b border-red-100 pb-2">
-                                      <div className="font-medium text-red-800">{student.nume} {student.prenume}</div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">
-                                          {student.anStudiu === 'II' ? 'Media anul I:' :
-                                           student.anStudiu === 'III' ? 'Media anul II:' :
-                                           'Media generală:'}
-                                        </span> 
-                                        <span className={`ml-1 font-semibold ${
-                                          student.media >= 9 ? 'text-green-600' :
-                                          student.media >= 8 ? 'text-blue-600' :
-                                          student.media >= 7 ? 'text-yellow-600' :
-                                          'text-red-600'
-                                        }`}>
-                                          {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
-                                        </span>
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">Preferințe:</span> {student.preferinte ? student.preferinte.map((p, idx) => `#${idx+1}`).join(', ') : 'Nespecificate'}
-                                      </div>
-                                      <div className="text-red-600 text-xs mt-1">
-                                        <span className="font-medium">Motiv nealocare:</span> {student.motivNealocare}
-                                      </div>
-                                      {student.numarMatricol && (
-                                        <div className="text-gray-500 text-xs">
-                                          Nr. matricol: {student.numarMatricol}
-                                        </div>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          </div>
                         </div>
                         
                         <div className="mt-6">
-                          <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Materii cu locuri rămase ({rezultateAlocare.materiiCuLocuriRamase.length})</h4>
+                          <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Materii cu locuri rămase</h4>
                           <div className="bg-blue-50 p-4 rounded-md overflow-x-auto">
                             {rezultateAlocare.materiiCuLocuriRamase.length === 0 ? (
                               <p className="text-sm text-gray-500">Nu există materii cu locuri rămase</p>
@@ -1674,11 +1598,7 @@ const AlocareAutomataPage = () => {
                               </table>
                             </div>
 
-                            <div className="mt-4 text-sm text-gray-600">
-                              <p><strong>Legendă:</strong></p>
-                              <p><span className="font-medium">Pref. #N</span> - Numărul de studenți pentru care materia a fost a N-a opțiune din preferințe</p>
-                              <p><span className="font-medium">Total</span> - Numărul total de studenți alocați la materie</p>
-                            </div>
+                            
                           </div>
                         </div>
                       </div>
@@ -1808,6 +1728,7 @@ const AlocareAutomataPage = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

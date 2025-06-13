@@ -278,7 +278,7 @@ const MateriileMelePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="text-center py-8 text-[#024A76]">
           <div className="text-lg font-semibold flex items-center justify-center space-x-2">
             <div className="w-6 h-6 bg-gradient-to-r from-[#024A76] to-[#3471B8] rounded-full animate-spin"></div>
@@ -290,12 +290,18 @@ const MateriileMelePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
-      <div className="container mx-auto px-4 py-4">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent mb-1 drop-shadow-sm">Materiile Mele</h1>
-          <div className="h-0.5 w-16 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 rounded shadow-sm"></div>
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+            {user?.tip === 'student' ? 'Materiile Mele' : 'Materiile pe care le predau'}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+            {user?.tip === 'student' 
+              ? 'Aici poți vedea toate materiile la care ești înscris și ți le poți gestiona'
+              : 'Materiile pe care le predai și studenții înscriși'
+            }
+          </p>
         </div>
 
         {error && (
@@ -305,9 +311,9 @@ const MateriileMelePage = () => {
         )}
 
         {materiiInscrise.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-xl p-6 text-center border border-gray-200">
-            <div className="text-lg text-gray-500 mb-1">Nu aveți nicio materie în istoricul academic</div>
-            <div className="text-xs text-gray-400">Contactați secretariatul pentru mai multe informații</div>
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-xl p-6 text-center border border-gray-200 dark:border-gray-700">
+            <div className="text-lg text-gray-500 dark:text-gray-300 mb-1">Nu aveți nicio materie în istoricul academic</div>
+            <div className="text-xs text-gray-400 dark:text-gray-400">Contactați secretariatul pentru mai multe informații</div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -321,7 +327,7 @@ const MateriileMelePage = () => {
                     className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
                       selectedYear === year
                         ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white shadow-lg border-2 border-[#E3AB23]'
-                        : 'bg-white text-[#024A76] hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 border border-gray-300 hover:border-[#3471B8]/30 shadow-md hover:shadow-lg'
+                        : 'bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 border border-gray-300 dark:border-gray-700 hover:border-[#3471B8]/30 shadow-md hover:shadow-lg'
                     }`}
                   >
                     Anul {year}
@@ -331,9 +337,9 @@ const MateriileMelePage = () => {
             </div>
 
             {/* Course Table */}
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
               {currentYearCourses.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-gray-300">
                   Nu aveți cursuri pentru anul {selectedYear}
                 </div>
               ) : (
@@ -370,14 +376,14 @@ const MateriileMelePage = () => {
                               {courses.map((materie, index) => (
                                 <tr 
                                   key={materie.id}
-                                  className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 cursor-pointer transition-all duration-200`}
+                                  className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-blue-light/10 dark:hover:to-yellow-accent/10 cursor-pointer transition-all duration-200`}
                                   onClick={() => setExpandedMaterieId(expandedMaterieId === materie.id ? null : materie.id)}
                                 >
-                                  <td className="py-3 px-6 text-gray-900">
+                                  <td className="py-3 px-6 text-gray-900 dark:text-gray-200">
                                     <div>
                                       <div className="font-medium">{materie.nume}</div>
                                       {expandedMaterieId === materie.id && (
-                                        <div className="mt-2 text-sm text-gray-600">
+                                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                                           <div><span className="font-semibold">Profesor:</span> {materie.profesor?.nume || 'Nealocat'}</div>
                                           <div><span className="font-semibold">Specializare:</span> {materie.specializare}</div>
                                           {materie.descriere && (
@@ -387,7 +393,7 @@ const MateriileMelePage = () => {
                                       )}
                                     </div>
                                   </td>
-                                  <td className="py-3 px-6 text-center text-gray-900">{materie.credite}</td>
+                                  <td className="py-3 px-6 text-center text-gray-900 dark:text-gray-200">{materie.credite}</td>
                                   <td className="py-3 px-6 text-center">
                                     <span className={`font-semibold px-2 py-1 rounded-full text-sm ${
                                       materie.nota >= 5 
@@ -403,9 +409,9 @@ const MateriileMelePage = () => {
                               ))}
                               
                               {/* Semester Total Row */}
-                              <tr className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 border-t-2 border-[#E3AB23]">
-                                <td className="py-2 px-6 font-semibold text-[#024A76]">Total</td>
-                                <td className="py-2 px-6 text-center font-semibold text-[#024A76]">{semesterCredits} credite</td>
+                              <tr className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/50 dark:to-gray-600/50 border-t-2 border-[#E3AB23] dark:border-yellow-accent">
+                                <td className="py-2 px-6 font-semibold text-[#024A76] dark:text-blue-light">Total</td>
+                                <td className="py-2 px-6 text-center font-semibold text-[#024A76] dark:text-blue-light">{semesterCredits} credite</td>
                                 <td className="py-2 px-6 text-center">
                                   <span className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] px-3 py-1 rounded-full font-semibold text-sm shadow-sm">
                                     {semesterAverage > 0 ? semesterAverage : '-'}

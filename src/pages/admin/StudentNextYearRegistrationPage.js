@@ -519,9 +519,10 @@ const StudentNextYearRegistrationPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-[#034a76]">Înscrierea Studenților în Anul Următor</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#034a76] dark:text-blue-light">Înscrierea Studenților în Anul Următor</h1>
         <button
           onClick={fetchEligibleStudents}
           disabled={studentsLoading}
@@ -541,22 +542,22 @@ const StudentNextYearRegistrationPage = () => {
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg border border-red-200">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg border border-red-200 dark:border-red-700">
+            {error}
+          </div>
+        )}
 
-      {successMessage && (
-        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg border border-green-200">
-          {successMessage}
-        </div>
-      )}
+        {successMessage && (
+          <div className="mb-4 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg border border-green-200 dark:border-green-700">
+            {successMessage}
+          </div>
+        )}
 
-      {/* Filters Section */}
-      <div className="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-[#024A76]">Filtrare Studenți</h3>
+        {/* Filters Section */}
+        <div className="mb-6 p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-[#024A76] dark:text-blue-light">Filtrare Studenți</h3>
           <button
             onClick={resetFilters}
             className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium transition-all duration-200"
@@ -574,7 +575,7 @@ const StudentNextYearRegistrationPage = () => {
             <select
               value={filters.facultate}
               onChange={(e) => updateFilter('facultate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800/50 text-[#024A76] dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3471B8] dark:focus:ring-yellow-accent focus:border-[#3471B8] dark:focus:border-yellow-accent transition-all duration-200"
             >
               <option value="">Toate facultățile</option>
               {getUniqueValues('facultate').map(facultate => (
@@ -593,7 +594,7 @@ const StudentNextYearRegistrationPage = () => {
             <select
               value={filters.specializare}
               onChange={(e) => updateFilter('specializare', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800/50 text-[#024A76] dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3471B8] dark:focus:ring-yellow-accent focus:border-[#3471B8] dark:focus:border-yellow-accent transition-all duration-200"
             >
               <option value="">Toate specializările</option>
               {getUniqueValues('specializare').map(specializare => (
@@ -612,7 +613,7 @@ const StudentNextYearRegistrationPage = () => {
             <select
               value={filters.an}
               onChange={(e) => updateFilter('an', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+              className="w-full px-3 py-2 bg-white dark:bg-gray-800/50 text-[#024A76] dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3471B8] dark:focus:ring-yellow-accent focus:border-[#3471B8] dark:focus:border-yellow-accent transition-all duration-200"
             >
               <option value="">Toți anii</option>
               {getUniqueValues('an').map(an => (
@@ -659,8 +660,8 @@ const StudentNextYearRegistrationPage = () => {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-          <div className="px-6 py-4 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
+              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900">
             <h2 className="text-lg font-semibold">
               Studenți Eligibili pentru Anul Următor
             </h2>
@@ -668,9 +669,9 @@ const StudentNextYearRegistrationPage = () => {
           
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10">
+              <thead className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-yellow-accent/20 dark:to-yellow-accent/10">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider">
                     <input
                       type="checkbox"
                       checked={filteredStudents.length > 0 && filteredStudents.every(student => selectedStudents.includes(student.id))}
@@ -692,33 +693,33 @@ const StudentNextYearRegistrationPage = () => {
                       className="w-4 h-4 text-[#024A76] border-gray-300 rounded focus:ring-[#024A76]"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider drop-shadow-sm">
                     Student
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider drop-shadow-sm">
                     An Curent
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
-                    ECTS Acumulate
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider drop-shadow-sm">
+                    CREDITE
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider drop-shadow-sm">
                     Media
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider drop-shadow-sm">
                     Facultate
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] dark:text-blue-light uppercase tracking-wider drop-shadow-sm">
                     Specializare
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800/50 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredStudents.map((student) => (
                   <tr 
                     key={student.id}
-                    className={`hover:bg-gray-50 transition-all duration-200 ${
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 ${
                       selectedStudents.includes(student.id) 
-                        ? 'border-l-4 border-[#E3AB23] bg-gradient-to-r from-[#E3AB23]/5 to-transparent' 
+                        ? 'border-l-4 border-[#E3AB23] dark:border-yellow-accent bg-gradient-to-r from-[#E3AB23]/5 to-transparent dark:from-yellow-accent/10 dark:to-transparent' 
                         : 'border-l-4 border-transparent'
                     }`}
                   >
@@ -731,10 +732,10 @@ const StudentNextYearRegistrationPage = () => {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
                         {student.nume} {student.prenume}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         {student.email}
                       </div>
                     </td>
@@ -753,10 +754,10 @@ const StudentNextYearRegistrationPage = () => {
                         {student.currentAverageGrade}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 font-medium">
                       {student.facultate}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 font-medium">
                       {student.specializare}
                     </td>
                   </tr>
@@ -765,6 +766,7 @@ const StudentNextYearRegistrationPage = () => {
             </table>
           </div>
         </div>
+      </div>
     </div>
   );
 };

@@ -372,9 +372,9 @@ const MaterieDetailsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#f5f5f5' }}>
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034a76]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#034a76] dark:border-yellow-accent"></div>
         </div>
       </div>
     );
@@ -382,10 +382,10 @@ const MaterieDetailsPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen p-8 bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+      <div className="min-h-screen p-8 bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-lg shadow-sm">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         </div>
       </div>
@@ -393,10 +393,10 @@ const MaterieDetailsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out">
+        <div className="fixed top-4 right-4 z-50 bg-green-500 dark:bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out">
           <div className="flex items-center space-x-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
@@ -409,13 +409,13 @@ const MaterieDetailsPage = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="mb-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-sm">
+          <div className="mb-4 bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 rounded-lg shadow-sm">
             {successMessage}
           </div>
         )}
         
         {errorMessage && (
-          <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-sm">
+          <div className="mb-4 bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-lg shadow-sm">
             {errorMessage}
           </div>
         )}
@@ -425,22 +425,22 @@ const MaterieDetailsPage = () => {
           <div className="flex items-center space-x-4 mb-2">
             <button
               onClick={() => navigate('/profesor/materiile-mele')}
-              className="flex items-center justify-center w-10 h-10 bg-white hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 text-[#024A76] hover:text-[#3471B8] rounded-lg border border-[#024A76]/30 shadow-sm hover:shadow-md transition-all duration-300"
+              className="flex items-center justify-center w-10 h-10 bg-white/80 dark:bg-gray-800/50 hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent rounded-lg border border-[#024A76]/30 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300"
               title="Înapoi la cursuri"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">{materie?.nume}</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">{materie?.nume}</h1>
           </div>
-          <div className="h-0.5 w-16 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 rounded ml-14 shadow-sm"></div>
+          <div className="h-0.5 w-16 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-yellow-accent dark:to-yellow-accent/70 rounded ml-14 shadow-sm"></div>
         </div>
         
         <div className="flex justify-end space-x-3 mb-6">
           <button
             onClick={handleExport}
-            className="bg-white hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 text-[#024A76] hover:text-[#3471B8] px-4 py-2 rounded-lg font-medium border border-[#024A76]/30 hover:border-[#3471B8]/50 flex items-center space-x-2 shadow-sm hover:shadow-md transition-all duration-300"
+            className="bg-white/80 dark:bg-gray-800/50 hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent px-4 py-2 rounded-lg font-medium border border-[#024A76]/30 dark:border-gray-700 hover:border-[#3471B8]/50 dark:hover:border-yellow-accent flex items-center space-x-2 shadow-sm hover:shadow-md transition-all duration-300"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -452,7 +452,7 @@ const MaterieDetailsPage = () => {
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-md">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#024A76]/60 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#024A76]/60 dark:text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -460,16 +460,16 @@ const MaterieDetailsPage = () => {
               placeholder="Caută studenți..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-[#024A76]/30 rounded-lg focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] shadow-sm hover:shadow-md transition-all duration-300"
+              className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300"
             />
           </div>
         </div>
 
         {/* Students Table */}
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200">
+        <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
           <table className="min-w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
+              <tr className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900">
                 <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">ID</th>
                 <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">Nume</th>
                 <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">Email</th>
@@ -483,17 +483,17 @@ const MaterieDetailsPage = () => {
                 return (
                   <tr 
                     key={student.id} 
-                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 cursor-pointer transition-all duration-200`}
+                    className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-200`}
                   >
-                    <td className="py-3 px-6 text-[#024A76]">
+                    <td className="py-3 px-6 text-[#024A76] dark:text-blue-light">
                       {index + 1}
                     </td>
-                    <td className="py-3 px-6 text-[#024A76]">
+                    <td className="py-3 px-6 text-[#024A76] dark:text-gray-200">
                       <div className="font-medium">
                         {student.nume} {student.prenume}
                       </div>
                     </td>
-                    <td className="py-3 px-6 text-[#024A76]">
+                    <td className="py-3 px-6 text-[#024A76] dark:text-gray-300">
                       {student.email}
                     </td>
                     <td className="py-3 px-6 text-center relative group w-40">
@@ -504,7 +504,7 @@ const MaterieDetailsPage = () => {
                             min="1"
                             max="10"
                             step="1"
-                            className="w-12 px-1 py-1 text-center border border-[#024A76]/30 rounded focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23]"
+                            className="w-12 px-1 py-1 text-center bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent"
                             value={editGradeForm.nota}
                             onChange={(e) => setEditGradeForm({...editGradeForm, nota: parseInt(e.target.value)})}
                             autoFocus
@@ -520,7 +520,7 @@ const MaterieDetailsPage = () => {
                           </button>
                           <button
                             onClick={() => setEditingStudentId(null)}
-                            className="text-[#024A76] hover:text-[#3471B8] flex-shrink-0 p-1"
+                            className="text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent flex-shrink-0 p-1"
                             title="Anulează"
                           >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,16 +532,16 @@ const MaterieDetailsPage = () => {
                         <div className="flex items-center justify-center min-h-[2.5rem]">
                           <span className={`font-semibold ${
                             student.nota === 'Not graded' 
-                              ? 'text-gray-500' 
+                              ? 'text-gray-500 dark:text-gray-400' 
                               : student.nota >= 5 
-                              ? 'text-green-600' 
-                              : 'text-red-600'
+                              ? 'text-green-600 dark:text-green-400' 
+                              : 'text-red-600 dark:text-red-400'
                           }`}>
                             {getGradeDisplay(student.nota)}
                           </span>
                           <button
                             onClick={() => startEditingGrade(student)}
-                            className="opacity-0 group-hover:opacity-100 text-[#024A76] hover:text-[#3471B8] transition-all duration-200 ml-2"
+                            className="opacity-0 group-hover:opacity-100 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-all duration-200 ml-2"
                             title="Editează nota"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -562,8 +562,8 @@ const MaterieDetailsPage = () => {
               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              <h3 className="mt-4 text-lg font-medium text-[#024A76]">Nu s-au găsit studenți</h3>
-              <p className="mt-2 text-[#024A76]/60">
+              <h3 className="mt-4 text-lg font-medium text-[#024A76] dark:text-blue-light">Nu s-au găsit studenți</h3>
+              <p className="mt-2 text-[#024A76]/60 dark:text-gray-300">
                 {searchTerm ? 'Niciun student nu corespunde criteriilor de căutare.' : 'Nu există studenți înscriși la această materie.'}
               </p>
             </div>

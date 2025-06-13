@@ -149,9 +149,9 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent text-center mb-12 drop-shadow-sm">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent text-center mb-12 drop-shadow-sm">
           {getDynamicGreeting(userData?.nume, userData?.prenume)}
         </h1>
         
@@ -160,45 +160,45 @@ const HomePage = () => {
             <button
               key={index}
               onClick={() => navigate(item.path)}
-              className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center group border border-gray-200 hover:border-[#3471B8]/30 hover:scale-105"
+              className="bg-white dark:bg-gray-800/50 p-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center group border border-gray-200 dark:border-gray-700/50 hover:border-[#3471B8]/30 dark:hover:border-blue-light/50 hover:scale-105"
             >
-              <div className="text-[#024A76] group-hover:text-[#3471B8] mb-4 transition-all duration-300">
+              <div className="text-[#024A76] dark:text-blue-light group-hover:text-[#3471B8] dark:group-hover:text-yellow-accent mb-4 transition-all duration-300">
                 {item.icon}
               </div>
-              <h2 className="text-xl font-semibold text-[#024A76] mb-2 group-hover:text-[#3471B8] transition-all duration-300">{item.title}</h2>
-              <p className="text-gray-600 group-hover:text-gray-700">{item.description}</p>
+              <h2 className="text-xl font-semibold text-[#024A76] dark:text-blue-light mb-2 group-hover:text-[#3471B8] dark:group-hover:text-yellow-accent transition-all duration-300">{item.title}</h2>
+              <p className="text-gray-600 dark:text-gray-300 group-hover:text-gray-700 dark:group-hover:text-gray-200">{item.description}</p>
             </button>
           ))}
         </div>
 
         {/* UVT Contact Information */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mt-10 border border-gray-200">
+        <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-lg p-8 mt-10 border border-gray-200 dark:border-gray-700/50">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent mb-6 text-center drop-shadow-sm">Facultatea de Matematică și Informatică - UVT</h2>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent mb-6 text-center drop-shadow-sm">Facultatea de Matematică și Informatică - UVT</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Contact Information */}
               <div className="space-y-5">
-                <h3 className="text-lg font-semibold text-[#024A76] drop-shadow-sm">Contact</h3>
+                <h3 className="text-lg font-semibold text-[#024A76] dark:text-blue-light drop-shadow-sm">Contact</h3>
                 <ul className="space-y-4">
                   <li className="flex items-start">
-                    <span className="text-[#024A76] mr-3 mt-0.5">
+                    <span className="text-[#024A76] dark:text-blue-light mr-3 mt-0.5">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 512 512">
                         <path d="M493.4 24.6l-104-24c-11.3-2.6-22.9 3.3-27.5 13.9l-48 112c-4.2 9.8-1.4 21.3 6.9 28l60.6 49.6c-36 76.7-98.9 140.5-177.2 177.2l-49.6-60.6c-6.8-8.3-18.2-11.1-28-6.9l-112 48C3.9 366.5-2 378.1.6 389.4l24 104C27.1 504.2 36.7 512 48 512c256.1 0 464-207.5 464-464 0-11.2-7.7-20.9-18.6-23.4z"></path>
                       </svg>
                     </span>
-                    <span className="text-gray-700">0256 592 155 | 0256 592 364</span>
+                    <span className="text-gray-700 dark:text-gray-300">0256 592 155 | 0256 592 364</span>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-[#024A76] mr-3 mt-0.5">
+                    <span className="text-[#024A76] dark:text-blue-light mr-3 mt-0.5">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 512 512">
                         <path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"></path>
                       </svg>
                     </span>
-                    <a href="mailto:secretariat.mateinfo@e-uvt.ro" className="text-gray-700 hover:text-[#024A76] transition-colors">secretariat.mateinfo@e-uvt.ro</a>
+                    <a href="mailto:secretariat.mateinfo@e-uvt.ro" className="text-gray-700 dark:text-gray-300 hover:text-[#024A76] transition-colors">secretariat.mateinfo@e-uvt.ro</a>
                   </li>
                   <li className="flex items-start">
-                    <span className="text-[#024A76] mr-3 mt-0.5">
+                    <span className="text-[#024A76] dark:text-blue-light mr-3 mt-0.5">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 384 512">
                         <path d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0zM192 272c44.183 0 80-35.817 80-80s-35.817-80-80-80-80 35.817-80 80 35.817 80 80 80z"></path>
                       </svg>
@@ -207,7 +207,7 @@ const HomePage = () => {
                       href="https://maps.app.goo.gl/WTeWusmvYDhKRtgq5" 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="text-gray-700 hover:text-[#024A76] transition-colors"
+                      className="text-gray-700 dark:text-gray-300 hover:text-[#024A76] transition-colors"
                     >
                       Vasile Pârvan blvd. nr. 4 Timişoara Timiş România 300223
                     </a>
@@ -217,18 +217,18 @@ const HomePage = () => {
               
               {/* Quick Links */}
               <div>
-                <h3 className="text-lg font-semibold text-[#024A76] mb-4 drop-shadow-sm">Link-uri rapide</h3>
+                <h3 className="text-lg font-semibold text-[#024A76] dark:text-blue-light mb-4 drop-shadow-sm">Link-uri rapide</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <a href="https://info.uvt.ro/" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#024A76] transition-colors">
+                  <a href="https://info.uvt.ro/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-[#024A76] transition-colors">
                     Facultatea de Informatică
                   </a>
-                  <a href="https://info.uvt.ro/avizier-general/" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#024A76] transition-colors">
+                  <a href="https://info.uvt.ro/avizier-general/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-[#024A76] transition-colors">
                     Avizier General
                   </a>
-                  <a href="https://info.uvt.ro/discipline-optionale/" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#024A76] transition-colors">
+                  <a href="https://info.uvt.ro/discipline-optionale/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-[#024A76] transition-colors">
                     Discipline Opționale
                   </a>
-                  <a href="https://info.uvt.ro/orare/" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-[#024A76] transition-colors">
+                  <a href="https://info.uvt.ro/orare/" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-[#024A76] transition-colors">
                     Orare
                   </a>
                 </div>

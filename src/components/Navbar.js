@@ -5,6 +5,7 @@ import { signOut } from 'firebase/auth';
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { isAdmin, isProfesor, isStudent, isSecretar } from '../utils/userRoles';
+import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -114,12 +115,12 @@ const Navbar = () => {
   };
 
   return (
-    <div className="h-16 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white w-full flex items-center justify-between px-6 fixed top-0 z-50 shadow-lg border-b border-[#3471B8]/30">
+    <div className="h-16 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:bg-gradient-to-r dark:from-yellow-accent dark:to-yellow-accent/90 text-white dark:text-blue-dark w-full flex items-center justify-between px-6 fixed top-0 z-50 shadow-lg border-b border-[#3471B8]/30 dark:border-blue-light/40 transition-colors duration-300">
       <div className="flex items-center h-full">
         <div className="mr-8 flex items-center h-full">
           <button
             onClick={() => navigate('/home')}
-            className="cursor-pointer hover:scale-105 transition-all duration-300 p-1 rounded-lg hover:bg-white/10 backdrop-blur-sm flex items-center justify-center"
+            className="cursor-pointer hover:scale-105 transition-all duration-300 p-1 rounded-lg hover:bg-white/10 dark:hover:bg-blue-dark/10 backdrop-blur-sm flex items-center justify-center"
             aria-label="Home"
           >
             <img 
@@ -132,7 +133,7 @@ const Navbar = () => {
         
         {/* Buton hamburger pentru mobile */}
         <button 
-          className="md:hidden p-2 rounded-lg hover:bg-white/10 backdrop-blur-sm transition-all duration-300"
+          className="md:hidden p-2 rounded-lg hover:bg-white/10 dark:hover:bg-blue-dark/10 backdrop-blur-sm transition-all duration-300"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           <svg className="w-6 h-6 drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,14 +150,14 @@ const Navbar = () => {
                   onClick={() => navigate(item.path)}
                   className={`px-4 h-full flex items-center relative group transition-all duration-300 font-medium
                     ${location.pathname === item.path 
-                      ? 'border-b-4 border-[#E3AB23]' 
-                      : 'hover:bg-white/10 hover:backdrop-blur-sm'
+                      ? 'border-b-4 border-[#E3AB23] dark:border-blue-light' 
+                      : 'hover:bg-white/10 dark:hover:bg-blue-dark/10 hover:backdrop-blur-sm'
                     }`}
                 >
                   <span className="drop-shadow-sm">{item.label}</span>
                   {/* Hover line - only show if not current page */}
                   {location.pathname !== item.path && (
-                    <span className="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 group-hover:w-full transition-all duration-300 shadow-md"></span>
+                    <span className="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-blue-light dark:to-blue-dark group-hover:w-full transition-all duration-300 shadow-md"></span>
                   )}
                 </button>
               </li>
@@ -167,16 +168,17 @@ const Navbar = () => {
       <div className="flex items-center space-x-4">
         {user ? (
           <>
+            <ThemeToggle />
             <button
               onClick={handleProfileClick}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-100 text-[#024A76] flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 hover:text-[#024A76] transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-blue-dark dark:to-blue-light text-[#024A76] dark:text-yellow-accent flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 dark:hover:from-yellow-accent dark:hover:to-yellow-accent/80 hover:text-[#024A76] dark:hover:text-blue-dark transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
               title="Profil"
             >
               {getInitials()}
             </button>
             <button
               onClick={handleLogout}
-              className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20"
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
               title="Deconectare"
             >
               <svg className="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +189,7 @@ const Navbar = () => {
         ) : (
           <button
             onClick={() => navigate('/login')}
-            className="px-4 py-2 text-sm bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 rounded-lg transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 border border-white/20"
+            className="px-4 py-2 text-sm bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 dark:hover:from-blue-dark dark:hover:to-blue-light rounded-lg transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 border border-white/20 dark:border-blue-light/30"
           >
             Autentificare
           </button>
@@ -196,7 +198,7 @@ const Navbar = () => {
       
       {/* Meniu mobile dropdown */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-16 left-0 right-0 bg-gradient-to-b from-[#024A76] to-[#3471B8] border-t border-[#E3AB23]/30 z-50 shadow-xl backdrop-blur-sm">
+        <div className="md:hidden absolute top-16 left-0 right-0 bg-gradient-to-b from-[#024A76] to-[#3471B8] dark:bg-gradient-to-b dark:from-yellow-accent dark:to-yellow-accent/90 border-t border-[#E3AB23]/30 dark:border-blue-light/40 z-50 shadow-xl backdrop-blur-sm transition-colors duration-300">
           <ul className="py-2">
             {navItems.map((item) => (
               <li key={item.path}>
@@ -205,16 +207,16 @@ const Navbar = () => {
                     navigate(item.path);
                     setIsMobileMenuOpen(false);
                   }}
-                  className={`w-full text-left px-6 py-3 relative group transition-all duration-300 font-medium
+                  className={`w-full text-left px-6 py-3 relative group transition-all duration-300 font-medium text-white dark:text-blue-dark
                     ${location.pathname === item.path 
-                      ? 'border-l-4 border-[#E3AB23]' 
-                      : 'hover:bg-white/10 hover:backdrop-blur-sm'
+                      ? 'border-l-4 border-[#E3AB23] dark:border-blue-light' 
+                      : 'hover:bg-white/10 dark:hover:bg-blue-dark/10 hover:backdrop-blur-sm'
                     }`}
                 >
                   <span className="drop-shadow-sm">{item.label}</span>
                   {/* Hover line for mobile - only show if not current page */}
                   {location.pathname !== item.path && (
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 group-hover:w-full transition-all duration-300 shadow-sm"></span>
+                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-blue-light dark:to-blue-dark group-hover:w-full transition-all duration-300 shadow-sm"></span>
                   )}
                 </button>
               </li>

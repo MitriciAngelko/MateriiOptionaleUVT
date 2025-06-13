@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { signInWithEmailAndPassword, setPersistence, browserSessionPersistence, browserLocalPersistence } from 'firebase/auth';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -33,7 +34,11 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
+    <div className="flex h-screen bg-[#f5f5f5] dark:bg-gray-900 overflow-hidden transition-colors duration-300">
+      {/* Theme Toggle - Fixed position */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       {/* Partea stângă - Imaginea */}
       <div className="hidden lg:block lg:w-1/2 relative">
         <img
@@ -44,7 +49,7 @@ const LoginPage = () => {
         {/* Overlay pentru imagine cu un gradient de albastru spre galben */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#024A76]/80 via-[#024A76]/60 to-[#E3AB23]/40" />
         {/* Gradient pentru tranziție */}
-        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#f5f5f5] to-transparent" />
+        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#f5f5f5] dark:from-gray-900 to-transparent transition-colors duration-300" />
       </div>
 
       {/* Partea dreaptă - Formularul de login */}
@@ -62,13 +67,13 @@ const LoginPage = () => {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent mb-4 drop-shadow-sm">
               Bine ați venit!
             </h2>
-            <p className="text-lg text-[#024A76]/70">
+            <p className="text-lg text-[#024A76]/70 dark:text-dark-text-secondary">
               Vă rugăm să vă autentificați pentru a continua
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg shadow-sm">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 rounded-lg shadow-sm">
               <p className="font-medium">Eroare de autentificare</p>
               <p className="text-sm">{error}</p>
             </div>
@@ -76,7 +81,7 @@ const LoginPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label className="block text-sm font-medium text-[#024A76] mb-2">
+              <label className="block text-sm font-medium text-[#024A76] dark:text-dark-text mb-2">
                 Email
               </label>
               <input
@@ -84,12 +89,12 @@ const LoginPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full px-4 py-3 rounded-lg border border-[#024A76]/30 shadow-sm focus:border-[#E3AB23] focus:ring-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                className="mt-1 block w-full px-4 py-3 rounded-lg border border-[#024A76]/30 dark:border-dark-bg-tertiary shadow-sm focus:border-[#E3AB23] dark:focus:border-yellow-accent focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-dark-bg-secondary dark:text-dark-text transition-all duration-300 hover:shadow-md"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#024A76] mb-2">
+              <label className="block text-sm font-medium text-[#024A76] dark:text-dark-text mb-2">
                 Parolă
               </label>
               <input
@@ -97,7 +102,7 @@ const LoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full px-4 py-3 rounded-lg border border-[#024A76]/30 shadow-sm focus:border-[#E3AB23] focus:ring-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                className="mt-1 block w-full px-4 py-3 rounded-lg border border-[#024A76]/30 dark:border-dark-bg-tertiary shadow-sm focus:border-[#E3AB23] dark:focus:border-yellow-accent focus:ring-[#E3AB23] dark:focus:ring-yellow-accent bg-white dark:bg-dark-bg-secondary dark:text-dark-text transition-all duration-300 hover:shadow-md"
                 placeholder="••••••••"
               />
             </div>
@@ -112,7 +117,7 @@ const LoginPage = () => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-[#E3AB23] border-[#024A76]/30 rounded focus:ring-[#E3AB23] transition-colors duration-200"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#024A76]">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-[#024A76] dark:text-dark-text">
                   Ține-mă minte
                 </label>
               </div>

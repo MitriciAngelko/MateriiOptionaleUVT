@@ -752,7 +752,7 @@ const AdminIstoricAcademicPage = () => {
 
   if (!hasAccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-xl shadow-lg border border-red-200">
           <h2 className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent mb-4">Acces Interzis</h2>
           <p className="mt-2 text-gray-600 mb-6">Nu aveți permisiunea de a accesa această pagină.</p>
@@ -768,14 +768,19 @@ const AdminIstoricAcademicPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent mb-8 drop-shadow-sm">
-          Administrare Istoric Academic
-        </h1>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+            Administrare Istoric Academic
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+            Gestionează mediile și situația academică a studenților
+          </p>
+        </div>
         
         {errorMessage && (
-          <div className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg shadow-md">
+          <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 mb-6 rounded-lg shadow-md">
             <div className="flex items-center">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -786,7 +791,7 @@ const AdminIstoricAcademicPage = () => {
         )}
         
         {successMessage && (
-          <div className="bg-gradient-to-r from-green-50 to-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg shadow-md">
+          <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 mb-6 rounded-lg shadow-md">
             <div className="flex items-center">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -798,12 +803,12 @@ const AdminIstoricAcademicPage = () => {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 backdrop-blur-sm">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
                   Studenți
                 </h2>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
                   {filteredStudents.length} din {students.length}
                 </div>
               </div>
@@ -811,16 +816,16 @@ const AdminIstoricAcademicPage = () => {
               {/* Search și Filtre */}
               <div className="mb-6 space-y-4">
                 <div className="relative">
+                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#024A76]/60 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                   <input
                     type="text"
                     placeholder="Caută student..."
-                    className="w-full px-4 py-3 pl-10 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                    className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
                   />
-                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
                 </div>
                 
                 {/* Filtre */}
@@ -830,7 +835,7 @@ const AdminIstoricAcademicPage = () => {
                     <select
                       value={facultateFilter}
                       onChange={(e) => handleFacultateChange(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300"
                     >
                       <option value="">Toate facultățile</option>
                       {facultati.map(facultate => (
@@ -844,7 +849,7 @@ const AdminIstoricAcademicPage = () => {
                     <select
                       value={specializareFilter}
                       onChange={(e) => setSpecializareFilter(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 disabled:bg-gray-100"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300 disabled:bg-gray-100 dark:disabled:bg-gray-700"
                       disabled={!facultateFilter}
                     >
                       <option value="">Toate specializările</option>
@@ -859,7 +864,7 @@ const AdminIstoricAcademicPage = () => {
                     <select
                       value={anFilter}
                       onChange={(e) => setAnFilter(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300"
+                      className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300"
                     >
                       <option value="">Toți anii</option>
                       {ani.map(an => (
@@ -898,13 +903,13 @@ const AdminIstoricAcademicPage = () => {
                         key={student.id}
                         className={`p-4 cursor-pointer rounded-lg transition-all duration-300 hover:shadow-md border ${
                           selectedStudent === student.id 
-                            ? 'bg-gradient-to-r from-[#E3AB23]/10 to-[#E3AB23]/5 border-[#E3AB23] shadow-md' 
-                            : 'bg-gray-50 border-gray-200 hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 hover:border-[#024A76]/30'
+                            ? 'bg-gradient-to-r from-[#E3AB23]/10 to-[#E3AB23]/5 dark:from-yellow-accent/20 dark:to-yellow-accent/10 border-[#E3AB23] dark:border-yellow-accent shadow-md' 
+                            : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 hover:border-[#024A76]/30 dark:hover:border-yellow-accent/30'
                         }`}
                         onClick={() => handleSelectStudent(student.id)}
                       >
-                        <div className="font-semibold text-[#024A76] mb-1">{student.nume} {student.prenume}</div>
-                        <div className="text-sm text-gray-600 flex items-center">
+                        <div className="font-semibold text-[#024A76] dark:text-blue-light mb-1">{student.nume} {student.prenume}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 flex items-center">
                           <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
                           </svg>
@@ -920,41 +925,43 @@ const AdminIstoricAcademicPage = () => {
           
           <div className="lg:col-span-2">
             {selectedStudentData ? (
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200 backdrop-blur-sm">
+              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="mb-6">
-                  <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+                  <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
                     Istoric Academic: {selectedStudentData.nume} {selectedStudentData.prenume}
                   </h2>
                 </div>
                 
                 {/* Detalii student */}
-                <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 p-6 rounded-lg mb-6 border border-gray-200">
-                  <h3 className="font-semibold mb-4 text-[#024A76] flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
+                <div className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/5 dark:from-gray-700/50 dark:to-gray-600/30 p-8 rounded-xl mb-6 border border-gray-200 dark:border-gray-600 shadow-lg backdrop-blur-sm">
+                  <h3 className="font-bold text-xl mb-6 text-[#024A76] dark:text-blue-light flex items-center">
+                    <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-yellow-accent dark:to-yellow-accent/80 p-2 rounded-lg mr-3 shadow-md">
+                      <svg className="w-6 h-6 text-[#024A76] dark:text-gray-900" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
                     Informații Student
                   </h3>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center">
-                        <span className="text-gray-600 font-medium w-20">Facultate:</span> 
-                        <span className="text-[#024A76] font-semibold">{selectedStudentData.facultate}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <div className="bg-white/60 dark:bg-gray-800/30 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+                        <span className="text-gray-600 dark:text-gray-400 font-medium text-sm block mb-1">Facultate</span> 
+                        <span className="text-[#024A76] dark:text-blue-light font-bold text-lg">{selectedStudentData.facultate}</span>
                       </div>
-                      <div className="flex items-center">
-                        <span className="text-gray-600 font-medium w-20">An:</span> 
-                        <span className="px-2 py-1 bg-[#E3AB23]/20 text-[#024A76] rounded-md font-semibold text-sm">{selectedStudentData.an}</span>
+                      <div className="bg-white/60 dark:bg-gray-800/30 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+                        <span className="text-gray-600 dark:text-gray-400 font-medium text-sm block mb-1">An de studiu</span> 
+                        <span className="inline-flex items-center px-3 py-1 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-yellow-accent dark:to-yellow-accent/80 text-[#024A76] dark:text-gray-900 rounded-full font-bold text-sm shadow-sm">Anul {selectedStudentData.an}</span>
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center">
-                        <span className="text-gray-600 font-medium w-24">Specializare:</span> 
-                        <span className="text-[#024A76] font-semibold">{selectedStudentData.specializare}</span>
+                    <div className="space-y-4">
+                      <div className="bg-white/60 dark:bg-gray-800/30 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+                        <span className="text-gray-600 dark:text-gray-400 font-medium text-sm block mb-1">Specializare</span> 
+                        <span className="text-[#024A76] dark:text-blue-light font-bold text-lg">{selectedStudentData.specializare}</span>
                       </div>
-                      <div className="flex items-center">
-                        <span className="text-gray-600 font-medium w-24">Nr. Matricol:</span> 
-                        <span className="text-[#024A76] font-semibold">{selectedStudentData.numarMatricol || 'N/A'}</span>
-                      </div>
+                                             <div className="bg-white/60 dark:bg-gray-800/30 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+                          <span className="text-gray-600 dark:text-gray-400 font-medium text-sm block mb-1">Nr. Matricol</span> 
+                          <span className="text-[#024A76] dark:text-blue-light font-bold text-lg">{selectedStudentData.numarMatricol || 'N/A'}</span>
+                        </div>
                     </div>
                   </div>
                 </div>
@@ -983,9 +990,9 @@ const AdminIstoricAcademicPage = () => {
                   {selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
                     <div className="space-y-8">
                       {getAllCursuri().map((semestru, semestruIndex) => (
-                        <div key={semestruIndex} className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                          <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 px-6 py-4">
-                            <h3 className="text-lg font-semibold text-[#024A76] flex items-center">
+                        <div key={semestruIndex} className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                          <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-yellow-accent dark:to-yellow-accent/80 px-6 py-4">
+                            <h3 className="text-lg font-semibold text-[#024A76] dark:text-gray-900 flex items-center drop-shadow-sm">
                               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
@@ -994,15 +1001,15 @@ const AdminIstoricAcademicPage = () => {
                           </div>
                           <div className="overflow-x-auto">
                             <table className="min-w-full">
-                              <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8]">
+                              <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80">
                                 <tr>
-                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Materie</th>
-                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Credite</th>
-                                  <th className="px-6 py-4 text-center text-xs font-semibold text-white uppercase tracking-wider">Notă</th>
-                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Acțiuni</th>
+                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Materie</th>
+                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Credite</th>
+                                  <th className="px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Notă</th>
+                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Acțiuni</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-200">
+                              <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white/80 dark:bg-gray-800/50">
                                 {semestru.cursuri.map((curs, courseIndex) => {
                                   // Găsim indexul anual și al notei pentru această notă
                                   const anualIndex = selectedStudentData.istoric.istoricAnual.findIndex(a => 
@@ -1016,7 +1023,7 @@ const AdminIstoricAcademicPage = () => {
                                   const isEditing = editingNoteId === `${anualIndex}-${noteIndex}`;
                                   
                                   return (
-                                    <tr key={courseIndex} className="group hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 transition-all duration-200">
+                                    <tr key={courseIndex} className="group hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 transition-all duration-200">
                                       <td className="px-6 py-4">
                                         {isEditing ? (
                                           <input
@@ -1026,7 +1033,7 @@ const AdminIstoricAcademicPage = () => {
                                             className="w-full px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23]"
                                           />
                                         ) : (
-                                          <span className="font-semibold text-[#024A76]">{curs.nume}</span>
+                                          <span className="font-semibold text-[#024A76] dark:text-blue-light">{curs.nume}</span>
                                         )}
                                       </td>
                                       <td className="px-6 py-4">
@@ -1040,7 +1047,7 @@ const AdminIstoricAcademicPage = () => {
                                             className="w-20 px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23]"
                                           />
                                         ) : (
-                                          <span className="px-2 py-1 bg-[#3471B8]/10 text-[#024A76] rounded-md font-semibold text-sm">
+                                          <span className="px-2 py-1 bg-[#3471B8]/10 dark:bg-blue-light/20 text-[#024A76] dark:text-blue-light rounded-md font-semibold text-sm">
                                             {curs.credite}
                                           </span>
                                         )}
@@ -1117,21 +1124,21 @@ const AdminIstoricAcademicPage = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-                      <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="text-center py-12 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <svg className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <p className="text-gray-500 font-medium text-lg">Nu există date pentru anul {activeYear} în istoricul academic</p>
+                      <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Nu există date pentru anul {activeYear} în istoricul academic</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200 backdrop-blur-sm">
-                <svg className="mx-auto h-16 w-16 text-gray-400 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700">
+                <svg className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-500 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
-                <p className="text-gray-500 font-medium text-lg">Selectați un student pentru a vedea istoricul academic</p>
+                <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Selectați un student pentru a vedea istoricul academic</p>
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import DeleteIcon from '../../components/icons/DeleteIcon';
+import { Link } from 'react-router-dom';
 
 const AdminMateriiPage = () => {
   const [activeTab, setActiveTab] = useState('materii'); // 'materii' sau 'pachete'
@@ -149,14 +150,14 @@ const AdminMateriiPage = () => {
   };
 
   const renderFilters = () => (
-    <div className="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+    <div className="mb-8 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
           Filtre
         </h2>
         <button
           onClick={resetFilters}
-          className="text-sm text-[#024A76] hover:text-[#3471B8] transition-colors duration-200 font-medium"
+          className="text-sm text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200 font-medium"
         >
           Resetează filtrele
         </button>
@@ -164,7 +165,7 @@ const AdminMateriiPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
-          <label className="block text-sm font-semibold text-[#024A76] mb-2">Facultate</label>
+          <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
           <select
             value={filters.facultate}
             onChange={(e) => setFilters(prev => ({ 
@@ -172,7 +173,7 @@ const AdminMateriiPage = () => {
               facultate: e.target.value,
               specializare: ''
             }))}
-            className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+            className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
           >
             <option value="">Toate facultățile</option>
             {facultati.map(fac => (
@@ -182,11 +183,11 @@ const AdminMateriiPage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-[#024A76] mb-2">Specializare</label>
+          <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
           <select
             value={filters.specializare}
             onChange={(e) => setFilters(prev => ({ ...prev, specializare: e.target.value }))}
-            className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md disabled:bg-gray-100"
+            className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md disabled:bg-gray-100 dark:disabled:bg-gray-700"
             disabled={!filters.facultate}
           >
             <option value="">Toate specializările</option>
@@ -197,11 +198,11 @@ const AdminMateriiPage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-[#024A76] mb-2">An</label>
+          <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">An</label>
           <select
             value={filters.an}
             onChange={(e) => setFilters(prev => ({ ...prev, an: e.target.value }))}
-            className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+            className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
           >
             <option value="">Toți anii</option>
             {ani.map(an => (
@@ -738,39 +739,36 @@ const AdminMateriiPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
             Administrare Materii
           </h1>
-          
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setActiveTab('materii')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                activeTab === 'materii'
-                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white shadow-lg'
-                  : 'bg-white text-[#024A76] border border-[#024A76]/30 hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10'
-              }`}
+          <div className="flex items-center space-x-4">
+            <Link
+              to="/admin/istoric-academic"
+              className="px-6 py-3 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-600 text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
             >
-              Materii
-            </button>
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
+              </svg>
+              Istoric Academic
+            </Link>
             <button
-              onClick={() => setActiveTab('pachete')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-                activeTab === 'pachete'
-                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white shadow-lg'
-                  : 'bg-white text-[#024A76] border border-[#024A76]/30 hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10'
-              }`}
+              onClick={() => setShowPachetModal(true)}
+              className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
             >
-              Pachete
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Adaugă Pachet
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md">
+          <div className="mb-6 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded-lg shadow-md">
             <div className="flex items-center">
               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -791,7 +789,7 @@ const AdminMateriiPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pachete.map((pachet) => (
-                <div key={pachet.id} className="bg-white border border-gray-200 rounded-xl p-6 relative shadow-lg hover:shadow-xl transition-all duration-300">
+                <div key={pachet.id} className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 relative shadow-lg hover:shadow-xl transition-all duration-300">
                   <button
                     onClick={() => handleDeletePachet(pachet.id)}
                     className="absolute top-4 right-4 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
@@ -842,8 +840,8 @@ const AdminMateriiPage = () => {
             {renderFilters()}
 
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                <h2 className="text-xl font-semibold mb-6 text-[#024A76] flex items-center">
+              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold mb-6 text-[#024A76] dark:text-blue-light flex items-center">
                   <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                   </svg>
@@ -987,8 +985,8 @@ const AdminMateriiPage = () => {
                 </form>
               </div>
 
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                <h2 className="text-xl font-semibold mb-6 text-[#024A76] flex items-center">
+              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold mb-6 text-[#024A76] dark:text-blue-light flex items-center">
                   <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                   </svg>

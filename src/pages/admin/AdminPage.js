@@ -507,45 +507,45 @@ const AdminPage = () => {
 
   const renderUserTable = (users) => (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200">
-        <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8]">
+      <table className="min-w-full bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
+        <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80">
           <tr>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
               Nume
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
               Email
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
               Tip
             </th>
-            <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
               Acțiuni
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
           {users.map(user => (
             <tr 
               key={user.id} 
-              className="hover:bg-gradient-to-r hover:from-[#E3AB23]/10 hover:to-[#E3AB23]/5 cursor-pointer transition-all duration-300"
+              className="hover:bg-gradient-to-r hover:from-[#E3AB23]/10 hover:to-[#E3AB23]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-300"
               onClick={() => setSelectedUser(user)}
             >
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="font-semibold text-[#024A76]">{user.nume} {user.prenume}</div>
+                <div className="font-semibold text-[#024A76] dark:text-blue-light">{user.nume} {user.prenume}</div>
                 {user.facultate && (
-                  <div className="text-sm text-gray-600">{user.facultate}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">{user.facultate}</div>
                 )}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+              <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
                 {user.email}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  user.tip === 'student' ? 'bg-blue-100 text-blue-800' :
-                  user.tip === 'profesor' ? 'bg-green-100 text-green-800' :
-                  user.tip === 'secretar' ? 'bg-purple-100 text-purple-800' :
-                  'bg-gray-100 text-gray-800'
+                  user.tip === 'student' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                  user.tip === 'profesor' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                  user.tip === 'secretar' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
+                  'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                 }`}>
                   {user.tip}
                 </span>
@@ -557,7 +557,7 @@ const AdminPage = () => {
                     setEditingUser(user);
                     setShowUserModal(true);
                   }}
-                  className="text-[#024A76] hover:text-[#3471B8] mr-4 transition-colors duration-200"
+                  className="text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent mr-4 transition-colors duration-200"
                 >
                   Editează
                 </button>
@@ -566,7 +566,7 @@ const AdminPage = () => {
                     e.stopPropagation();
                     handleDeleteUser(user.id);
                   }}
-                  className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                  className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200"
                 >
                   Șterge
                 </button>
@@ -579,9 +579,9 @@ const AdminPage = () => {
   );
 
   const renderFilters = () => (
-    <div className="mb-8 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+    <div className="mb-8 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
           Filtre
         </h2>
         <button
@@ -594,7 +594,7 @@ const AdminPage = () => {
               materie: ''
             });
           }}
-          className="text-sm text-[#024A76] hover:text-[#3471B8] transition-colors duration-200 font-medium"
+          className="text-sm text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200 font-medium"
         >
           Resetează filtrele
         </button>
@@ -602,14 +602,14 @@ const AdminPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div>
-          <label className="block text-sm font-semibold text-[#024A76] mb-2">
+          <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">
             Tip Utilizator
           </label>
           <select
             value={filters.tip}
             onChange={handleFilterChange}
             name="tip"
-            className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+            className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
           >
             {tipuriUtilizatori.map(tip => (
               <option key={tip} value={tip}>
@@ -622,12 +622,12 @@ const AdminPage = () => {
         {filters.tip === 'student' && (
           <>
             <div>
-              <label className="block text-sm font-semibold text-[#024A76] mb-2">Facultate</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
               <select
                 value={filters.facultate}
                 onChange={handleFilterChange}
                 name="facultate"
-                className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
               >
                 <option value="">Toate facultățile</option>
                 {facultati.map(fac => (
@@ -637,12 +637,12 @@ const AdminPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#024A76] mb-2">Specializare</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
               <select
                 value={filters.specializare}
                 onChange={handleFilterChange}
                 name="specializare"
-                className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md disabled:bg-gray-100"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md disabled:bg-gray-100 dark:disabled:bg-gray-700"
                 disabled={!filters.facultate}
               >
                 <option value="">Toate specializările</option>
@@ -653,12 +653,12 @@ const AdminPage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-[#024A76] mb-2">An</label>
+              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">An</label>
               <select
                 value={filters.an}
                 onChange={handleFilterChange}
                 name="an"
-                className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
               >
                 <option value="">Toți anii</option>
                 {ani.map(an => (
@@ -671,12 +671,12 @@ const AdminPage = () => {
 
         {filters.tip === 'profesor' && (
           <div>
-            <label className="block text-sm font-semibold text-[#024A76] mb-2">Materie Predată</label>
+            <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Materie Predată</label>
             <select
               value={filters.materie}
               onChange={handleFilterChange}
               name="materie"
-              className="w-full px-4 py-3 border border-[#024A76]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] focus:border-[#E3AB23] bg-white transition-all duration-300 hover:shadow-md"
+              className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
             >
               <option value="">Toate materiile</option>
               {materiiList.map(materie => (
@@ -692,10 +692,10 @@ const AdminPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5">
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
             Administrare Utilizatori
           </h1>
           <button
@@ -703,7 +703,7 @@ const AdminPage = () => {
               setEditingUser(null);
               setShowUserModal(true);
             }}
-            className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
+            className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
           >
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -714,15 +714,15 @@ const AdminPage = () => {
 
         {renderFilters()}
 
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-[#024A76] flex items-center">
+            <h2 className="text-xl font-semibold text-[#024A76] dark:text-blue-light flex items-center">
               <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
               </svg>
               Lista Utilizatori
             </h2>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-300">
               Total: {users.length} utilizatori
             </div>
           </div>
@@ -732,7 +732,7 @@ const AdminPage = () => {
               <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
               </svg>
-              <p className="text-gray-500 font-medium text-lg">Nu există utilizatori care să corespundă filtrelor</p>
+              <p className="text-gray-500 dark:text-gray-400 font-medium text-lg">Nu există utilizatori care să corespundă filtrelor</p>
             </div>
           ) : (
             renderUserTable(getFilteredUsers())

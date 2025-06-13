@@ -519,42 +519,52 @@ const SecretarStudentNextYearRegistrationPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-[#034a76]">Înscrierea Studenților în Anul Următor</h1>
-        <button
-          onClick={fetchEligibleStudents}
-          disabled={studentsLoading}
-          className="px-4 py-2 bg-[#024A76] text-white rounded-lg hover:bg-gradient-to-r hover:from-[#024A76] hover:to-[#3471B8] disabled:bg-gray-400 flex items-center gap-2 transition-all duration-200 shadow-md"
-        >
-          {studentsLoading ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Se încarcă...
-            </>
-          ) : (
-            'Actualizează Lista'
-          )}
-        </button>
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg border border-red-200">
-          {error}
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+            Secretar - Înregistrare Anul Următor
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+            Gestionează înregistrarea studenților pentru anul următor
+          </p>
         </div>
-      )}
 
-      {successMessage && (
-        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg border border-green-200">
-          {successMessage}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#034a76]">Înscrierea Studenților în Anul Următor</h1>
+          <button
+            onClick={fetchEligibleStudents}
+            disabled={studentsLoading}
+            className="px-4 py-2 bg-[#024A76] text-white rounded-lg hover:bg-gradient-to-r hover:from-[#024A76] hover:to-[#3471B8] disabled:bg-gray-400 flex items-center gap-2 transition-all duration-200 shadow-md"
+          >
+            {studentsLoading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Se încarcă...
+              </>
+            ) : (
+              'Actualizează Lista'
+            )}
+          </button>
         </div>
-      )}
 
-      {/* Filters Section */}
-      <div className="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg border border-red-200">
+            {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg border border-green-200">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Filters Section */}
+        <div className="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-[#024A76]">Filtrare Studenți</h3>
             <button
@@ -632,34 +642,34 @@ const SecretarStudentNextYearRegistrationPage = () => {
                 <span className="text-[#E3AB23] font-medium"> (filtrați)</span>
               )}
             </p>
-                     </div>
-         </div>
+          </div>
+        </div>
 
-      <div className="mb-6 flex flex-wrap gap-2 items-center justify-between">
-        <button
-          onClick={bulkRegisterStudents}
-          disabled={registrationInProgress || selectedStudents.length === 0}
-          className={`px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-all duration-200 shadow-md ${
-            selectedStudents.length === 0 
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70'
-          } ${registrationInProgress ? 'disabled:bg-gray-400' : ''}`}
-        >
-          {registrationInProgress ? (
-            <>
-              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Se procesează...
-            </>
-          ) : (
-            `Înregistrează Selectați`
-          )}
-        </button>
-      </div>
+        <div className="mb-6 flex flex-wrap gap-2 items-center justify-between">
+          <button
+            onClick={bulkRegisterStudents}
+            disabled={registrationInProgress || selectedStudents.length === 0}
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-all duration-200 shadow-md ${
+              selectedStudents.length === 0 
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70'
+            } ${registrationInProgress ? 'disabled:bg-gray-400' : ''}`}
+          >
+            {registrationInProgress ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Se procesează...
+              </>
+            ) : (
+              `Înregistrează Selectați`
+            )}
+          </button>
+        </div>
 
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
           <div className="px-6 py-4 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
             <h2 className="text-lg font-semibold">
               Studenți Eligibili pentru Anul Următor
@@ -699,7 +709,7 @@ const SecretarStudentNextYearRegistrationPage = () => {
                     An Curent
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
-                    ECTS Acumulate
+                    CREDITE
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-[#024A76] uppercase tracking-wider">
                     Media
@@ -765,6 +775,7 @@ const SecretarStudentNextYearRegistrationPage = () => {
             </table>
           </div>
         </div>
+      </div>
     </div>
   );
 };

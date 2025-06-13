@@ -22,6 +22,7 @@ import SecretarRoute from './components/secretar/SecretarRoute';
 import SecretarAlocareAutomataPage from './pages/secretar/SecretarAlocareAutomataPage';
 import SecretarStudentNextYearRegistrationPage from './pages/secretar/SecretarStudentNextYearRegistrationPage';
 import { MateriiProvider } from './contexts/MateriiContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function App() {
   const location = useLocation();
@@ -33,10 +34,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <ConditionalNavbar />
-      <main className={!isLoginPage ? "pt-16" : ""}>
-        <Routes>
+    <ThemeProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-bg transition-colors duration-300">
+        <ConditionalNavbar />
+        <main className={!isLoginPage ? "pt-16" : ""}>
+          <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
           <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
@@ -114,8 +116,9 @@ function App() {
           <Route path="/secretar/alocare-automata" element={<SecretarRoute><SecretarAlocareAutomataPage /></SecretarRoute>} />
           <Route path="/secretar/inscriere-anul-urmator" element={<SecretarRoute><SecretarStudentNextYearRegistrationPage /></SecretarRoute>} />
         </Routes>
-      </main>
-    </div>
+        </main>
+      </div>
+    </ThemeProvider>
   );
 }
 

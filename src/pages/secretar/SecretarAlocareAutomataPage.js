@@ -1238,516 +1238,525 @@ const SecretarAlocareAutomataPage = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6 text-[#024A76]">Alocare Automată Pachete</h1>
-      
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={hideToast}
-        />
-      )}
-      
-      {/* Search Input and Button */}
-      <div className="flex mb-6 shadow-md rounded-lg overflow-hidden">
-        <input
-          type="text"
-          className="flex-grow p-3 border-0 bg-white text-[#024A76] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3471B8] transition-all duration-200"
-          placeholder="Caută după nume, specializare sau facultate..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <button 
-          className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold"
-          onClick={handleSearch}
-        >
-          Caută
-        </button>
-      </div>
-      
-      {successMessage && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-          {successMessage}
-        </div>
-      )}
-      
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="col-span-1 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-          <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4">
-            <h2 className="text-lg font-semibold drop-shadow-sm">Pachete disponibile</h2>
-          </div>
-          
-          <div className="divide-y">
-            {filteredPachete.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                Nu există pachete disponibile
-              </div>
-            ) : (
-              filteredPachete.map(pachet => (
-                <div 
-                  key={pachet.id} 
-                  className={`p-4 cursor-pointer transition-all duration-200 ${
-                    pachet.statusInscriere === 'activ' 
-                      ? (selectedPachet === pachet.id 
-                          ? 'bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 border-l-4 border-[#E3AB23] hover:from-[#E3AB23]/30 hover:to-[#E3AB23]/15' 
-                          : 'bg-green-50 hover:bg-gradient-to-r hover:from-green-100 hover:to-green-50')
-                      : (selectedPachet === pachet.id 
-                          ? 'bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/5 border-l-4 border-[#024A76] hover:from-[#024A76]/15 hover:to-[#3471B8]/10' 
-                          : 'hover:bg-gray-50')
-                  }`}
-                  onClick={() => handleSelectPachet(pachet)}
-                >
-                  <div>
-                    <h3 className="font-semibold text-[#024A76] drop-shadow-sm">{pachet.nume || 'Pachet fără nume'}</h3>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {pachet.facultate && <span className="block">Facultate: {pachet.facultate}</span>}
-                      {pachet.specializare && <span className="block">Specializare: {pachet.specializare}</span>}
-                      {pachet.an && <span className="block">An: {pachet.an}</span>}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-2 text-sm text-gray-600">
-                    <div className="grid grid-cols-2 gap-1">
-                      <div>
-                        <span className={`font-medium ${(() => {
-                          if (!pachet.dataStart || !pachet.dataFinal) return '';
-                          const now = new Date();
-                          const start = new Date(pachet.dataStart);
-                          const end = new Date(pachet.dataFinal);
-                          return (now >= start && now <= end) ? 'text-green-600' : '';
-                        })()}`}>Perioada:</span>
-                      </div>
-                      <div>
-                        <span className={(() => {
-                          if (!pachet.dataStart || !pachet.dataFinal) return '';
-                          const now = new Date();
-                          const start = new Date(pachet.dataStart);
-                          const end = new Date(pachet.dataFinal);
-                          return (now >= start && now <= end) ? 'text-green-600' : '';
-                        })()}>{formatDate(pachet.dataStart)} - {formatDate(pachet.dataFinal)}</span>
-                      </div>
-                    </div>
-                    {pachet.dataUltimaAlocare && (
-                      <div className="grid grid-cols-2 gap-1 mt-1">
-                        <div>
-                          <span className="font-medium">Ultima alocare:</span>
-                        </div>
-                        <div>
-                          <span className="text-purple-600 font-medium">{formatDate(pachet.dataUltimaAlocare)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="mt-2 flex space-x-2">
-                    <button
-                      className="text-xs bg-gradient-to-r from-[#3471B8] to-[#024A76] text-white px-3 py-1 rounded-full hover:from-[#024A76] hover:to-[#3471B8] transition-all duration-300 font-medium shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPachetData(pachet);
-                        setIsDetailsModalOpen(true);
-                      }}
-                    >
-                      Vezi detalii
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+            Secretar - Alocare Automată
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+            Gestionează procesul de alocare automată pentru studenți
+          </p>
         </div>
         
-        <div className="col-span-1 lg:col-span-2">
-          {!selectedPachet ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500 h-full flex items-center justify-center">
-              <div>
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-600">Selectați un pachet din listă</h3>
-                <p className="mt-1 text-sm text-gray-500">Pentru a gestiona alocarea automată a materiilor și a vizualiza rezultatele.</p>
-              </div>
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={hideToast}
+          />
+        )}
+        
+        {/* Search Input and Button */}
+        <div className="flex mb-6 shadow-md rounded-lg overflow-hidden">
+          <input
+            type="text"
+            className="flex-grow p-3 border-0 bg-white text-[#024A76] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3471B8] transition-all duration-200"
+            placeholder="Caută după nume, specializare sau facultate..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button 
+            className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold"
+            onClick={handleSearch}
+          >
+            Caută
+          </button>
+        </div>
+        
+        {successMessage && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+            {successMessage}
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="col-span-1 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+            <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4">
+              <h2 className="text-lg font-semibold drop-shadow-sm">Pachete disponibile</h2>
             </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-              <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4 flex justify-between items-center">
-                <h2 className="text-lg font-semibold drop-shadow-sm">
-                  {pachete.find(p => p.id === selectedPachet)?.nume || 'Pachet selectat'}
-                </h2>
-                
-                <button
-                  onClick={() => setSelectedPachet(null)}
-                  className="text-white hover:text-gray-200"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Tabs */}
-              <div className="border-b border-gray-200">
-                <nav className="flex -mb-px">
-                  <button
-                    className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
-                      activeTab === 'info'
-                        ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
-                        : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
+            
+            <div className="divide-y">
+              {filteredPachete.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  Nu există pachete disponibile
+                </div>
+              ) : (
+                filteredPachete.map(pachet => (
+                  <div 
+                    key={pachet.id} 
+                    className={`p-4 cursor-pointer transition-all duration-200 ${
+                      pachet.statusInscriere === 'activ' 
+                        ? (selectedPachet === pachet.id 
+                            ? 'bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 border-l-4 border-[#E3AB23] hover:from-[#E3AB23]/30 hover:to-[#E3AB23]/15' 
+                            : 'bg-green-50 hover:bg-gradient-to-r hover:from-green-100 hover:to-green-50')
+                        : (selectedPachet === pachet.id 
+                            ? 'bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/5 border-l-4 border-[#024A76] hover:from-[#024A76]/15 hover:to-[#3471B8]/10' 
+                            : 'hover:bg-gray-50')
                     }`}
-                    onClick={() => setActiveTab('info')}
+                    onClick={() => handleSelectPachet(pachet)}
                   >
-                    Informații
-                  </button>
-                  <button
-                    className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
-                      activeTab === 'perioadaInscriere'
-                        ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
-                        : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
-                    }`}
-                    onClick={() => {
-                      setActiveTab('perioadaInscriere');
-                      if (selectedPachet) {
-                        handleSetarePerioadaInscriere(selectedPachet);
-                      }
-                    }}
-                  >
-                    Setare Perioadă Înscriere
-                  </button>
-                </nav>
-              </div>
-              
-              {/* Tab content */}
-              <div className="p-4">
-                {activeTab === 'info' && (
-                  <div>
-                    <div className="mb-6">
-                      <p className="text-gray-600 mb-4">
-                        Procesul de alocare automată va distribui studenții la materiile opționale în funcție de preferințele
-                        acestora și de mediile lor academice. Studenții cu medii mai mari vor avea prioritate.
-                      </p>
-                      
-                      <button
-                        onClick={handleAlocareAutomata}
-                        disabled={processingPachet !== null}
-                        className={`px-6 py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl ${
-                          processingPachet === null 
-                            ? 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 text-[#024A76]' 
-                            : 'bg-gray-400 cursor-not-allowed'
-                        }`}
-                      >
-                        {processingPachet === selectedPachet ? (
-                          <span className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Procesare...
-                          </span>
-                        ) : (
-                          'Procesează alocarea automată'
-                        )}
-                      </button>
+                    <div>
+                      <h3 className="font-semibold text-[#024A76] drop-shadow-sm">{pachet.nume || 'Pachet fără nume'}</h3>
+                      <div className="mt-1 text-xs text-gray-500">
+                        {pachet.facultate && <span className="block">Facultate: {pachet.facultate}</span>}
+                        {pachet.specializare && <span className="block">Specializare: {pachet.specializare}</span>}
+                        {pachet.an && <span className="block">An: {pachet.an}</span>}
+                      </div>
                     </div>
                     
-                    {rezultateAlocare && (
-                      <div className="mt-6 border-t pt-6">
-                        <h3 className="text-lg font-semibold text-[#024A76] mb-4 drop-shadow-sm">Rezultate alocare</h3>
-                        
-                        {/* Sumar rapid */}
-                        <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 p-6 rounded-lg mb-6 border border-gray-200">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">{rezultateAlocare.studentiAlocati.length}</div>
-                              <div className="text-sm text-gray-600 font-medium">Studenți alocați</div>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-500">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">{rezultateAlocare.studentiNealocati.length}</div>
-                              <div className="text-sm text-gray-600 font-medium">Studenți nealocați</div>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#3471B8]">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-[#3471B8] to-[#024A76] bg-clip-text text-transparent">
-                                {rezultateAlocare.studentiAlocati.filter(s => s.pozitiePrioritate === 1).length}
-                              </div>
-                              <div className="text-sm text-gray-600 font-medium">Prima alegere</div>
-                            </div>
-                            <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#E3AB23]">
-                              <div className="text-2xl font-bold bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 bg-clip-text text-transparent">
-                                {rezultateAlocare.studentiAlocati.length > 0 ? 
-                                  (rezultateAlocare.studentiAlocati.reduce((sum, s) => sum + s.media, 0) / rezultateAlocare.studentiAlocati.length).toFixed(2) :
-                                  '0.00'
-                                }
-                              </div>
-                              <div className="text-sm text-gray-600 font-medium">Media pentru alocare</div>
-                            </div>
+                    <div className="mt-2 text-sm text-gray-600">
+                      <div className="grid grid-cols-2 gap-1">
+                        <div>
+                          <span className={`font-medium ${(() => {
+                            if (!pachet.dataStart || !pachet.dataFinal) return '';
+                            const now = new Date();
+                            const start = new Date(pachet.dataStart);
+                            const end = new Date(pachet.dataFinal);
+                            return (now >= start && now <= end) ? 'text-green-600' : '';
+                          })()}`}>Perioada:</span>
+                        </div>
+                        <div>
+                          <span className={(() => {
+                            if (!pachet.dataStart || !pachet.dataFinal) return '';
+                            const now = new Date();
+                            const start = new Date(pachet.dataStart);
+                            const end = new Date(pachet.dataFinal);
+                            return (now >= start && now <= end) ? 'text-green-600' : '';
+                          })()}>{formatDate(pachet.dataStart)} - {formatDate(pachet.dataFinal)}</span>
+                        </div>
+                      </div>
+                      {pachet.dataUltimaAlocare && (
+                        <div className="grid grid-cols-2 gap-1 mt-1">
+                          <div>
+                            <span className="font-medium">Ultima alocare:</span>
+                          </div>
+                          <div>
+                            <span className="text-purple-600 font-medium">{formatDate(pachet.dataUltimaAlocare)}</span>
                           </div>
                         </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-2 flex space-x-2">
+                      <button
+                        className="text-xs bg-gradient-to-r from-[#3471B8] to-[#024A76] text-white px-3 py-1 rounded-full hover:from-[#024A76] hover:to-[#3471B8] transition-all duration-300 font-medium shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedPachetData(pachet);
+                          setIsDetailsModalOpen(true);
+                        }}
+                      >
+                        Vezi detalii
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
+          <div className="col-span-1 lg:col-span-2">
+            {!selectedPachet ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500 h-full flex items-center justify-center">
+                <div>
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-600">Selectați un pachet din listă</h3>
+                  <p className="mt-1 text-sm text-gray-500">Pentru a gestiona alocarea automată a materiilor și a vizualiza rezultatele.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+                <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white p-4 flex justify-between items-center">
+                  <h2 className="text-lg font-semibold drop-shadow-sm">
+                    {pachete.find(p => p.id === selectedPachet)?.nume || 'Pachet selectat'}
+                  </h2>
+                  
+                  <button
+                    onClick={() => setSelectedPachet(null)}
+                    className="text-white hover:text-gray-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Tabs */}
+                <div className="border-b border-gray-200">
+                  <nav className="flex -mb-px">
+                    <button
+                      className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
+                        activeTab === 'info'
+                          ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
+                          : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
+                      }`}
+                      onClick={() => setActiveTab('info')}
+                    >
+                      Informații
+                    </button>
+                    <button
+                      className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
+                        activeTab === 'perioadaInscriere'
+                          ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
+                          : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
+                      }`}
+                      onClick={() => {
+                        setActiveTab('perioadaInscriere');
+                        if (selectedPachet) {
+                          handleSetarePerioadaInscriere(selectedPachet);
+                        }
+                      }}
+                    >
+                      Setare Perioadă Înscriere
+                    </button>
+                  </nav>
+                </div>
+                
+                {/* Tab content */}
+                <div className="p-4">
+                  {activeTab === 'info' && (
+                    <div>
+                      <div className="mb-6">
+                        <p className="text-gray-600 mb-4">
+                          Procesul de alocare automată va distribui studenții la materiile opționale în funcție de preferințele
+                          acestora și de mediile lor academice. Studenții cu medii mai mari vor avea prioritate.
+                        </p>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți alocați ({rezultateAlocare.studentiAlocati.length})</h4>
-                            <div className="bg-green-50 p-4 rounded-md h-64 overflow-y-auto">
-                              {rezultateAlocare.studentiAlocati.length === 0 ? (
-                                <p className="text-sm text-gray-500">Nu există studenți alocați</p>
-                              ) : (
-                                <ul className="space-y-2">
-                                  {rezultateAlocare.studentiAlocati.map(student => (
-                                    <li key={student.id} className="text-sm border-b border-green-100 pb-2">
-                                      <div className="font-medium text-green-800">{student.nume} {student.prenume}</div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">Materie:</span> {student.numeMaterieAlocata}
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">Preferința #{student.pozitiePrioritate}</span>
-                                        <span className={`ml-2 px-2 py-1 text-xs rounded ${
-                                          student.pozitiePrioritate === 1 ? 'bg-green-200 text-green-800' :
-                                          student.pozitiePrioritate === 2 ? 'bg-yellow-200 text-yellow-800' :
-                                          'bg-orange-200 text-orange-800'
-                                        }`}>
-                                          {student.pozitiePrioritate === 1 ? 'Prima alegere' :
-                                           student.pozitiePrioritate === 2 ? 'A doua alegere' :
-                                           `A ${student.pozitiePrioritate}-a alegere`}
-                                        </span>
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">
-                                          {student.anStudiu === 'II' ? 'Media anul I:' :
-                                           student.anStudiu === 'III' ? 'Media anul II:' :
-                                           'Media generală:'}
-                                        </span> 
-                                        <span className={`ml-1 font-semibold ${
-                                          student.media >= 9 ? 'text-green-600' :
-                                          student.media >= 8 ? 'text-blue-600' :
-                                          student.media >= 7 ? 'text-yellow-600' :
-                                          'text-red-600'
-                                        }`}>
-                                          {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
-                                        </span>
-                                      </div>
-                                      {student.numarMatricol && (
-                                        <div className="text-gray-500 text-xs">
-                                          Nr. matricol: {student.numarMatricol}
-                                        </div>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
+                        <button
+                          onClick={handleAlocareAutomata}
+                          disabled={processingPachet !== null}
+                          className={`px-6 py-3 rounded-lg text-white font-semibold transition-all duration-300 shadow-lg hover:shadow-xl ${
+                            processingPachet === null 
+                              ? 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 text-[#024A76]' 
+                              : 'bg-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          {processingPachet === selectedPachet ? (
+                            <span className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Procesare...
+                            </span>
+                          ) : (
+                            'Procesează alocarea automată'
+                          )}
+                        </button>
+                      </div>
+                      
+                      {rezultateAlocare && (
+                        <div className="mt-6 border-t pt-6">
+                          <h3 className="text-lg font-semibold text-[#024A76] mb-4 drop-shadow-sm">Rezultate alocare</h3>
+                          
+                          {/* Sumar rapid */}
+                          <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 p-6 rounded-lg mb-6 border border-gray-200">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
+                                <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">{rezultateAlocare.studentiAlocati.length}</div>
+                                <div className="text-sm text-gray-600 font-medium">Studenți alocați</div>
+                              </div>
+                              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-500">
+                                <div className="text-2xl font-bold bg-gradient-to-r from-red-600 to-red-500 bg-clip-text text-transparent">{rezultateAlocare.studentiNealocati.length}</div>
+                                <div className="text-sm text-gray-600 font-medium">Studenți nealocați</div>
+                              </div>
+                              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#3471B8]">
+                                <div className="text-2xl font-bold bg-gradient-to-r from-[#3471B8] to-[#024A76] bg-clip-text text-transparent">
+                                  {rezultateAlocare.studentiAlocati.filter(s => s.pozitiePrioritate === 1).length}
+                                </div>
+                                <div className="text-sm text-gray-600 font-medium">Prima alegere</div>
+                              </div>
+                              <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#E3AB23]">
+                                <div className="text-2xl font-bold bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 bg-clip-text text-transparent">
+                                  {rezultateAlocare.studentiAlocati.length > 0 ? 
+                                    (rezultateAlocare.studentiAlocati.reduce((sum, s) => sum + s.media, 0) / rezultateAlocare.studentiAlocati.length).toFixed(2) :
+                                    '0.00'
+                                  }
+                                </div>
+                                <div className="text-sm text-gray-600 font-medium">Media pentru alocare</div>
+                              </div>
                             </div>
                           </div>
                           
-                          <div>
-                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți nealocați ({rezultateAlocare.studentiNealocati.length})</h4>
-                            <div className="bg-red-50 p-4 rounded-md h-64 overflow-y-auto">
-                              {rezultateAlocare.studentiNealocati.length === 0 ? (
-                                <p className="text-sm text-gray-500">Nu există studenți nealocați</p>
-                              ) : (
-                                <ul className="space-y-2">
-                                  {rezultateAlocare.studentiNealocati.map(student => (
-                                    <li key={student.id} className="text-sm border-b border-red-100 pb-2">
-                                      <div className="font-medium text-red-800">{student.nume} {student.prenume}</div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">
-                                          {student.anStudiu === 'II' ? 'Media anul I:' :
-                                           student.anStudiu === 'III' ? 'Media anul II:' :
-                                           'Media generală:'}
-                                        </span> 
-                                        <span className={`ml-1 font-semibold ${
-                                          student.media >= 9 ? 'text-green-600' :
-                                          student.media >= 8 ? 'text-blue-600' :
-                                          student.media >= 7 ? 'text-yellow-600' :
-                                          'text-red-600'
-                                        }`}>
-                                          {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
-                                        </span>
-                                      </div>
-                                      <div className="text-gray-600">
-                                        <span className="font-medium">Preferințe:</span> {student.preferinte ? student.preferinte.map((p, idx) => `#${idx+1}`).join(', ') : 'Nespecificate'}
-                                      </div>
-                                      <div className="text-red-600 text-xs mt-1">
-                                        <span className="font-medium">Motiv nealocare:</span> {student.motivNealocare}
-                                      </div>
-                                      {student.numarMatricol && (
-                                        <div className="text-gray-500 text-xs">
-                                          Nr. matricol: {student.numarMatricol}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți alocați ({rezultateAlocare.studentiAlocati.length})</h4>
+                              <div className="bg-green-50 p-4 rounded-md h-64 overflow-y-auto">
+                                {rezultateAlocare.studentiAlocati.length === 0 ? (
+                                  <p className="text-sm text-gray-500">Nu există studenți alocați</p>
+                                ) : (
+                                  <ul className="space-y-2">
+                                    {rezultateAlocare.studentiAlocati.map(student => (
+                                      <li key={student.id} className="text-sm border-b border-green-100 pb-2">
+                                        <div className="font-medium text-green-800">{student.nume} {student.prenume}</div>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">Materie:</span> {student.numeMaterieAlocata}
                                         </div>
-                                      )}
-                                    </li>
-                                  ))}
-                                </ul>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">Preferința #{student.pozitiePrioritate}</span>
+                                          <span className={`ml-2 px-2 py-1 text-xs rounded ${
+                                            student.pozitiePrioritate === 1 ? 'bg-green-200 text-green-800' :
+                                            student.pozitiePrioritate === 2 ? 'bg-yellow-200 text-yellow-800' :
+                                            'bg-orange-200 text-orange-800'
+                                          }`}>
+                                            {student.pozitiePrioritate === 1 ? 'Prima alegere' :
+                                             student.pozitiePrioritate === 2 ? 'A doua alegere' :
+                                             `A ${student.pozitiePrioritate}-a alegere`}
+                                          </span>
+                                        </div>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
+                                        </div>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">
+                                            {student.anStudiu === 'II' ? 'Media anul I:' :
+                                             student.anStudiu === 'III' ? 'Media anul II:' :
+                                             'Media generală:'}
+                                          </span> 
+                                          <span className={`ml-1 font-semibold ${
+                                            student.media >= 9 ? 'text-green-600' :
+                                            student.media >= 8 ? 'text-blue-600' :
+                                            student.media >= 7 ? 'text-yellow-600' :
+                                            'text-red-600'
+                                          }`}>
+                                            {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
+                                          </span>
+                                        </div>
+                                        {student.numarMatricol && (
+                                          <div className="text-gray-500 text-xs">
+                                            Nr. matricol: {student.numarMatricol}
+                                          </div>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Studenți nealocați ({rezultateAlocare.studentiNealocati.length})</h4>
+                              <div className="bg-red-50 p-4 rounded-md h-64 overflow-y-auto">
+                                {rezultateAlocare.studentiNealocati.length === 0 ? (
+                                  <p className="text-sm text-gray-500">Nu există studenți nealocați</p>
+                                ) : (
+                                  <ul className="space-y-2">
+                                    {rezultateAlocare.studentiNealocati.map(student => (
+                                      <li key={student.id} className="text-sm border-b border-red-100 pb-2">
+                                        <div className="font-medium text-red-800">{student.nume} {student.prenume}</div>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">An studiu:</span> {student.anStudiu || 'N/A'}
+                                        </div>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">
+                                            {student.anStudiu === 'II' ? 'Media anul I:' :
+                                             student.anStudiu === 'III' ? 'Media anul II:' :
+                                             'Media generală:'}
+                                          </span> 
+                                          <span className={`ml-1 font-semibold ${
+                                            student.media >= 9 ? 'text-green-600' :
+                                            student.media >= 8 ? 'text-blue-600' :
+                                            student.media >= 7 ? 'text-yellow-600' :
+                                            'text-red-600'
+                                          }`}>
+                                            {student.media > 0 ? parseFloat(student.media).toFixed(2) : 'Nespecificată'}
+                                          </span>
+                                        </div>
+                                        <div className="text-gray-600">
+                                          <span className="font-medium">Preferințe:</span> {student.preferinte ? student.preferinte.map((p, idx) => `#${idx+1}`).join(', ') : 'Nespecificate'}
+                                        </div>
+                                        <div className="text-red-600 text-xs mt-1">
+                                          <span className="font-medium">Motiv nealocare:</span> {student.motivNealocare}
+                                        </div>
+                                        {student.numarMatricol && (
+                                          <div className="text-gray-500 text-xs">
+                                            Nr. matricol: {student.numarMatricol}
+                                          </div>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-6">
+                            <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Materii cu locuri rămase ({rezultateAlocare.materiiCuLocuriRamase.length})</h4>
+                            <div className="bg-blue-50 p-4 rounded-md overflow-x-auto">
+                              {rezultateAlocare.materiiCuLocuriRamase.length === 0 ? (
+                                <p className="text-sm text-gray-500">Nu există materii cu locuri rămase</p>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full divide-y divide-blue-200">
+                                    <thead>
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Materie</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Locuri rămase</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-blue-100">
+                                      {rezultateAlocare.materiiCuLocuriRamase.map(materie => (
+                                        <tr key={materie.id}>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{materie.nume}</td>
+                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{materie.locuriRamase}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
                               )}
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="mt-6">
-                          <h4 className="text-md font-semibold text-[#024A76] mb-2 drop-shadow-sm">Materii cu locuri rămase ({rezultateAlocare.materiiCuLocuriRamase.length})</h4>
-                          <div className="bg-blue-50 p-4 rounded-md overflow-x-auto">
-                            {rezultateAlocare.materiiCuLocuriRamase.length === 0 ? (
-                              <p className="text-sm text-gray-500">Nu există materii cu locuri rămase</p>
-                            ) : (
+
+                          {/* Adaugă statisticile de alocare pe materii și preferințe */}
+                          <div className="mt-6">
+                            <h4 className="text-md font-medium text-[#034a76] mb-2">Statistici alocare pe preferințe</h4>
+                            <div className="bg-purple-50 p-4 rounded-md">
                               <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-blue-200">
+                                <table className="min-w-full divide-y divide-purple-200">
                                   <thead>
                                     <tr>
-                                      <th className="px-3 py-2 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Materie</th>
-                                      <th className="px-3 py-2 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Locuri rămase</th>
+                                      <th className="px-3 py-2 text-left text-xs font-medium text-purple-800 uppercase tracking-wider">Materie</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #1</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #2</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #3</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #4</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #5</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Altă pref.</th>
+                                      <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Total</th>
                                     </tr>
                                   </thead>
-                                  <tbody className="divide-y divide-blue-100">
-                                    {rezultateAlocare.materiiCuLocuriRamase.map(materie => (
-                                      <tr key={materie.id}>
-                                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{materie.nume}</td>
-                                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{materie.locuriRamase}</td>
+                                  <tbody className="divide-y divide-purple-100">
+                                    {selectedPachetData?.statisticiPreferinte ? 
+                                      Object.entries(selectedPachetData.statisticiPreferinte).map(([materieId, stats]) => {
+                                        const total = 
+                                          (stats.preferinta1 || 0) + 
+                                          (stats.preferinta2 || 0) + 
+                                          (stats.preferinta3 || 0) + 
+                                          (stats.preferinta4 || 0) + 
+                                          (stats.preferinta5 || 0) + 
+                                          (stats.altaPreferinta || 0);
+                                        
+                                        return (
+                                          <tr key={materieId}>
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{stats.nume}</td>
+                                            <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta1 || 0}</td>
+                                            <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta2 || 0}</td>
+                                            <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta3 || 0}</td>
+                                            <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta4 || 0}</td>
+                                            <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta5 || 0}</td>
+                                            <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.altaPreferinta || 0}</td>
+                                            <td className="px-3 py-2 text-center text-sm font-medium text-purple-800">{total}</td>
+                                          </tr>
+                                        );
+                                      })
+                                    : (
+                                      <tr>
+                                        <td colSpan="8" className="px-3 py-4 text-center text-sm text-gray-500">
+                                          Nu există statistici disponibile. Procesați alocarea pentru a genera statistici.
+                                        </td>
                                       </tr>
-                                    ))}
+                                    )}
                                   </tbody>
                                 </table>
                               </div>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Adaugă statisticile de alocare pe materii și preferințe */}
-                        <div className="mt-6">
-                          <h4 className="text-md font-medium text-[#034a76] mb-2">Statistici alocare pe preferințe</h4>
-                          <div className="bg-purple-50 p-4 rounded-md">
-                            <div className="overflow-x-auto">
-                              <table className="min-w-full divide-y divide-purple-200">
-                                <thead>
-                                  <tr>
-                                    <th className="px-3 py-2 text-left text-xs font-medium text-purple-800 uppercase tracking-wider">Materie</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #1</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #2</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #3</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #4</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Pref. #5</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Altă pref.</th>
-                                    <th className="px-3 py-2 text-center text-xs font-medium text-purple-800 uppercase tracking-wider">Total</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-purple-100">
-                                  {selectedPachetData?.statisticiPreferinte ? 
-                                    Object.entries(selectedPachetData.statisticiPreferinte).map(([materieId, stats]) => {
-                                      const total = 
-                                        (stats.preferinta1 || 0) + 
-                                        (stats.preferinta2 || 0) + 
-                                        (stats.preferinta3 || 0) + 
-                                        (stats.preferinta4 || 0) + 
-                                        (stats.preferinta5 || 0) + 
-                                        (stats.altaPreferinta || 0);
-                                      
-                                      return (
-                                        <tr key={materieId}>
-                                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-600">{stats.nume}</td>
-                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta1 || 0}</td>
-                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta2 || 0}</td>
-                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta3 || 0}</td>
-                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta4 || 0}</td>
-                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.preferinta5 || 0}</td>
-                                          <td className="px-3 py-2 text-center text-sm text-gray-600">{stats.altaPreferinta || 0}</td>
-                                          <td className="px-3 py-2 text-center text-sm font-medium text-purple-800">{total}</td>
-                                        </tr>
-                                      );
-                                    })
-                                  : (
-                                    <tr>
-                                      <td colSpan="8" className="px-3 py-4 text-center text-sm text-gray-500">
-                                        Nu există statistici disponibile. Procesați alocarea pentru a genera statistici.
-                                      </td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-
-                            <div className="mt-4 text-sm text-gray-600">
-                              <p><strong>Legendă:</strong></p>
-                              <p><span className="font-medium">Pref. #N</span> - Numărul de studenți pentru care materia a fost a N-a opțiune din preferințe</p>
-                              <p><span className="font-medium">Total</span> - Numărul total de studenți alocați la materie</p>
+                              <div className="mt-4 text-sm text-gray-600">
+                                <p><strong>Legendă:</strong></p>
+                                <p><span className="font-medium">Pref. #N</span> - Numărul de studenți pentru care materia a fost a N-a opțiune din preferințe</p>
+                                <p><span className="font-medium">Total</span> - Numărul total de studenți alocați la materie</p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {activeTab === 'perioadaInscriere' && (
-                  <div className="space-y-4">
-                    <p className="text-gray-600 mb-4">
-                      Setați perioada de înscriere pentru pachetul de materii. În această perioadă, studenții vor putea 
-                      să își exprime preferințele pentru materiile opționale disponibile.
-                    </p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data de început</label>
-                        <input 
-                          type="date" 
-                          value={perioadaStartDate} 
-                          onChange={(e) => setPerioadaStartDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
+                      )}
+                    </div>
+                  )}
+                  
+                  {activeTab === 'perioadaInscriere' && (
+                    <div className="space-y-4">
+                      <p className="text-gray-600 mb-4">
+                        Setați perioada de înscriere pentru pachetul de materii. În această perioadă, studenții vor putea 
+                        să își exprime preferințele pentru materiile opționale disponibile.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Data de început</label>
+                          <input 
+                            type="date" 
+                            value={perioadaStartDate} 
+                            onChange={(e) => setPerioadaStartDate(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Ora de început</label>
+                          <input 
+                            type="time" 
+                            value={perioadaStartTime} 
+                            onChange={(e) => setPerioadaStartTime(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Data de final</label>
+                          <input 
+                            type="date" 
+                            value={perioadaEndDate} 
+                            onChange={(e) => setPerioadaEndDate(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Ora de final</label>
+                          <input 
+                            type="time" 
+                            value={perioadaEndTime} 
+                            onChange={(e) => setPerioadaEndTime(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                       </div>
                       
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ora de început</label>
-                        <input 
-                          type="time" 
-                          value={perioadaStartTime} 
-                          onChange={(e) => setPerioadaStartTime(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Data de final</label>
-                        <input 
-                          type="date" 
-                          value={perioadaEndDate} 
-                          onChange={(e) => setPerioadaEndDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ora de final</label>
-                        <input 
-                          type="time" 
-                          value={perioadaEndTime} 
-                          onChange={(e) => setPerioadaEndTime(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
+                      <div className="flex justify-end">
+                        <button
+                          onClick={handleSavePerioadaInscriere}
+                          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                        >
+                          Salvează perioada
+                        </button>
                       </div>
                     </div>
-                    
-                    <div className="flex justify-end">
-                      <button
-                        onClick={handleSavePerioadaInscriere}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                      >
-                        Salvează perioada
-                      </button>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

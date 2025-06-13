@@ -14,17 +14,17 @@ const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDe
       onDragStart={(e) => onDragStart(e, id)}
       onDragOver={(e) => onDragOver(e)}
       onDrop={(e) => onDrop(e, id)}
-      className="flex items-center justify-between bg-gradient-to-r from-white to-gray-50 p-3 rounded-lg border border-[#024A76]/20 mb-2 cursor-move hover:border-[#E3AB23] hover:shadow-md transition-all duration-200 shadow-sm"
+      className="flex items-center justify-between bg-gradient-to-r from-white to-gray-50 dark:from-gray-700 dark:to-gray-600 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-600 mb-2 cursor-move hover:border-[#E3AB23] dark:hover:border-yellow-accent hover:shadow-md transition-all duration-200 shadow-sm"
     >
       <div className="flex items-center">
         <span className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 shadow-sm">
           {index + 1}
         </span>
-        <span className="text-sm text-[#024A76] font-medium">{materie.nume}</span>
+        <span className="text-sm text-[#024A76] dark:text-blue-light font-medium">{materie.nume}</span>
       </div>
       <button
         onClick={() => onViewDetails(materie.id)}
-        className="p-1 rounded-full text-[#024A76]/70 hover:text-[#024A76] hover:bg-gradient-to-r hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 transition-all duration-200"
+        className="p-1 rounded-full text-[#024A76]/70 dark:text-blue-light/70 hover:text-[#024A76] dark:hover:text-yellow-accent hover:bg-gradient-to-r hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 dark:hover:from-yellow-accent/20 dark:hover:to-yellow-accent/10 transition-all duration-200"
         title="Vezi detalii"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,20 +41,20 @@ const AcademicYearProgress = ({ currentYear, accumulatedECTS, minECTS, isNewRegi
   const yearNumber = currentYear === 'I' ? 1 : currentYear === 'II' ? 2 : 3;
   
   return (
-    <div className="mb-4 p-4 bg-white rounded-lg shadow-sm border border-[#034a76]/20">
-      <h3 className="text-md font-medium text-[#034a76] mb-3">Progresul anului academic</h3>
+    <div className="mb-4 p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-sm border border-[#034a76]/20 dark:border-gray-700">
+      <h3 className="text-md font-medium text-[#034a76] dark:text-blue-light mb-3">Progresul anului academic</h3>
       
       <div className="flex items-center justify-between mb-2">
         {[1, 2, 3].map(year => (
           <div 
             key={year} 
-            className={`relative flex flex-col items-center ${year <= yearNumber ? 'text-[#034a76]' : 'text-gray-400'}`}
+            className={`relative flex flex-col items-center ${year <= yearNumber ? 'text-[#034a76] dark:text-blue-light' : 'text-gray-400 dark:text-gray-500'}`}
           >
             <div 
               className={`w-12 h-12 rounded-full flex items-center justify-center mb-1 border-2 
                 ${year < yearNumber ? 'bg-[#034a76] text-white border-[#034a76]' : 
-                  year === yearNumber ? 'bg-white text-[#034a76] border-[#034a76]' : 
-                  'bg-white text-gray-400 border-gray-300'}`}
+                  year === yearNumber ? 'bg-white dark:bg-gray-700 text-[#034a76] dark:text-blue-light border-[#034a76] dark:border-blue-light' : 
+                  'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600'}`}
             >
               {year === 1 ? 'I' : year === 2 ? 'II' : 'III'}
             </div>
@@ -104,7 +104,7 @@ const AcademicYearProgress = ({ currentYear, accumulatedECTS, minECTS, isNewRegi
         ></div>
       </div>
       
-      <div className="text-xs text-center text-[#034a76]/70">
+      <div className="text-xs text-center text-[#034a76]/70 dark:text-gray-300">
         {yearNumber < 3 ? (
           <>
             {accumulatedECTS}/{minECTS} ECTS acumulate în anul curent
@@ -984,7 +984,7 @@ const InscriereMateriiPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center py-8 text-[#024A76]">
           <div className="text-lg font-semibold flex items-center justify-center space-x-2">
             <div className="w-6 h-6 bg-gradient-to-r from-[#024A76] to-[#3471B8] rounded-full animate-spin"></div>
@@ -996,23 +996,11 @@ const InscriereMateriiPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 pt-16 pb-8">
-      {/* AI Assistant */}
-      <AIAssistant />
-      
-      {/* Toast Notification */}
-      {toastMessage && (
-        <ToastNotification
-          message={toastMessage.message}
-          type={toastMessage.type}
-          onClose={closeToast}
-        />
-      )}
-
-      <div className="container mx-auto px-4 py-8 relative">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">Înscriere la Materii</h1>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent text-center mb-8 drop-shadow-sm">
+          {user?.an !== 3 ? 'Înscrierea la materii este închisă' : 'Înscriere la Materii Opționale'}
+        </h1>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300 shadow-sm">
@@ -1020,7 +1008,7 @@ const InscriereMateriiPage = () => {
           </div>
         )}
         
-        <p className="text-[#024A76]/80 mb-6 bg-white/70 p-4 rounded-lg border border-[#024A76]/20 shadow-sm">
+        <p className="text-[#024A76]/80 dark:text-gray-300 mb-6 bg-white/70 dark:bg-gray-800/50 p-4 rounded-lg border border-[#024A76]/20 dark:border-gray-700 shadow-sm">
           Ține apăsat pe o materie și trage-o pentru a schimba ordinea preferințelor. Prima materie din listă are cea mai mare prioritate.
           Apasă pe iconița de verificare din colțul dreapta sus al fiecărui pachet pentru a salva preferințele.
         </p>
@@ -1033,7 +1021,7 @@ const InscriereMateriiPage = () => {
             const statusData = statusInscrieri[pachet.id] || { status: 'inactiv', active: false };
             
             return (
-              <div key={pachet.id} className="border border-[#024A76]/20 rounded-lg bg-white shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+              <div key={pachet.id} className="border border-[#024A76]/20 dark:border-gray-700 rounded-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] p-4 border-b flex justify-between items-center">
                   <div>
                     <h2 className="text-lg font-semibold text-white drop-shadow-sm">{pachet.nume}</h2>
@@ -1075,10 +1063,10 @@ const InscriereMateriiPage = () => {
                 </div>
                 
                 <div className="p-4">
-                  <h3 className="font-medium text-sm text-[#024A76] mb-3 drop-shadow-sm">Materiile tale, ordonate după preferință:</h3>
+                  <h3 className="font-medium text-sm text-[#024A76] dark:text-blue-light mb-3 drop-shadow-sm">Materiile tale, ordonate după preferință:</h3>
                   
                   {preferintePachet.length === 0 ? (
-                    <div className="text-sm text-[#024A76]/70 italic p-2 text-center">
+                    <div className="text-sm text-[#024A76]/70 dark:text-gray-400 italic p-2 text-center">
                       Se încarcă materiile...
                     </div>
                   ) : (
@@ -1106,8 +1094,8 @@ const InscriereMateriiPage = () => {
                 
                 {/* Afișează informații despre alocarea automată dacă înscrierea s-a încheiat */}
                 {statusData.status === 'încheiat' && (
-                  <div className="p-4 border-t border-[#024A76]/20 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5">
-                    <p className="text-sm text-[#024A76]/80">
+                  <div className="p-4 border-t border-[#024A76]/20 dark:border-gray-700 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 dark:from-gray-700/30 dark:to-gray-600/30">
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">
                       <strong>Notă:</strong> Perioada de înscriere pentru acest pachet s-a încheiat. 
                       Materiile vor fi alocate automat în funcție de preferințele studenților și de mediile acestora.
                     </p>
@@ -1129,15 +1117,15 @@ const InscriereMateriiPage = () => {
               }
             }}
           >
-            <div className="bg-white rounded-lg max-w-2xl w-full overflow-y-auto p-6 shadow-xl border border-gray-200">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg max-w-2xl w-full overflow-y-auto p-6 shadow-xl border border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] bg-clip-text text-transparent drop-shadow-sm">{materieDetails.nume}</h2>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">{materieDetails.nume}</h2>
                 <button 
                   onClick={() => {
                     setMaterieDetails(null);
                     setSelectedMaterie(null);
                   }}
-                  className="text-[#024A76] hover:text-[#3471B8] transition-colors duration-200"
+                  className="text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1146,37 +1134,37 @@ const InscriereMateriiPage = () => {
               </div>
               
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 p-3 rounded-lg border border-[#024A76]/20">
+                <div className="grid grid-cols-2 gap-3 bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/30 dark:to-gray-600/30 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-700">
                   <div>
-                    <h3 className="text-sm font-medium text-[#024A76]">Facultate:</h3>
-                    <p className="text-sm text-[#024A76]/80">{materieDetails.facultate}</p>
+                    <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Facultate:</h3>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.facultate}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#024A76]">Specializare:</h3>
-                    <p className="text-sm text-[#024A76]/80">{materieDetails.specializare}</p>
+                    <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Specializare:</h3>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.specializare}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#024A76]">Profesor:</h3>
-                    <p className="text-sm text-[#024A76]/80">{materieDetails.profesorNume}</p>
+                    <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Profesor:</h3>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.profesorNume}</p>
                   </div>
                   <div>
-                    <h3 className="text-sm font-medium text-[#024A76]">Credite:</h3>
-                    <p className="text-sm text-[#024A76]/80">{materieDetails.credite}</p>
+                    <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Credite:</h3>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.credite}</p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-[#024A76] mb-1">Descriere:</h3>
-                  <div className="max-h-32 overflow-y-auto bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 p-3 rounded-lg border border-[#024A76]/20">
-                    <p className="text-sm text-[#024A76]/80 whitespace-pre-wrap">
+                  <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light mb-1">Descriere:</h3>
+                  <div className="max-h-32 overflow-y-auto bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/30 dark:to-gray-600/30 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-700">
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300 whitespace-pre-wrap">
                       {materieDetails.descriere || 'Nicio descriere disponibilă.'}
                     </p>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 p-3 rounded-lg border border-[#E3AB23]/30 shadow-sm">
-                  <h3 className="text-sm font-medium text-[#024A76] mb-1">Locuri disponibile:</h3>
-                  <p className="text-sm text-[#024A76] font-semibold">
+                <div className="bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 dark:from-yellow-accent/20 dark:to-yellow-accent/10 p-3 rounded-lg border border-[#E3AB23]/30 dark:border-yellow-accent/30 shadow-sm">
+                  <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light mb-1">Locuri disponibile:</h3>
+                  <p className="text-sm text-[#024A76] dark:text-blue-light font-semibold">
                     {materieDetails.locuriDisponibile - (materieDetails.studentiInscrisi?.length || 0)} / {materieDetails.locuriDisponibile}
                   </p>
                 </div>
