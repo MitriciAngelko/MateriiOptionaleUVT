@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { isAdmin, isProfesor, isStudent, isSecretar } from '../utils/userRoles';
 import ThemeToggle from './ThemeToggle';
@@ -342,4 +342,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar;
+export default memo(Navbar);

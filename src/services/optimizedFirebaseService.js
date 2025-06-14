@@ -1,6 +1,3 @@
-/**
- * Optimized Firebase service with caching, pagination, and performance improvements
- */
 import { 
   collection, 
   getDocs, 
@@ -12,6 +9,7 @@ import {
   getDoc,
   doc
 } from 'firebase/firestore';
+import { useState, useEffect, useCallback } from 'react';
 import { db } from '../firebase';
 
 // Cache configuration
@@ -335,8 +333,6 @@ export const optimizedFirebaseService = {
 /**
  * React Hook for optimized data fetching
  */
-import { useState, useEffect, useCallback } from 'react';
-
 export const useOptimizedFirebaseQuery = (collectionName, options = {}) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);

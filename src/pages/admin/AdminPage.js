@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useAuth } from '../../providers/AuthProvider';
@@ -8,18 +8,22 @@ import AdminUserForm from '../../components/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import CSVImportModal from '../../components/CSVImportModal';
 import MassDeleteModal from '../../components/MassDeleteModal';
+import OptimizedUserTable from '../../components/optimized/OptimizedUserTable';
 import { isAdmin, isSecretar } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
 import { generateUserCSVTemplate, downloadCSV } from '../../utils/csvUtils';
 import { createUser } from '../../services/userService';
+import { optimizedFirebaseService } from '../../services/optimizedFirebaseService';
 import axios from 'axios';
 import { executeBatchedOperationsWithRetry } from '../../utils/rateLimiter';
+import SkeletonLoader from '../../components/common/SkeletonLoader';
 
 const AdminPage = () => {
   const { loading } = useAuth();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState(null);
   const [filters, setFilters] = useState({
     tip: 'all',
@@ -49,9 +53,11 @@ const AdminPage = () => {
   const ani = ["I", "II", "III"];
   const tipuriUtilizatori = ["all", "student", "profesor", "secretar"];
   
-  // Fetch users function that can be called from different places
+  // Optimized fetch users function with caching and loading states
   const fetchUsers = useCallback(async () => {
     try {
+      setUsersLoading(true);
+      
       // Verifică dacă utilizatorul este admin sau secretar
       const adminAccess = await isAdmin(user.uid);
       const secretarAccess = !adminAccess ? await isSecretar(user.uid) : false;
@@ -61,16 +67,21 @@ const AdminPage = () => {
         return;
       }
 
-      // Obține lista de utilizatori
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const usersData = usersSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-      }));
+      // Use optimized Firebase service with caching
+      const usersData = await optimizedFirebaseService.getPaginatedCollection('users', {
+        pageSize: 100, // Load first 100 users
+        filters: [] // Add filters as needed
+      });
 
-      // Filtrăm utilizatorii
-      setUsers(usersData.filter(u => !u.email?.endsWith('@admin.com') && u.tip !== 'admin'));
+      // Filtrăm utilizatorii (exclude admin accounts)
+      const filteredUsers = usersData
+        .filter(u => !u.email?.endsWith('@admin.com') && u.tip !== 'admin')
+        .map(user => ({
+          ...user,
+          createdAt: user.createdAt?.toDate?.() || new Date(),
+        }));
+      
+      setUsers(filteredUsers);
 
       // Obține lista de materii pentru dropdown-ul de filtrare
       const materiiDropdown = Object.values(allMaterii || {}).map(materie => ({
@@ -80,8 +91,10 @@ const AdminPage = () => {
       setMateriiList(materiiDropdown);
     } catch (error) {
       console.error('Eroare la încărcarea utilizatorilor:', error);
+    } finally {
+      setUsersLoading(false);
     }
-      }, [user, allMaterii, navigate]);
+  }, [user, allMaterii, navigate]);
 
   useEffect(() => {
     if (user?.uid && !materiiLoading) {
@@ -384,7 +397,8 @@ const AdminPage = () => {
   };
 
   // Funcție pentru filtrarea utilizatorilor
-  const getFilteredUsers = () => {
+  // Memoized filtered users to prevent unnecessary recalculations
+  const getFilteredUsers = useMemo(() => {
     return users.filter(user => {
       // Filtrare după tip utilizator
       if (filters.tip !== 'all' && user.tip !== filters.tip) return false;
@@ -403,15 +417,15 @@ const AdminPage = () => {
       
       return true;
     });
-  };
+  }, [users, filters]);
 
-  const handleFilterChange = (e) => {
+  const handleFilterChange = useCallback((e) => {
     const { name, value } = e.target;
     setFilters(prev => ({
       ...prev,
       [name]: value
     }));
-  };
+  }, []);
 
   const handleFormSubmit = () => {
     // Ascunde formularul și actualizează lista de utilizatori
@@ -578,154 +592,7 @@ const AdminPage = () => {
     return <div>Loading...</div>;
   }
 
-  const renderUserTable = (users) => (
-    <>
-      {/* Desktop Table View */}
-      <div className="hidden lg:block overflow-x-auto">
-        <table className="min-w-full bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
-          <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80">
-            <tr>
-              <th className="w-2/5 px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
-                Nume
-              </th>
-              <th className="w-1/5 px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
-                Număr Matricol
-              </th>
-              <th className="w-1/5 px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
-                Tip
-              </th>
-              <th className="w-1/5 px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider">
-                Acțiuni
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {users.map(user => (
-              <tr 
-                key={user.id} 
-                className="group hover:bg-gradient-to-r hover:from-[#E3AB23]/10 hover:to-[#E3AB23]/5 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 cursor-pointer transition-all duration-300"
-                onClick={() => setSelectedUser(user)}
-              >
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="font-semibold text-[#024A76] dark:text-blue-light">{user.nume} {user.prenume}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">{user.email}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center text-gray-700 dark:text-gray-300 font-medium">
-                  {user.numarMatricol || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                    user.tip === 'student' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                    user.tip === 'profesor' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                    user.tip === 'secretar' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
-                    'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-                  }`}>
-                    {user.tip}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-center">
-                  <div className="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingUser(user);
-                        setShowUserModal(true);
-                      }}
-                      className="p-2 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10 rounded-lg transition-all duration-200"
-                      title="Editează utilizator"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteUser(user.id);
-                      }}
-                      className="p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                      title="Șterge utilizator"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="lg:hidden space-y-4">
-        {users.map(user => (
-          <div 
-            key={user.id}
-            className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-xl transition-all duration-300 cursor-pointer"
-            onClick={() => setSelectedUser(user)}
-          >
-            {/* Card Header */}
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <h3 className="font-semibold text-[#024A76] dark:text-blue-light text-lg">
-                  {user.nume} {user.prenume}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {user.email}
-                </p>
-              </div>
-              <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ml-3 ${
-                user.tip === 'student' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                user.tip === 'profesor' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                user.tip === 'secretar' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
-                'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
-              }`}>
-                {user.tip}
-              </span>
-            </div>
-
-            {/* Card Details */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <span className="font-medium">Matricol:</span> {user.numarMatricol || 'N/A'}
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingUser(user);
-                    setShowUserModal(true);
-                  }}
-                  className="p-2 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10 rounded-lg transition-all duration-200"
-                  title="Editează utilizator"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteUser(user.id);
-                  }}
-                  className="p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-                  title="Șterge utilizator"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
+    // Legacy table renderer removed - replaced with OptimizedUserTable
 
   const renderFilters = () => (
     <div className="mb-6 sm:mb-8 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
@@ -934,7 +801,9 @@ const AdminPage = () => {
             </div>
           </div>
           
-          {getFilteredUsers().length === 0 ? (
+          {usersLoading ? (
+            <SkeletonLoader.UserTable />
+          ) : getFilteredUsers.length === 0 ? (
             <div className="text-center py-8 sm:py-12">
               <svg className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
@@ -947,7 +816,24 @@ const AdminPage = () => {
               </p>
             </div>
           ) : (
-            renderUserTable(getFilteredUsers())
+            <OptimizedUserTable
+              users={getFilteredUsers}
+              onEditUser={(user) => {
+                setEditingUser(user);
+                setShowUserModal(true);
+              }}
+              onDeleteUser={handleDeleteUser}
+              onUpdateField={async (userId, field, value) => {
+                try {
+                  const userRef = doc(db, 'users', userId);
+                  await updateDoc(userRef, { [field]: value });
+                  await fetchUsers(); // Refresh the list
+                } catch (error) {
+                  console.error('Error updating user field:', error);
+                }
+              }}
+              loading={usersLoading}
+            />
           )}
         </div>
 

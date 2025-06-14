@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const bodyParser = require('body-parser');
 const routes = require('./routes/index');
 
@@ -19,6 +20,7 @@ const corsOptions = {
 };
 
 // Middleware configuration
+app.use(compression()); // Enable gzip compression for all responses
 app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));

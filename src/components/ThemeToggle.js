@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeToggle = () => {
@@ -25,4 +25,4 @@ const ThemeToggle = () => {
   );
 };
 
-export default ThemeToggle; 
+export default memo(ThemeToggle); 

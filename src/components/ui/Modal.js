@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { X } from 'lucide-react';
 
 const Modal = ({ 
@@ -77,4 +77,4 @@ const Modal = ({
   );
 };
 
-export default Modal; 
+export default memo(Modal); 

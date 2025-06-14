@@ -3,7 +3,7 @@
  */
 import React, { memo, useMemo, useCallback, useState } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { searchUsers, filterUsers } from '../utils/userUtils';
+import { searchUsers, filterUsers } from '../../utils/userUtils';
 
 // Memoized user row component
 const UserRow = memo(({ index, style, data }) => {

@@ -5,9 +5,36 @@ import { db } from '../firebase';
 const MateriiContext = createContext();
 
 export const MateriiProvider = ({ children }) => {
-  const [allMaterii, setAllMaterii] = useState({});
+  const [allMaterii, setAllMaterii] = useState(() => {
+    // Initialize with cached data if available
+    const cached = localStorage.getItem('materii_cache');
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached);
+        // Use cached data if less than 1 hour old
+        if (Date.now() - timestamp < 60 * 60 * 1000) {
+          return data;
+        }
+      } catch (error) {
+        console.warn('Failed to parse cached materii data:', error);
+      }
+    }
+    return {};
+  });
+  
   const [loading, setLoading] = useState(true);
-  const [lastFetch, setLastFetch] = useState(null);
+  const [lastFetch, setLastFetch] = useState(() => {
+    const cached = localStorage.getItem('materii_cache');
+    if (cached) {
+      try {
+        const { timestamp } = JSON.parse(cached);
+        return timestamp;
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  });
 
   const fetchAllMaterii = useCallback(async (force = false) => {
     // Only fetch if we haven't fetched in the last hour or if forced
@@ -23,12 +50,25 @@ export const MateriiProvider = ({ children }) => {
         });
         
         setAllMaterii(materiiMap);
-        setLastFetch(Date.now());
+        const now = Date.now();
+        setLastFetch(now);
+        
+        // Cache the data
+        try {
+          localStorage.setItem('materii_cache', JSON.stringify({
+            data: materiiMap,
+            timestamp: now
+          }));
+        } catch (error) {
+          console.warn('Failed to cache materii data:', error);
+        }
       } catch (error) {
         console.error('Error fetching materii:', error);
       } finally {
         setLoading(false);
       }
+    } else {
+      setLoading(false);
     }
   }, [lastFetch]);
 
@@ -36,11 +76,22 @@ export const MateriiProvider = ({ children }) => {
     fetchAllMaterii();
   }, [fetchAllMaterii]);
 
+  const clearCache = useCallback(() => {
+    try {
+      localStorage.removeItem('materii_cache');
+      setLastFetch(null);
+      console.log('Materii cache cleared');
+    } catch (error) {
+      console.warn('Failed to clear materii cache:', error);
+    }
+  }, []);
+
   return (
     <MateriiContext.Provider value={{ 
       allMaterii, 
       loading, 
-      refreshMaterii: () => fetchAllMaterii(true) 
+      refreshMaterii: () => fetchAllMaterii(true),
+      clearCache 
     }}>
       {children}
     </MateriiContext.Provider>
