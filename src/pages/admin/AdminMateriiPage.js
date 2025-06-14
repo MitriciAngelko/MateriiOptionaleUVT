@@ -402,7 +402,7 @@ const AdminMateriiPage = () => {
       }
       
       // Show preview instead of immediately uploading
-      setProcessingMessage('✅ Extragerea datelor completă!');
+      setProcessingMessage(' Extragerea datelor completă!');
       
       setTimeout(() => {
         setIsProcessing(false);
@@ -433,54 +433,76 @@ const AdminMateriiPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
-            Administrare Materii
-          </h1>
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Mobile-First Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+              Administrare Materii
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+              Gestionează materiile, pachetele și importurile în masă
+            </p>
+          </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-2 mb-8">
-          <button
-            onClick={() => setActiveTab('materii')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-              activeTab === 'materii'
-                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
-                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-            Materii
-          </button>
-          <button
-            onClick={() => setActiveTab('pachete')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-              activeTab === 'pachete'
-                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
-                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 13a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-            Pachete
-          </button>
-          <button
-            onClick={() => setActiveTab('bulk-upload')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-              activeTab === 'bulk-upload'
-                ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
-                : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            <svg className="w-5 h-5 mr-2 inline" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-            Import în Masă
-          </button>
+        {/* Mobile-Optimized Tab Navigation */}
+        <div className="mb-6 sm:mb-8">
+          {/* Mobile: Dropdown Style */}
+          <div className="sm:hidden">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value)}
+              className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-[#024A76] dark:text-blue-light font-semibold focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent transition-all duration-300 shadow-lg"
+            >
+              <option value="materii">Materii</option>
+              <option value="pachete">Pachete</option>
+              <option value="bulk-upload">Import în Masă</option>
+            </select>
+          </div>
+
+          {/* Desktop: Traditional Tabs */}
+          <div className="hidden sm:flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab('materii')}
+              className={`px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center text-sm lg:text-base ${
+                activeTab === 'materii'
+                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
+                  : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+              Materii
+            </button>
+            <button
+              onClick={() => setActiveTab('pachete')}
+              className={`px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center text-sm lg:text-base ${
+                activeTab === 'pachete'
+                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
+                  : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 13a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+              Pachete
+            </button>
+            <button
+              onClick={() => setActiveTab('bulk-upload')}
+              className={`px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center text-sm lg:text-base ${
+                activeTab === 'bulk-upload'
+                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
+                  : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 101.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+              Import în Masă
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -507,7 +529,7 @@ const AdminMateriiPage = () => {
         )}
 
         {activeTab === 'materii' && (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {!selectedMaterie && (
               <FiltersComponent 
                 filters={filters}
@@ -517,20 +539,24 @@ const AdminMateriiPage = () => {
             )}
 
             {!selectedMaterie ? (
-              <div className="grid md:grid-cols-2 gap-8">
-                <AddMaterieForm 
-                  newMaterie={newMaterie}
-                  setNewMaterie={setNewMaterie}
-                  handleSubmit={handleSubmit}
-                />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <div className="order-2 lg:order-1">
+                  <AddMaterieForm 
+                    newMaterie={newMaterie}
+                    setNewMaterie={setNewMaterie}
+                    handleSubmit={handleSubmit}
+                  />
+                </div>
 
-                <MateriesList 
-                  filteredMaterii={getFilteredMaterii()}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  setSelectedMaterie={setSelectedMaterie}
-                  handleDelete={handleDelete}
-                />
+                <div className="order-1 lg:order-2">
+                  <MateriesList 
+                    filteredMaterii={getFilteredMaterii()}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    setSelectedMaterie={setSelectedMaterie}
+                    handleDelete={handleDelete}
+                  />
+                </div>
               </div>
             ) : (
               <MaterieModal 

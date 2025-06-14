@@ -697,9 +697,9 @@ const SecretarAlocareAutomataPage = () => {
             
             if (preferinteDirecte.length > 0) {
               preferinteFinale = preferinteDirecte;
-              console.log('✅ Preferințe directe găsite:', preferinteFinale);
+              console.log(' Preferințe directe găsite:', preferinteFinale);
             } else {
-              console.log('❌ Preferințele nu sunt ID-uri directe, încercăm decodificarea...');
+              console.log(' Preferințele nu sunt ID-uri directe, încercăm decodificarea...');
               
               // Încercăm să decodificăm preferințele dacă sunt codificate
               const materiiSnapshot = await getDocs(collection(db, 'materii'));
@@ -717,14 +717,14 @@ const SecretarAlocareAutomataPage = () => {
               for (const preferinta of preferinteRaw) {
                 if (mapareIduri[preferinta] && materiiIds.includes(mapareIduri[preferinta])) {
                   preferinteFinale.push(mapareIduri[preferinta]);
-                  console.log(`✅ Preferință decodificată: ${preferinta} -> ${mapareIduri[preferinta]}`);
+                  console.log(` Preferință decodificată: ${preferinta} -> ${mapareIduri[preferinta]}`);
                 } else {
-                  console.log(`❌ Nu s-a putut decodifica: ${preferinta}`);
+                  console.log(` Nu s-a putut decodifica: ${preferinta}`);
                 }
               }
             }
           } else {
-            console.log('❌ Nu există preferințe pentru acest pachet în userData');
+            console.log(' Nu există preferințe pentru acest pachet în userData');
           }
           
           // Actualizăm preferințele studentului
@@ -732,7 +732,7 @@ const SecretarAlocareAutomataPage = () => {
           student.preferinte = preferinteFinale;
           console.log(`Preferințe finale pentru alocare: ${preferinteFinale.length} preferințe - ${preferinteFinale}`);
         } else {
-          console.log(`❌ Nu s-a găsit documentul pentru studentul ${student.id}`);
+          console.log(` Nu s-a găsit documentul pentru studentul ${student.id}`);
           student.media = student.media || 0;
           student.anStudiu = anPachet;
         }
@@ -798,7 +798,7 @@ const SecretarAlocareAutomataPage = () => {
         
         // Sărim peste studenții fără preferințe valide
         if (!student.preferinte || student.preferinte.length === 0) {
-          console.log(`❌ Studentul nu are preferințe valide - omis din alocare`);
+          console.log(` Studentul nu are preferințe valide - omis din alocare`);
           studentiNealocati.push({
             ...student,
             motivNealocare: 'Preferințe invalide sau lipsa de preferințe'
@@ -824,13 +824,13 @@ const SecretarAlocareAutomataPage = () => {
           
           if (materieIndex !== -1) {
             const materie = materii[materieIndex];
-            console.log(`  📚 Materie găsită: ${materie.nume}`);
-            console.log(`  📊 Locuri rămase: ${materie.locuriRamase}/${materie.locuriDisponibile || 0}`);
-            console.log(`  👥 Studenți înscriși: ${materie.studentiInscrisi.length}`);
+            console.log(`Materie găsită: ${materie.nume}`);
+            console.log(`Locuri rămase: ${materie.locuriRamase}/${materie.locuriDisponibile || 0}`);
+            console.log(`Studenți înscriși: ${materie.studentiInscrisi.length}`);
             
             if (materie.locuriRamase > 0) {
               // Am găsit un loc disponibil la o materie preferată
-              console.log(`  ✅ LOC DISPONIBIL! Alocăm studentul...`);
+              console.log(`LOC DISPONIBIL! Alocăm studentul...`);
               
               materie.locuriRamase--;
               
@@ -877,7 +877,7 @@ const SecretarAlocareAutomataPage = () => {
               alocat = true;
               break; // Trecem la următorul student
             } else {
-              console.log(`  ❌ Materia ${materie.nume} PLINĂ (0 locuri rămase)`);
+              console.log(`   Materia ${materie.nume} PLINĂ (0 locuri rămase)`);
             }
           } else {
             console.log(`  ⚠️ EROARE: Materia cu ID ${materieId} NU EXISTĂ în pachet`);
@@ -886,8 +886,8 @@ const SecretarAlocareAutomataPage = () => {
         }
         
         if (!alocat) {
-          console.log(`  ❌ STUDENT NEALOCAT: ${student.nume} ${student.prenume}`);
-          console.log(`  📝 Motiv: Toate materiile preferate sunt pline sau nu există`);
+          console.log(`   STUDENT NEALOCAT: ${student.nume} ${student.prenume}`);
+          console.log(`   Motiv: Toate materiile preferate sunt pline sau nu există`);
           
           // Studentul nu a putut fi alocat la nicio materie din lista sa de preferințe
           studentiNealocati.push({
@@ -914,11 +914,11 @@ const SecretarAlocareAutomataPage = () => {
           console.log(`${index + 1}. ${student.nume} ${student.prenume} -> ${student.numeMaterieAlocata} (preferința #${student.pozitiePrioritate})`);
         });
       } else {
-        console.log('\n❌ NICIUN STUDENT ALOCAT!');
+        console.log('\n NICIUN STUDENT ALOCAT!');
       }
       
       if (studentiNealocati.length > 0) {
-        console.log('\n❌ STUDENȚI NEALOCAȚI:');
+        console.log('\n STUDENȚI NEALOCAȚI:');
         studentiNealocati.forEach((student, index) => {
           console.log(`${index + 1}. ${student.nume} ${student.prenume} - ${student.motivNealocare}`);
         });
@@ -958,9 +958,9 @@ const SecretarAlocareAutomataPage = () => {
           totalMaterii: materii.length,
           statisticiPreferinte: statisticiPreferinte
         });
-        console.log('✅ Pachet actualizat cu succes cu rezultatele alocării');
+        console.log(' Pachet actualizat cu succes cu rezultatele alocării');
       } catch (error) {
-        console.error('❌ Eroare la actualizarea pachetului:', error);
+        console.error(' Eroare la actualizarea pachetului:', error);
         throw new Error(`Eroare la actualizarea pachetului: ${error.message}`);
       }
       
@@ -1016,7 +1016,7 @@ const SecretarAlocareAutomataPage = () => {
           });
           
           // Adăugăm materia în istoricul academic existent al studentului
-          console.log(`📚 Adding allocated course to existing academic history for student: ${student.nume} ${student.prenume}`);
+          console.log(`Adding allocated course to existing academic history for student: ${student.nume} ${student.prenume}`);
           
           // Obținem sau creăm istoricul academic al studentului
           const istoricStudentRef = doc(db, 'istoricAcademic', student.id);
@@ -1055,7 +1055,7 @@ const SecretarAlocareAutomataPage = () => {
             status: 'neevaluat'
           };
           
-          console.log(`📝 Adding course to Year ${anStudiu}, Semester ${semestruMaterie}: ${student.numeMaterieAlocata}`);
+          console.log(` Adding course to Year ${anStudiu}, Semester ${semestruMaterie}: ${student.numeMaterieAlocata}`);
           
           // Verifică dacă există deja un istoric pentru anul și semestrul specificat (fără anUniversitar)
           const anualIndex = istoricStudentData.istoricAnual.findIndex(
@@ -1071,7 +1071,7 @@ const SecretarAlocareAutomataPage = () => {
             if (!materieExistenta) {
               // Adaugă nota la istoricul existent pentru an/semestru
               istoricStudentData.istoricAnual[anualIndex].cursuri.push(newNote);
-              console.log(`✅ Added course to existing Year ${anStudiu}, Semester ${semestruMaterie} record`);
+              console.log(` Added course to existing Year ${anStudiu}, Semester ${semestruMaterie} record`);
             } else {
               console.log(`ℹ️ Course already exists in Year ${anStudiu}, Semester ${semestruMaterie}`);
             }
@@ -1084,7 +1084,7 @@ const SecretarAlocareAutomataPage = () => {
             };
             
             istoricStudentData.istoricAnual.push(newAnualRecord);
-            console.log(`✅ Created new record for Year ${anStudiu}, Semester ${semestruMaterie}`);
+            console.log(` Created new record for Year ${anStudiu}, Semester ${semestruMaterie}`);
           }
           
           // Salvăm istoricul academic actualizat
@@ -1205,12 +1205,13 @@ const SecretarAlocareAutomataPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Mobile-First Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
             Secretar - Alocare Automată
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+          <p className="text-gray-600 dark:text-gray-300 mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg px-4 sm:px-0">
             Gestionează procesul de alocare automată pentru studenți
           </p>
         </div>
@@ -1224,21 +1225,23 @@ const SecretarAlocareAutomataPage = () => {
           />
         )}
         
-        {/* Search Input and Button */}
-        <div className="flex mb-6 shadow-md rounded-lg overflow-hidden">
-          <input
-            type="text"
-            className="flex-grow p-3 border-0 bg-white text-[#024A76] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3471B8] transition-all duration-200"
-            placeholder="Caută după nume, specializare sau facultate..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button 
-            className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold"
-            onClick={handleSearch}
-          >
-            Caută
-          </button>
+        {/* Mobile-Optimized Search */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 shadow-md rounded-lg overflow-hidden">
+            <input
+              type="text"
+              className="flex-grow p-3 border-0 bg-white text-[#024A76] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#3471B8] transition-all duration-200 text-sm sm:text-base"
+              placeholder="Caută după nume, specializare sau facultate..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <button 
+              className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-4 sm:px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold text-sm sm:text-base"
+              onClick={handleSearch}
+            >
+              Caută
+            </button>
+          </div>
         </div>
         
         {successMessage && (

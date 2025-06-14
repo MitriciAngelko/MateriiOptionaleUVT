@@ -608,22 +608,27 @@ const SecretarStudentNextYearRegistrationPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Mobile-First Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
             Secretar - Înregistrare Anul Următor
           </h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-3 text-lg">
+          <p className="text-gray-600 dark:text-gray-300 mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg px-4 sm:px-0">
             Gestionează înregistrarea studenților pentru anul următor
           </p>
         </div>
 
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#034a76]">Înscrierea Studenților în Anul Următor</h1>
+        {/* Mobile-Optimized Action Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#034a76] text-center sm:text-left">
+            <span className="hidden sm:inline">Înscrierea Studenților în Anul Următor</span>
+            <span className="sm:hidden">Înscrierea Studenților</span>
+          </h2>
           <button
             onClick={fetchEligibleStudents}
             disabled={studentsLoading}
-            className="px-4 py-2 bg-[#024A76] text-white rounded-lg hover:bg-gradient-to-r hover:from-[#024A76] hover:to-[#3471B8] disabled:bg-gray-400 flex items-center gap-2 transition-all duration-200 shadow-md"
+            className="px-3 sm:px-4 py-2 bg-[#024A76] text-white rounded-lg hover:bg-gradient-to-r hover:from-[#024A76] hover:to-[#3471B8] disabled:bg-gray-400 flex items-center justify-center gap-2 transition-all duration-200 shadow-md text-sm sm:text-base"
           >
             {studentsLoading ? (
               <>
@@ -631,10 +636,14 @@ const SecretarStudentNextYearRegistrationPage = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Se încarcă...
+                <span className="hidden sm:inline">Se încarcă...</span>
+                <span className="sm:hidden">Încarcă...</span>
               </>
             ) : (
-              'Actualizează Lista'
+              <>
+                <span className="hidden sm:inline">Actualizează Lista</span>
+                <span className="sm:hidden">Actualizează</span>
+              </>
             )}
           </button>
         </div>
@@ -647,28 +656,29 @@ const SecretarStudentNextYearRegistrationPage = () => {
 
 
 
-        {/* Filters Section */}
-        <div className="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[#024A76]">Filtrare Studenți</h3>
+        {/* Mobile-Optimized Filters Section */}
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-white rounded-lg shadow-md border border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4">
+            <h3 className="text-base sm:text-lg font-semibold text-[#024A76] text-center sm:text-left">Filtrare Studenți</h3>
             <button
               onClick={resetFilters}
-              className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium transition-all duration-200"
+              className="px-3 py-1.5 sm:py-1 text-xs sm:text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium transition-all duration-200"
             >
-              Resetează Filtrele
+              <span className="hidden sm:inline">Resetează Filtrele</span>
+              <span className="sm:hidden">Resetează</span>
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {/* Facultate Filter */}
             <div>
-              <label className="block text-sm font-medium text-[#024A76] mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-[#024A76] mb-1 sm:mb-2">
                 Facultate
               </label>
               <select
                 value={filters.facultate}
                 onChange={(e) => updateFilter('facultate', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200 text-sm"
               >
                 <option value="">Toate facultățile</option>
                 {getUniqueValues('facultate').map(facultate => (
@@ -681,13 +691,13 @@ const SecretarStudentNextYearRegistrationPage = () => {
 
             {/* Specializare Filter */}
             <div>
-              <label className="block text-sm font-medium text-[#024A76] mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-[#024A76] mb-1 sm:mb-2">
                 Specializare
               </label>
               <select
                 value={filters.specializare}
                 onChange={(e) => updateFilter('specializare', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200 text-sm"
               >
                 <option value="">Toate specializările</option>
                 {getUniqueValues('specializare').map(specializare => (
@@ -700,13 +710,13 @@ const SecretarStudentNextYearRegistrationPage = () => {
 
             {/* An Filter */}
             <div>
-              <label className="block text-sm font-medium text-[#024A76] mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-[#024A76] mb-1 sm:mb-2">
                 An de studiu
               </label>
               <select
                 value={filters.an}
                 onChange={(e) => updateFilter('an', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md shadow-sm bg-white text-[#024A76] focus:outline-none focus:ring-2 focus:ring-[#3471B8] focus:border-[#3471B8] transition-all duration-200 text-sm"
               >
                 <option value="">Toți anii</option>
                 {getUniqueValues('an').map(an => (
@@ -719,8 +729,8 @@ const SecretarStudentNextYearRegistrationPage = () => {
           </div>
           
           {/* Filter Results Info */}
-          <div className="mt-4 p-3 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 rounded-md">
-            <p className="text-sm text-[#024A76]/80">
+          <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 rounded-md">
+            <p className="text-xs sm:text-sm text-[#024A76]/80 text-center sm:text-left">
               <strong>Rezultate filtrare:</strong> {filteredStudents.length} din {eligibleStudents.length} studenți
               {filteredStudents.length !== eligibleStudents.length && (
                 <span className="text-[#E3AB23] font-medium"> (filtrați)</span>
@@ -729,11 +739,12 @@ const SecretarStudentNextYearRegistrationPage = () => {
           </div>
         </div>
 
-        <div className="mb-6 flex flex-wrap gap-2 items-center justify-between">
+        {/* Mobile-Optimized Action Button */}
+        <div className="mb-4 sm:mb-6 flex justify-center sm:justify-start">
           <button
             onClick={bulkRegisterStudents}
             disabled={registrationInProgress || selectedStudents.length === 0}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 font-semibold transition-all duration-200 shadow-md ${
+            className={`w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg flex items-center justify-center gap-2 font-semibold transition-all duration-200 shadow-md text-sm sm:text-base ${
               selectedStudents.length === 0 
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70'
@@ -745,18 +756,24 @@ const SecretarStudentNextYearRegistrationPage = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Se procesează...
+                <span className="hidden sm:inline">Se procesează...</span>
+                <span className="sm:hidden">Procesează...</span>
               </>
             ) : (
-              `Înregistrează Selectați`
+              <>
+                <span className="hidden sm:inline">Înregistrează Selectați ({selectedStudents.length})</span>
+                <span className="sm:hidden">Înregistrează ({selectedStudents.length})</span>
+              </>
             )}
           </button>
         </div>
 
+        {/* Mobile-Optimized Table */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
-          <div className="px-6 py-4 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
-            <h2 className="text-lg font-semibold">
-              Studenți Eligibili pentru Anul Următor
+          <div className="px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
+            <h2 className="text-base sm:text-lg font-semibold text-center sm:text-left">
+              <span className="hidden sm:inline">Studenți Eligibili pentru Anul Următor</span>
+              <span className="sm:hidden">Studenți Eligibili ({filteredStudents.length})</span>
             </h2>
           </div>
           

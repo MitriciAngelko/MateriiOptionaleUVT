@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { isAdmin } from '../../utils/userRoles';
+import { isAdmin, isSecretar } from '../../utils/userRoles';
 
-const AdminRoute = ({ children }) => {
+const AdminRoute = ({ children, allowSecretar = false }) => {
   const user = useSelector((state) => state.auth.user);
   const location = useLocation();
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -13,7 +13,7 @@ const AdminRoute = ({ children }) => {
   const isMainAdmin = user?.email === 'admin@admin.com';
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAccess = async () => {
       if (!user) {
         setIsAuthorized(false);
         setLoading(false);
@@ -28,18 +28,27 @@ const AdminRoute = ({ children }) => {
       }
 
       try {
-        const adminStatus = await isAdmin(user);
-        setIsAuthorized(adminStatus);
+        // Check admin status - pass the userId for consistency with other role checks
+        const adminStatus = await isAdmin(user.uid);
+        
+        // If allowSecretar is true, also check for secretar role
+        let secretarStatus = false;
+        if (allowSecretar) {
+          secretarStatus = await isSecretar(user.uid);
+        }
+        
+        const hasAccess = adminStatus || secretarStatus;
+        setIsAuthorized(hasAccess);
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('AdminRoute: Error checking access status:', error);
         setIsAuthorized(false);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAdmin();
-  }, [user, isMainAdmin]);
+    checkAccess();
+  }, [user, isMainAdmin, allowSecretar]);
 
   // Show loading state while checking for all users
   if (loading) {

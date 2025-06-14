@@ -1121,18 +1121,18 @@ const AdminMateriiPage = () => {
 
   // Funny Romanian loading messages
   const funnyLoadingMessages = [
-    "🤖 Învăț să citesc PDF-uri ca un profesor în primul an...",
-    "📚 Caut materiile prin labirintul academic...",
-    "🔍 Analizez planul de învățământ cu lupa...",
-    "💭 Mă gândesc mai tare decât la examenul de licență...",
-    "🎯 Extrag datele cu precizia unui chirurg...",
-    "🚀 Zbor prin semestre ca Superman prin nori...",
-    "🧠 Fac gimnastică mentală cu credite și semestre...",
-    "📊 Organizez materiile ca un bibliotecrar obsesiv...",
-    "⚡ Procesez informațiile cu viteza internetului din cămin...",
-    "🎪 Jonglез cu materii obligatorii și opționale...",
-    "🔥 Ard etapele ca un student în sesiune...",
-    "🎨 Pictez un tabel perfect cu materiile tale...",
+    "Învăț să citesc PDF-uri ca un profesor în primul an...",
+    "Caut materiile prin labirintul academic...",
+    "Analizez planul de învățământ cu lupa...",
+    "Mă gândesc mai tare decât la examenul de licență...",
+    "Extrag datele cu precizia unui chirurg...",
+    "Zbor prin semestre ca Superman prin nori...",
+    "Fac gimnastică mentală cu credite și semestre...",
+    "Organizez materiile ca un bibliotecrar obsesiv...",
+    "Procesez informațiile cu viteza internetului din cămin...",
+    "Jonglez cu materii obligatorii și opționale...",
+    "Ard etapele ca un student în sesiune...",
+    "Pictez un tabel perfect cu materiile tale...",
   ];
 
   const getRandomLoadingMessage = () => {
@@ -1232,7 +1232,7 @@ const AdminMateriiPage = () => {
       
       // Here you would parse the CSV and add materii to the database
       // For now, just show success message
-      setProcessingMessage('✅ Procesarea a fost finalizată cu succes!');
+      setProcessingMessage(' Procesarea a fost finalizată cu succes!');
       
       setTimeout(() => {
         setIsProcessing(false);

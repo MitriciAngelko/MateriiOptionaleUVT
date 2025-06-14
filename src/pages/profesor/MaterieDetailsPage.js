@@ -218,7 +218,7 @@ const MaterieDetailsPage = () => {
 
   const handleExport = () => {
     // Create CSV content
-    const headers = ['ID', 'Nume', 'Email', 'Nota', 'Număr Matricol'];
+    const headers = ['ID', 'Nume', 'Email', 'Nota', 'Numar Matricol'];
     const rows = studenti.map((student, index) => [
       index + 1,
       `${student.nume} ${student.prenume}`,

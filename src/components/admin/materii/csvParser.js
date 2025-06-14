@@ -111,7 +111,7 @@ export const parseCsvToMaterii = (csvData, facultate, specializare) => {
         };
         
         materiiList.push(materie);
-        console.log(`✅ Parsed line ${index + 1}:`, materie);
+        console.log(` Parsed line ${index + 1}:`, materie);
         
       } catch (error) {
         console.error(`Error parsing line ${index + 1} "${line}":`, error);
@@ -168,10 +168,10 @@ export const bulkUploadMaterii = async (materiiList, onProgress = null) => {
       await addDoc(collection(db, 'materii'), materie);
       
       results.successful++;
-      console.log(`✅ Successfully uploaded: ${materie.nume}`);
+      console.log(` Successfully uploaded: ${materie.nume}`);
       
     } catch (error) {
-      console.error(`❌ Failed to upload materie ${materiiList[i]?.nume}:`, error);
+      console.error(` Failed to upload materie ${materiiList[i]?.nume}:`, error);
       results.failed++;
       results.errors.push({
         materie: materiiList[i]?.nume || 'Unknown',

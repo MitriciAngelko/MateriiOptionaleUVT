@@ -939,12 +939,16 @@ const AdminIstoricAcademicPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Mobile-First Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
               Administrare Istoric Academic
             </h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+              Gestionează notele și istoricul academic al studenților
+            </p>
           </div>
         </div>
         
@@ -970,28 +974,28 @@ const AdminIstoricAcademicPage = () => {
           </div>
         )}
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           <div className="lg:col-span-1">
-            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
                   Studenți
                 </h2>
-                <div className="text-sm text-gray-600 dark:text-gray-300">
+                <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
                   {filteredStudents.length} din {students.length}
                 </div>
               </div>
               
               {/* Search și Filtre */}
-              <div className="mb-6 space-y-4">
+              <div className="mb-4 sm:mb-6 space-y-3 sm:space-y-4">
                 <div className="relative">
-                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#024A76]/60 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#024A76]/60 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
                     type="text"
                     placeholder="Caută student..."
-                    className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300"
+                    className="pl-9 sm:pl-10 pr-3 sm:pr-4 py-2 sm:py-2.5 w-full bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300 text-sm sm:text-base"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
                   />
@@ -1094,10 +1098,11 @@ const AdminIstoricAcademicPage = () => {
           
           <div className="lg:col-span-2">
             {selectedStudentData ? (
-              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
-                    Istoric Academic: {selectedStudentData.nume} {selectedStudentData.prenume}
+              <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
+                <div className="mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent">
+                    <span className="hidden sm:inline">Istoric Academic: {selectedStudentData.nume} {selectedStudentData.prenume}</span>
+                    <span className="sm:hidden">Istoric: {selectedStudentData.nume}</span>
                   </h2>
                 </div>
                 
@@ -1136,15 +1141,29 @@ const AdminIstoricAcademicPage = () => {
                 </div>
                 
                 {/* Filtre pentru istoric */}
-                <div className="mb-6">
-                  <div className="flex space-x-2 border-b border-gray-200 pb-2">
+                <div className="mb-4 sm:mb-6">
+                  {/* Mobile: Dropdown Style */}
+                  <div className="sm:hidden mb-4">
+                    <select
+                      value={activeYear}
+                      onChange={(e) => setActiveYear(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[#024A76] dark:text-blue-light font-semibold focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent transition-all duration-300 shadow-sm text-sm"
+                    >
+                      <option value="I">Anul I</option>
+                      <option value="II">Anul II</option>
+                      <option value="III">Anul III</option>
+                    </select>
+                  </div>
+
+                  {/* Desktop: Traditional Tabs */}
+                  <div className="hidden sm:flex space-x-2 border-b border-gray-200 dark:border-gray-700 pb-2">
                     {['I', 'II', 'III'].map((year) => (
                       <button
                         key={year}
-                        className={`px-6 py-3 font-semibold rounded-t-lg transition-all duration-300 ${
+                        className={`px-4 lg:px-6 py-2 lg:py-3 font-semibold rounded-t-lg transition-all duration-300 text-sm lg:text-base ${
                           activeYear === year 
                             ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white shadow-lg' 
-                            : 'text-[#024A76] hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10'
+                            : 'text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10'
                         }`}
                         onClick={() => setActiveYear(year)}
                       >
@@ -1157,23 +1176,25 @@ const AdminIstoricAcademicPage = () => {
                 {/* Istoric în tabel grupat pe semestre */}
                 <div className="overflow-x-auto">
                   {selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
-                    <div className="space-y-8">
+                    <div className="space-y-4 sm:space-y-8">
                       {getAllCursuri().map((semestru, semestruIndex) => (
                         <div key={semestruIndex} className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
-                          <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-yellow-accent dark:to-yellow-accent/80 px-6 py-4">
-                            <h3 className="text-lg font-semibold text-[#024A76] dark:text-gray-900 flex items-center drop-shadow-sm">
-                              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-yellow-accent dark:to-yellow-accent/80 px-4 sm:px-6 py-3 sm:py-4">
+                            <h3 className="text-base sm:text-lg font-semibold text-[#024A76] dark:text-gray-900 flex items-center drop-shadow-sm">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zM4 7h12v9a1 1 0 01-1 1H5a1 1 0 01-1-1V7z" clipRule="evenodd" />
                               </svg>
-                              Anul {semestru.anStudiu}, Semestrul {semestru.semestru}
+                              <span className="hidden sm:inline">Anul {semestru.anStudiu}, Semestrul {semestru.semestru}</span>
+                              <span className="sm:hidden">An {semestru.anStudiu}, Sem {semestru.semestru}</span>
                             </h3>
                           </div>
                           <div className="overflow-x-auto">
                             <table className="min-w-full">
                               <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80">
                                 <tr>
-                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Materie</th>
-                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Credite</th>
-                                  <th className="px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Notă</th>
+                                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Materie</th>
+                                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm hidden sm:table-cell">Credite</th>
+                                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Notă</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white/80 dark:bg-gray-800/50">
@@ -1192,16 +1213,21 @@ const AdminIstoricAcademicPage = () => {
                                   
                                   return (
                                     <tr key={courseIndex} className="group hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 transition-all duration-200">
-                                      <td className="px-6 py-4">
+                                      <td className="px-3 sm:px-6 py-3 sm:py-4">
                                         {isEditing ? (
                                           <input
                                             type="text"
                                             value={editNoteForm.nume}
                                             onChange={(e) => setEditNoteForm({...editNoteForm, nume: e.target.value})}
-                                            className="w-full px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23]"
+                                            className="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23] text-sm sm:text-base"
                                           />
                                         ) : (
-                                          <span className="font-semibold text-[#024A76] dark:text-blue-light">{curs.nume}</span>
+                                          <div>
+                                            <span className="font-semibold text-[#024A76] dark:text-blue-light text-sm sm:text-base">{curs.nume}</span>
+                                            <div className="sm:hidden text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                              {curs.credite} ECTS
+                                            </div>
+                                          </div>
                                         )}
                                       </td>
                                       <td className="px-6 py-4">

@@ -7,30 +7,144 @@ import MaterieModal from '../../components/student/MaterieModal';
 import { isStudent } from '../../utils/userRoles';
 import AIAssistant from '../../components/AIAssistant';
 
-const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDetails, id }) => {
+const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDetails, onMoveUp, onMoveDown, onSetPriority, id, totalCount, pachetId }) => {
+  const [showPrioritySelector, setShowPrioritySelector] = useState(false);
+  
   return (
     <div 
       draggable
       onDragStart={(e) => onDragStart(e, id)}
       onDragOver={(e) => onDragOver(e)}
       onDrop={(e) => onDrop(e, id)}
-      className="flex items-center justify-between bg-gradient-to-r from-white to-gray-50 dark:from-gray-700 dark:to-gray-600 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-600 mb-2 cursor-move hover:border-[#E3AB23] dark:hover:border-yellow-accent hover:shadow-md transition-all duration-200 shadow-sm"
+      className="flex items-center justify-between bg-gradient-to-r from-white to-gray-50 dark:from-gray-700 dark:to-gray-600 p-2 sm:p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-600 mb-2 hover:border-[#E3AB23] dark:hover:border-yellow-accent hover:shadow-md transition-all duration-200 shadow-sm"
     >
-      <div className="flex items-center">
-        <span className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2 shadow-sm">
-          {index + 1}
+      <div className="flex items-center flex-1 min-w-0">
+        {/* Priority Number - Clickable on mobile */}
+        <div className="relative">
+          <button
+            onClick={() => setShowPrioritySelector(!showPrioritySelector)}
+            className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-xs mr-2 sm:mr-3 shadow-sm flex-shrink-0 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-200 touch-manipulation"
+            title="Apasă pentru a schimba prioritatea"
+          >
+            {index + 1}
+          </button>
+          
+          {/* Mobile Priority Selector Dropdown */}
+          {showPrioritySelector && (
+            <div className="absolute top-8 left-0 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg p-2 min-w-[120px]">
+              <div className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2 text-center">
+                Alege prioritatea:
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {Array.from({ length: totalCount }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      onSetPriority(pachetId, id, i);
+                      setShowPrioritySelector(false);
+                    }}
+                    className={`w-8 h-8 rounded-full text-xs font-medium transition-all duration-200 ${
+                      i === index
+                        ? 'bg-[#024A76] text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-[#024A76]/20 dark:hover:bg-[#024A76]/30'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowPrioritySelector(false)}
+                className="w-full mt-2 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              >
+                Anulează
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <span className="text-xs sm:text-sm text-[#024A76] dark:text-blue-light font-medium truncate pr-2 cursor-move">
+          {materie.nume}
         </span>
-        <span className="text-sm text-[#024A76] dark:text-blue-light font-medium">{materie.nume}</span>
       </div>
-      <button
-        onClick={() => onViewDetails(materie.id)}
-        className="p-1 rounded-full text-[#024A76]/70 dark:text-blue-light/70 hover:text-[#024A76] dark:hover:text-yellow-accent hover:bg-gradient-to-r hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 dark:hover:from-yellow-accent/20 dark:hover:to-yellow-accent/10 transition-all duration-200"
-        title="Vezi detalii"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </button>
+      
+      {/* Mobile-First Controls */}
+      <div className="flex items-center space-x-1">
+        {/* Touch-Friendly Up/Down Arrows */}
+        <div className="flex flex-col space-y-0.5 sm:hidden">
+          <button
+            onClick={() => onMoveUp(pachetId, id)}
+            disabled={index === 0}
+            className={`p-1 rounded transition-all duration-200 touch-manipulation ${
+              index === 0
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-[#024A76] dark:text-blue-light hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10'
+            }`}
+            title="Mută în sus"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onMoveDown(pachetId, id)}
+            disabled={index === totalCount - 1}
+            className={`p-1 rounded transition-all duration-200 touch-manipulation ${
+              index === totalCount - 1
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-[#024A76] dark:text-blue-light hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10'
+            }`}
+            title="Mută în jos"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Desktop Up/Down Arrows (smaller, horizontal) */}
+        <div className="hidden sm:flex items-center space-x-1">
+          <button
+            onClick={() => onMoveUp(pachetId, id)}
+            disabled={index === 0}
+            className={`p-1.5 rounded-full transition-all duration-200 ${
+              index === 0
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-[#024A76]/70 dark:text-blue-light/70 hover:text-[#024A76] dark:hover:text-blue-light hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10'
+            }`}
+            title="Mută în sus"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => onMoveDown(pachetId, id)}
+            disabled={index === totalCount - 1}
+            className={`p-1.5 rounded-full transition-all duration-200 ${
+              index === totalCount - 1
+                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                : 'text-[#024A76]/70 dark:text-blue-light/70 hover:text-[#024A76] dark:hover:text-blue-light hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10'
+            }`}
+            title="Mută în jos"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+        
+        {/* Details Button */}
+        <button
+          onClick={() => onViewDetails(materie.id)}
+          className="p-1.5 sm:p-1 rounded-full text-[#024A76]/70 dark:text-blue-light/70 hover:text-[#024A76] dark:hover:text-yellow-accent hover:bg-gradient-to-r hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 dark:hover:from-yellow-accent/20 dark:hover:to-yellow-accent/10 transition-all duration-200 flex-shrink-0 touch-manipulation"
+          title="Vezi detalii"
+        >
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };
@@ -240,7 +354,7 @@ const InscriereMateriiPage = () => {
     setToastMessage(null);
   };
 
-  // Funcții pentru drag-and-drop
+  // Funcții pentru drag-and-drop (kept for desktop compatibility)
   const handleDragStart = (e, materieId, pachetId) => {
     setDragItem(materieId);
     setDragPachet(pachetId);
@@ -272,6 +386,56 @@ const InscriereMateriiPage = () => {
       setPreferinte(prevPreferinte => ({
         ...prevPreferinte,
         [pachetId]: newList
+      }));
+    }
+  };
+
+  // Mobile-friendly functions for reordering preferences
+  const handleMoveUp = (pachetId, materieId) => {
+    const preferintePachet = [...(preferinte[pachetId] || [])];
+    const currentIndex = preferintePachet.indexOf(materieId);
+    
+    if (currentIndex > 0) {
+      // Swap with the item above
+      [preferintePachet[currentIndex - 1], preferintePachet[currentIndex]] = 
+      [preferintePachet[currentIndex], preferintePachet[currentIndex - 1]];
+      
+      setPreferinte(prevPreferinte => ({
+        ...prevPreferinte,
+        [pachetId]: preferintePachet
+      }));
+    }
+  };
+
+  const handleMoveDown = (pachetId, materieId) => {
+    const preferintePachet = [...(preferinte[pachetId] || [])];
+    const currentIndex = preferintePachet.indexOf(materieId);
+    
+    if (currentIndex < preferintePachet.length - 1) {
+      // Swap with the item below
+      [preferintePachet[currentIndex], preferintePachet[currentIndex + 1]] = 
+      [preferintePachet[currentIndex + 1], preferintePachet[currentIndex]];
+      
+      setPreferinte(prevPreferinte => ({
+        ...prevPreferinte,
+        [pachetId]: preferintePachet
+      }));
+    }
+  };
+
+  const handleSetPriority = (pachetId, materieId, newIndex) => {
+    const preferintePachet = [...(preferinte[pachetId] || [])];
+    const currentIndex = preferintePachet.indexOf(materieId);
+    
+    if (currentIndex !== -1 && newIndex !== currentIndex && newIndex >= 0 && newIndex < preferintePachet.length) {
+      // Remove the item from its current position
+      const [movedItem] = preferintePachet.splice(currentIndex, 1);
+      // Insert it at the new position
+      preferintePachet.splice(newIndex, 0, movedItem);
+      
+      setPreferinte(prevPreferinte => ({
+        ...prevPreferinte,
+        [pachetId]: preferintePachet
       }));
     }
   };
@@ -997,7 +1161,17 @@ const InscriereMateriiPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        
+        {/* Mobile-First Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm mb-2 sm:mb-3">
+            Înscriere Materii
+          </h1>
+          <p className="text-sm sm:text-base text-[#024A76]/70 dark:text-gray-400 max-w-2xl mx-auto">
+            Alege materiile optionale și stabilește-ți preferințele pentru acest semestru
+          </p>
+        </div>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300 shadow-sm">
@@ -1005,12 +1179,28 @@ const InscriereMateriiPage = () => {
           </div>
         )}
         
-        <p className="text-[#024A76]/80 dark:text-gray-300 mb-6 bg-white/70 dark:bg-gray-800/50 p-4 rounded-lg border border-[#024A76]/20 dark:border-gray-700 shadow-sm">
-          Ține apăsat pe o materie și trage-o pentru a schimba ordinea preferințelor. Prima materie din listă are cea mai mare prioritate.
-          Apasă pe iconița de verificare din colțul dreapta sus al fiecărui pachet pentru a salva preferințele.
-        </p>
+        {/* Mobile-Optimized Instructions */}
+        <div className="text-[#024A76]/80 dark:text-gray-300 mb-6 bg-white/70 dark:bg-gray-800/50 p-3 sm:p-4 rounded-lg border border-[#024A76]/20 dark:border-gray-700 shadow-sm">
+          <div className="hidden sm:block">
+            <p className="text-sm sm:text-base">
+              <strong>Cum să reordonezi preferințele:</strong> Folosește săgețile ↑↓ pentru a muta materiile, 
+              apasă pe numărul priorității pentru a alege direct, sau trage și plasează materiile (drag & drop). 
+              Prima materie din listă are cea mai mare prioritate.
+            </p>
+          </div>
+          <div className="sm:hidden">
+            <p className="text-sm">
+              <strong>Cum să reordonezi:</strong><br/>
+              • Apasă pe <span className="inline-flex items-center justify-center w-5 h-5 bg-[#024A76] text-white rounded-full text-xs mx-1">1</span> pentru a alege prioritatea direct<br/>
+              • Folosește săgețile ↑↓ pentru a muta materiile<br/>
+              • Prima materie = prioritate maximă<br/>
+              • Apasă ✓ pentru a salva preferințele
+            </p>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Responsive Grid - Single column on mobile, responsive on larger screens */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {pachete.map((pachet) => {
             // Asigură-te că toate materiile sunt în lista de preferințe
             const preferintePachet = preferinte[pachet.id] || [];
@@ -1019,39 +1209,46 @@ const InscriereMateriiPage = () => {
             
             return (
               <div key={pachet.id} className="border border-[#024A76]/20 dark:border-gray-700 rounded-lg bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
-                <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] p-4 border-b flex justify-between items-center">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white drop-shadow-sm">{pachet.nume}</h2>
-                    <div className="text-xs text-white/90 mt-1">
-                      {pachet.facultate && <span className="mr-2">Facultate: {pachet.facultate}</span>}
-                      {pachet.specializare && <span className="mr-2">Specializare: {pachet.specializare}</span>}
-                      {pachet.an && <span>An: {pachet.an}</span>}
+                {/* Mobile-Optimized Header */}
+                <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] p-3 sm:p-4 border-b flex justify-between items-start sm:items-center">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold text-white drop-shadow-sm truncate">{pachet.nume}</h2>
+                    <div className="text-xs text-white/90 mt-1 space-y-1 sm:space-y-0">
+                      <div className="sm:hidden">
+                        <div>{pachet.facultate}</div>
+                        <div>{pachet.specializare} • An {pachet.an}</div>
+                      </div>
+                      <div className="hidden sm:block">
+                        {pachet.facultate && <span className="mr-2">Facultate: {pachet.facultate}</span>}
+                        {pachet.specializare && <span className="mr-2">Specializare: {pachet.specializare}</span>}
+                        {pachet.an && <span>An: {pachet.an}</span>}
+                      </div>
                     </div>
                   </div>
                   <button
                     onClick={() => salveazaPreferintePachet(pachet.id)}
                     disabled={isLoading || !statusData.active}
-                    className={`p-2 rounded-full transition-all duration-300 ${isLoading ? 'bg-gray-200' : statusData.active ? 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 hover:from-[#E3AB23]/80 hover:to-[#E3AB23] shadow-lg' : 'bg-gray-400'} text-[#024A76]`}
+                    className={`ml-2 p-2 rounded-full transition-all duration-300 flex-shrink-0 ${isLoading ? 'bg-gray-200' : statusData.active ? 'bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 hover:from-[#E3AB23]/80 hover:to-[#E3AB23] shadow-lg' : 'bg-gray-400'} text-[#024A76]`}
                     title={statusData.active ? "Salvează preferințele pentru acest pachet" : "Înscrierile nu sunt active"}
                   >
                     {isLoading ? (
-                      <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </button>
                 </div>
                 
-                {/* Afișează statusul înscrierii */}
-                <div className={`px-4 py-2 ${getStatusClass(statusData.status)}`}>
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{getStatusText(statusData.status)}</span>
-                    <span className="text-sm">
+                {/* Mobile-Optimized Status Bar */}
+                <div className={`px-3 sm:px-4 py-2 ${getStatusClass(statusData.status)}`}>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
+                    <span className="font-medium text-sm sm:text-base">{getStatusText(statusData.status)}</span>
+                    <span className="text-xs sm:text-sm">
                       {statusData.status === 'activ' ? 'Se închide: ' + formatDate(statusData.dataFinal) :
                        statusData.status === 'urmează' ? 'Începe: ' + formatDate(statusData.dataStart) :
                        'Închis'}
@@ -1059,8 +1256,11 @@ const InscriereMateriiPage = () => {
                   </div>
                 </div>
                 
-                <div className="p-4">
-                  <h3 className="font-medium text-sm text-[#024A76] dark:text-blue-light mb-3 drop-shadow-sm">Materiile tale, ordonate după preferință:</h3>
+                <div className="p-3 sm:p-4">
+                  <h3 className="font-medium text-sm text-[#024A76] dark:text-blue-light mb-3 drop-shadow-sm">
+                    <span className="hidden sm:inline">Materiile tale, ordonate după preferință:</span>
+                    <span className="sm:hidden">Preferințele tale:</span>
+                  </h3>
                   
                   {preferintePachet.length === 0 ? (
                     <div className="text-sm text-[#024A76]/70 dark:text-gray-400 italic p-2 text-center">
@@ -1082,6 +1282,11 @@ const InscriereMateriiPage = () => {
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, materieId, pachet.id)}
                             onViewDetails={handleMaterieView}
+                            onMoveUp={(pachetId, id) => handleMoveUp(pachetId, id)}
+                            onMoveDown={(pachetId, id) => handleMoveDown(pachetId, id)}
+                            onSetPriority={(pachetId, id, newIndex) => handleSetPriority(pachetId, id, newIndex)}
+                            totalCount={preferintePachet.length}
+                            pachetId={pachet.id}
                           />
                         );
                       })}
@@ -1089,12 +1294,13 @@ const InscriereMateriiPage = () => {
                   )}
                 </div>
                 
-                {/* Afișează informații despre alocarea automată dacă înscrierea s-a încheiat */}
+                {/* Mobile-Optimized Auto-allocation Info */}
                 {statusData.status === 'încheiat' && (
-                  <div className="p-4 border-t border-[#024A76]/20 dark:border-gray-700 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 dark:from-gray-700/30 dark:to-gray-600/30">
-                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">
-                      <strong>Notă:</strong> Perioada de înscriere pentru acest pachet s-a încheiat. 
-                      Materiile vor fi alocate automat în funcție de preferințele studenților și de mediile acestora.
+                  <div className="p-3 sm:p-4 border-t border-[#024A76]/20 dark:border-gray-700 bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 dark:from-gray-700/30 dark:to-gray-600/30">
+                    <p className="text-xs sm:text-sm text-[#024A76]/80 dark:text-gray-300">
+                      <strong>Notă:</strong> Perioada de înscriere s-a încheiat. 
+                      <span className="hidden sm:inline"> Materiile vor fi alocate automat în funcție de preferințele studenților și de mediile acestora.</span>
+                      <span className="sm:hidden"> Alocarea automată va avea loc în curând.</span>
                     </p>
                   </div>
                 )}
@@ -1103,10 +1309,10 @@ const InscriereMateriiPage = () => {
           })}
         </div>
 
-        {/* Modale pentru detaliile materiei */}
+        {/* Mobile-Optimized Modal */}
         {materieDetails && (
           <div 
-            className="fixed inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setMaterieDetails(null);
@@ -1114,35 +1320,38 @@ const InscriereMateriiPage = () => {
               }
             }}
           >
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-lg max-w-2xl w-full overflow-y-auto p-6 shadow-xl border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">{materieDetails.nume}</h2>
+            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6 shadow-xl border border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm pr-2 flex-1">
+                  {materieDetails.nume}
+                </h2>
                 <button 
                   onClick={() => {
                     setMaterieDetails(null);
                     setSelectedMaterie(null);
                   }}
-                  className="text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200"
+                  className="text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200 p-1 flex-shrink-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/30 dark:to-gray-600/30 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-700">
+              <div className="space-y-3 sm:space-y-4">
+                {/* Mobile-Optimized Info Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/30 dark:to-gray-600/30 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-700">
                   <div>
                     <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Facultate:</h3>
-                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.facultate}</p>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300 break-words">{materieDetails.facultate}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Specializare:</h3>
-                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.specializare}</p>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300 break-words">{materieDetails.specializare}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Profesor:</h3>
-                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300">{materieDetails.profesorNume}</p>
+                    <p className="text-sm text-[#024A76]/80 dark:text-gray-300 break-words">{materieDetails.profesorNume}</p>
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light">Credite:</h3>
@@ -1151,8 +1360,8 @@ const InscriereMateriiPage = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light mb-1">Descriere:</h3>
-                  <div className="max-h-32 overflow-y-auto bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/30 dark:to-gray-600/30 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-700">
+                  <h3 className="text-sm font-medium text-[#024A76] dark:text-blue-light mb-2">Descriere:</h3>
+                  <div className="max-h-32 sm:max-h-40 overflow-y-auto bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/30 dark:to-gray-600/30 p-3 rounded-lg border border-[#024A76]/20 dark:border-gray-700">
                     <p className="text-sm text-[#024A76]/80 dark:text-gray-300 whitespace-pre-wrap">
                       {materieDetails.descriere || 'Nicio descriere disponibilă.'}
                     </p>

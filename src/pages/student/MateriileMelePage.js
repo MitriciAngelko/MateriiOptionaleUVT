@@ -137,7 +137,7 @@ const MateriileMelePage = () => {
           // Ensure nota is a number
           const nota = parseFloat(materie.nota) || 0;
           
-          console.log(`📚 ${materie.nume}: ${credite} credite, nota ${nota}`);
+          console.log(`${materie.nume}: ${credite} credite, nota ${nota}`);
           
           // Add to total credits (all enrolled courses)
           totalCredite += credite;
@@ -146,11 +146,11 @@ const MateriileMelePage = () => {
           if (nota >= 5) {
             crediteTrecute += credite;
             cursurilePromovate.push(materie); // Add course to promoted courses for average calculation
-            console.log(`✅ Promovat: ${materie.nume} - ${credite} credite, nota ${nota}`);
+            console.log(`Promovat: ${materie.nume} - ${credite} credite, nota ${nota}`);
           } else if (nota > 0) {
-            console.log(`❌ Nepromovat: ${materie.nume} - ${credite} credite, nota ${nota}`);
+            console.log(`Nepromovat: ${materie.nume} - ${credite} credite, nota ${nota}`);
           } else {
-            console.log(`⏳ Neevaluat: ${materie.nume} - ${credite} credite`);
+            console.log(`Neevaluat: ${materie.nume} - ${credite} credite`);
           }
         });
 
@@ -293,62 +293,84 @@ const MateriileMelePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        
+        {/* Mobile-First Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm mb-2 sm:mb-3">
+            Materiile Mele
+          </h1>
+          <p className="text-sm sm:text-base text-[#024A76]/70 dark:text-gray-400 max-w-2xl mx-auto">
+            Istoricul tău academic cu toate materiile și notele obținute
+          </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-2 bg-red-50 border-l-4 border-red-400 text-red-700 rounded-r-lg">
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-400 text-red-700 rounded-r-lg">
             <div className="font-medium text-sm">{error}</div>
           </div>
         )}
 
         {materiiInscrise.length === 0 ? (
           <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-xl p-6 text-center border border-gray-200 dark:border-gray-700">
-            <div className="text-lg text-gray-500 dark:text-gray-300 mb-1">Nu aveți nicio materie în istoricul academic</div>
-            <div className="text-xs text-gray-400 dark:text-gray-400">Contactați secretariatul pentru mai multe informații</div>
+            <div className="text-base sm:text-lg text-gray-500 dark:text-gray-300 mb-2">Nu aveți nicio materie în istoricul academic</div>
+            <div className="text-sm text-gray-400 dark:text-gray-400">Contactați secretariatul pentru mai multe informații</div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Header and Year Tabs */}
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-2">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Mobile-Optimized Year Selection */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                 {availableYears.map((year) => (
                   <button
                     key={year}
                     onClick={() => setSelectedYear(year)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+                    className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm sm:text-base ${
                       selectedYear === year
                         ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white shadow-lg border-2 border-[#E3AB23]'
                         : 'bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 border border-gray-300 dark:border-gray-700 hover:border-[#3471B8]/30 shadow-md hover:shadow-lg'
                     }`}
                   >
-                    Anul {year}
+                    <span className="hidden sm:inline">Anul {year}</span>
+                    <span className="sm:hidden">An {year}</span>
                   </button>
                 ))}
               </div>
+              
+              {/* Mobile Stats Summary */}
+              {currentYearCourses.length > 0 && (
+                <div className="flex justify-center sm:justify-end">
+                </div>
+              )}
             </div>
 
-            {/* Course Table */}
+            {/* Mobile-Optimized Course Table */}
             <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
               {currentYearCourses.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-300">
-                  Nu aveți cursuri pentru anul {selectedYear}
+                  <span className="hidden sm:inline">Nu aveți cursuri pentru anul {selectedYear}</span>
+                  <span className="sm:hidden">Niciun curs pentru anul {selectedYear}</span>
                 </div>
               ) : (
-                <div>
+                <div className="overflow-x-auto">
                   <table className="min-w-full">
                     <thead>
                       <tr className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
-                        <th className="py-3 px-6 text-left font-semibold drop-shadow-sm">Materie</th>
-                        <th className="py-3 px-6 text-center font-semibold drop-shadow-sm">Credite</th>
-                        <th className="py-3 px-6 text-center font-semibold drop-shadow-sm">Nota</th>
+                        <th className="py-2 sm:py-3 px-3 sm:px-6 text-left font-semibold drop-shadow-sm text-sm sm:text-base">
+                          <span className="hidden sm:inline">Materie</span>
+                          <span className="sm:hidden">Materie</span>
+                        </th>
+                        <th className="py-2 sm:py-3 px-2 sm:px-6 text-center font-semibold drop-shadow-sm text-sm sm:text-base">
+                          <span className="hidden sm:inline">Credite</span>
+                          <span className="sm:hidden">ECTS</span>
+                        </th>
+                        <th className="py-2 sm:py-3 px-2 sm:px-6 text-center font-semibold drop-shadow-sm text-sm sm:text-base">Nota</th>
                       </tr>
                     </thead>
                     <tbody>
                       {Object.entries(coursesBySemester)
                         .sort(([a], [b]) => parseInt(a) - parseInt(b))
-                                                 .map(([semester, courses]) => {
+                        .map(([semester, courses]) => {
                            // Calculate semester totals - only count credits from passed courses
                            const passedCourses = courses.filter(course => parseFloat(course.nota) >= 5);
                            const semesterCredits = passedCourses.reduce((sum, course) => sum + parseInt(course.credite || 0), 0);
@@ -358,31 +380,35 @@ const MateriileMelePage = () => {
 
                           return (
                             <React.Fragment key={semester}>
-                              {/* Semester Header Row */}
+                              {/* Mobile-Optimized Semester Header */}
                               <tr className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
-                                <td colSpan="3" className="py-2 px-6">
-                                  <span className="font-semibold drop-shadow-sm">Semestrul {semester}</span>
+                                <td colSpan="3" className="py-2 px-3 sm:px-6">
+                                  <span className="font-semibold drop-shadow-sm text-sm sm:text-base">
+                                    <span className="hidden sm:inline">Semestrul {semester}</span>
+                                    <span className="sm:hidden">Sem {semester}</span>
+                                  </span>
                                 </td>
                               </tr>
                               
-                              {/* Course Rows */}
+                              {/* Mobile-Optimized Course Rows */}
                               {courses.map((materie, index) => (
                                 <tr 
                                   key={materie.id}
                                   className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'} hover:bg-gradient-to-r hover:from-[#024A76]/5 hover:to-[#3471B8]/5 dark:hover:from-blue-light/10 dark:hover:to-yellow-accent/10 transition-all duration-200`}
                                 >
-                                  <td className="py-3 px-6 text-gray-900 dark:text-gray-200">
+                                  <td className="py-2 sm:py-3 px-3 sm:px-6 text-gray-900 dark:text-gray-200">
                                     <div 
-                                      className="font-medium cursor-pointer hover:text-[#024A76] dark:hover:text-yellow-accent hover:underline transition-all duration-200"
+                                      className="font-medium cursor-pointer hover:text-[#024A76] dark:hover:text-yellow-accent hover:underline transition-all duration-200 text-sm sm:text-base break-words"
                                       onClick={() => setSelectedMaterieForModal(materie)}
                                       title="Apasă pentru a vedea detaliile complete"
                                     >
-                                      {materie.nume}
+                                      <span className="hidden sm:inline">{materie.nume}</span>
+                                      <span className="sm:hidden line-clamp-2">{materie.nume}</span>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-6 text-center text-gray-900 dark:text-gray-200">{materie.credite}</td>
-                                  <td className="py-3 px-6 text-center">
-                                    <span className={`font-bold text-lg ${
+                                  <td className="py-2 sm:py-3 px-2 sm:px-6 text-center text-gray-900 dark:text-gray-200 text-sm sm:text-base">{materie.credite}</td>
+                                  <td className="py-2 sm:py-3 px-2 sm:px-6 text-center">
+                                    <span className={`font-bold text-base sm:text-lg ${
                                       materie.nota >= 5 
                                         ? 'text-green-600 dark:text-green-400' 
                                         : materie.nota > 0 
@@ -395,12 +421,15 @@ const MateriileMelePage = () => {
                                 </tr>
                               ))}
                               
-                              {/* Semester Total Row */}
+                              {/* Mobile-Optimized Semester Total Row */}
                               <tr className="bg-gradient-to-r from-[#024A76]/10 to-[#3471B8]/10 dark:from-gray-700/50 dark:to-gray-600/50 border-t-2 border-[#E3AB23] dark:border-yellow-accent">
-                                <td className="py-2 px-6 font-semibold text-[#024A76] dark:text-blue-light"></td>
-                                <td className="py-2 px-6 text-center font-semibold text-[#024A76] dark:text-blue-light">{semesterCredits}</td>
-                                <td className="py-2 px-6 text-center">
-                                  <span className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] px-3 py-1 rounded-full font-semibold text-sm shadow-sm">
+                                <td className="py-2 px-3 sm:px-6 font-semibold text-[#024A76] dark:text-blue-light text-sm sm:text-base">
+                                  <span className="hidden sm:inline">Total Semestru</span>
+                                  <span className="sm:hidden">Total</span>
+                                </td>
+                                <td className="py-2 px-2 sm:px-6 text-center font-semibold text-[#024A76] dark:text-blue-light text-sm sm:text-base">{semesterCredits}</td>
+                                <td className="py-2 px-2 sm:px-6 text-center">
+                                  <span className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] px-2 sm:px-3 py-1 rounded-full font-semibold text-xs sm:text-sm shadow-sm">
                                     {semesterAverage > 0 ? semesterAverage : '-'}
                                   </span>
                                 </td>
@@ -409,12 +438,18 @@ const MateriileMelePage = () => {
                           );
                         })}
                       
-                      {/* Year Total Row */}
+                      {/* Mobile-Optimized Year Total Row */}
                       <tr className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white">
-                        <td className="py-3 px-6 font-bold drop-shadow-sm">Total Anul {selectedYear}</td>
-                        <td className="py-3 px-6 text-center font-bold drop-shadow-sm">{selectedYearStats.totalCredite} credite</td>
-                        <td className="py-3 px-6 text-center">
-                          <span className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] px-3 py-1 rounded-full font-bold shadow-lg">
+                        <td className="py-3 px-3 sm:px-6 font-bold drop-shadow-sm text-sm sm:text-base">
+                          <span className="hidden sm:inline">Total Anul {selectedYear}</span>
+                          <span className="sm:hidden">Total An {selectedYear}</span>
+                        </td>
+                        <td className="py-3 px-2 sm:px-6 text-center font-bold drop-shadow-sm text-sm sm:text-base">
+                          <span className="hidden sm:inline">{selectedYearStats.totalCredite} credite</span>
+                          <span className="sm:hidden">{selectedYearStats.totalCredite}</span>
+                        </td>
+                        <td className="py-3 px-2 sm:px-6 text-center">
+                          <span className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 text-[#024A76] px-2 sm:px-3 py-1 rounded-full font-bold text-xs sm:text-sm shadow-lg">
                             {selectedYearStats.medieGenerala || '-'}
                           </span>
                         </td>

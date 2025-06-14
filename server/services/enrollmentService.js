@@ -236,18 +236,18 @@ const alocaMateriiPreferate = async (pachetId) => {
             pozitiePrioritate: pozitiePreferinta
           });
           
-          console.log(`  ✅ ALOCAT la materia ${materie.nume} (preferința ${pozitiePreferinta})`);
+          console.log(`   ALOCAT la materia ${materie.nume} (preferința ${pozitiePreferinta})`);
           
           break; // Trecem la următorul student
         } else {
-          console.log(`  ❌ Nu mai sunt locuri disponibile la această materie`);
+          console.log(`   Nu mai sunt locuri disponibile la această materie`);
         }
       }
 
       // Dacă studentul nu a fost alocat la nicio materie, îl adăugăm la lista de nealocați
       if (!alocatCuSucces) {
         rezultateAlocare.studentiNealocati.push(student);
-        console.log(`  ❌ NEALOCAT: Nu a putut fi alocat la nicio materie preferată`);
+        console.log(`   NEALOCAT: Nu a putut fi alocat la nicio materie preferată`);
       }
     }
 
@@ -321,11 +321,11 @@ const alocaMateriiPreferate = async (pachetId) => {
     // Execută actualizările în batch
     console.log('- Executare actualizări în baza de date...');
     await batch.commit();
-    console.log('✅ Actualizări finalizate cu succes!');
+    console.log(' Actualizări finalizate cu succes!');
 
     return rezultateAlocare;
   } catch (error) {
-    console.error('❌ Eroare la alocarea materiilor:', error);
+    console.error(' Eroare la alocarea materiilor:', error);
     throw error;
   }
 };

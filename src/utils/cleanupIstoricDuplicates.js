@@ -26,7 +26,7 @@ export const cleanupIstoricDuplicates = async () => {
         continue;
       }
       
-      console.log(`📚 Procesez studentul ${studentId}...`);
+      console.log(`Procesez studentul ${studentId}...`);
       
       const originalCount = data.istoricAnual.length;
       
@@ -71,7 +71,7 @@ export const cleanupIstoricDuplicates = async () => {
         const duplicatesRemoved = originalCount - newCount;
         totalDuplicatesRemoved += duplicatesRemoved;
         
-        console.log(`  ✅ Șters ${duplicatesRemoved} duplicate(e) pentru ${studentId} (${originalCount} -> ${newCount})`);
+        console.log(`   Șters ${duplicatesRemoved} duplicate(e) pentru ${studentId} (${originalCount} -> ${newCount})`);
         
         // Actualizează documentul în Firestore
         await updateDoc(doc(db, 'istoricAcademic', studentId), {
@@ -86,7 +86,7 @@ export const cleanupIstoricDuplicates = async () => {
     console.log(`👥 Total studenți procesați: ${totalStudents}`);
     console.log(`🔧 Studenți cu duplicate: ${studentsWithDuplicates}`);
     console.log(`🗑️ Total duplicate șterse: ${totalDuplicatesRemoved}`);
-    console.log('✅ Curățarea completă!');
+    console.log(' Curățarea completă!');
     
     return {
       totalStudents,
@@ -95,7 +95,7 @@ export const cleanupIstoricDuplicates = async () => {
     };
     
   } catch (error) {
-    console.error('❌ Eroare la curățarea duplicatelor:', error);
+    console.error(' Eroare la curățarea duplicatelor:', error);
     throw error;
   }
 };
@@ -104,7 +104,7 @@ export const cleanupIstoricDuplicates = async () => {
  * Funcție pentru a analiza duplicatele fără a le șterge
  */
 export const analyzeIstoricDuplicates = async () => {
-  console.log('🔍 Analizez duplicatele din istoricAnual...');
+  console.log(' Analizez duplicatele din istoricAnual...');
   
   try {
     const istoricCollection = collection(db, 'istoricAcademic');
@@ -160,7 +160,7 @@ export const analyzeIstoricDuplicates = async () => {
     console.log(`📈 Max duplicate per student: ${analysis.maxDuplicatesPerStudent}`);
     
     if (analysis.duplicatesByStudent.length > 0) {
-      console.log('\n🔍 TOP studenți cu cele mai multe duplicate:');
+      console.log('\n TOP studenți cu cele mai multe duplicate:');
       analysis.duplicatesByStudent
         .sort((a, b) => b.duplicateCount - a.duplicateCount)
         .slice(0, 10)
@@ -172,7 +172,7 @@ export const analyzeIstoricDuplicates = async () => {
     return analysis;
     
   } catch (error) {
-    console.error('❌ Eroare la analiza duplicatelor:', error);
+    console.error(' Eroare la analiza duplicatelor:', error);
     throw error;
   }
 }; 

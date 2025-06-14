@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } fro
 import { db } from '../../firebase';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { isAdmin } from '../../utils/userRoles';
+import { isAdmin, isSecretar } from '../../utils/userRoles';
 
 // Toast notification component
 const Toast = ({ message, type = 'success', onClose }) => {
@@ -120,10 +120,11 @@ const AlocareAutomataPage = () => {
   useEffect(() => {
     const checkAccess = async () => {
       if (user) {
-        const adminAccess = await isAdmin(user);
-        setHasAccess(adminAccess);
+        const adminAccess = await isAdmin(user.uid);
+        const secretarAccess = await isSecretar(user.uid);
+        setHasAccess(adminAccess || secretarAccess);
         
-        if (!adminAccess) {
+        if (!adminAccess && !secretarAccess) {
           navigate('/');
         }
       }
@@ -723,9 +724,9 @@ const AlocareAutomataPage = () => {
             
             if (preferinteDirecte.length > 0) {
               preferinteFinale = preferinteDirecte;
-              console.log('✅ Preferințe directe găsite:', preferinteFinale);
+              console.log(' Preferințe directe găsite:', preferinteFinale);
             } else {
-              console.log('❌ Preferințele nu sunt ID-uri directe, încercăm decodificarea...');
+              console.log(' Preferințele nu sunt ID-uri directe, încercăm decodificarea...');
               
               // Încercăm să decodificăm preferințele dacă sunt codificate
               const materiiSnapshot = await getDocs(collection(db, 'materii'));
@@ -743,14 +744,14 @@ const AlocareAutomataPage = () => {
               for (const preferinta of preferinteRaw) {
                 if (mapareIduri[preferinta] && materiiIds.includes(mapareIduri[preferinta])) {
                   preferinteFinale.push(mapareIduri[preferinta]);
-                  console.log(`✅ Preferință decodificată: ${preferinta} -> ${mapareIduri[preferinta]}`);
+                  console.log(` Preferință decodificată: ${preferinta} -> ${mapareIduri[preferinta]}`);
                 } else {
-                  console.log(`❌ Nu s-a putut decodifica: ${preferinta}`);
+                  console.log(` Nu s-a putut decodifica: ${preferinta}`);
                 }
               }
             }
           } else {
-            console.log('❌ Nu există preferințe pentru acest pachet în userData');
+            console.log(' Nu există preferințe pentru acest pachet în userData');
           }
           
           // Actualizăm preferințele studentului
@@ -758,7 +759,7 @@ const AlocareAutomataPage = () => {
           student.preferinte = preferinteFinale;
           console.log(`Preferințe finale pentru alocare: ${preferinteFinale.length} preferințe - ${preferinteFinale}`);
         } else {
-          console.log(`❌ Nu s-a găsit documentul pentru studentul ${student.id}`);
+          console.log(` Nu s-a găsit documentul pentru studentul ${student.id}`);
           student.media = student.media || 0;
           student.anStudiu = anPachet;
         }
@@ -824,7 +825,7 @@ const AlocareAutomataPage = () => {
         
         // Sărim peste studenții fără preferințe valide
         if (!student.preferinte || student.preferinte.length === 0) {
-          console.log(`❌ Studentul nu are preferințe valide - omis din alocare`);
+          console.log(` Studentul nu are preferințe valide - omis din alocare`);
           studentiNealocati.push({
             ...student,
             motivNealocare: 'Preferințe invalide sau lipsa de preferințe'
@@ -850,13 +851,13 @@ const AlocareAutomataPage = () => {
           
           if (materieIndex !== -1) {
             const materie = materii[materieIndex];
-            console.log(`  📚 Materie găsită: ${materie.nume}`);
-            console.log(`  📊 Locuri rămase: ${materie.locuriRamase}/${materie.locuriDisponibile || 0}`);
-            console.log(`  👥 Studenți înscriși: ${materie.studentiInscrisi.length}`);
+            console.log(`Materie găsită: ${materie.nume}`);
+            console.log(`Locuri rămase: ${materie.locuriRamase}/${materie.locuriDisponibile || 0}`);
+            console.log(`Studenți înscriși: ${materie.studentiInscrisi.length}`);
             
             if (materie.locuriRamase > 0) {
               // Am găsit un loc disponibil la o materie preferată
-              console.log(`  ✅ LOC DISPONIBIL! Alocăm studentul...`);
+              console.log(`LOC DISPONIBIL! Alocăm studentul...`);
               
               materie.locuriRamase--;
               
@@ -903,7 +904,7 @@ const AlocareAutomataPage = () => {
               alocat = true;
               break; // Trecem la următorul student
             } else {
-              console.log(`  ❌ Materia ${materie.nume} PLINĂ (0 locuri rămase)`);
+              console.log(`   Materia ${materie.nume} PLINĂ (0 locuri rămase)`);
             }
           } else {
             console.log(`  ⚠️ EROARE: Materia cu ID ${materieId} NU EXISTĂ în pachet`);
@@ -912,8 +913,8 @@ const AlocareAutomataPage = () => {
         }
         
         if (!alocat) {
-          console.log(`  ❌ STUDENT NEALOCAT: ${student.nume} ${student.prenume}`);
-          console.log(`  📝 Motiv: Toate materiile preferate sunt pline sau nu există`);
+          console.log(`   STUDENT NEALOCAT: ${student.nume} ${student.prenume}`);
+          console.log(`   Motiv: Toate materiile preferate sunt pline sau nu există`);
           
           // Studentul nu a putut fi alocat la nicio materie din lista sa de preferințe
           studentiNealocati.push({
@@ -940,11 +941,11 @@ const AlocareAutomataPage = () => {
           console.log(`${index + 1}. ${student.nume} ${student.prenume} -> ${student.numeMaterieAlocata} (preferința #${student.pozitiePrioritate})`);
         });
       } else {
-        console.log('\n❌ NICIUN STUDENT ALOCAT!');
+        console.log('\n NICIUN STUDENT ALOCAT!');
       }
       
       if (studentiNealocati.length > 0) {
-        console.log('\n❌ STUDENȚI NEALOCAȚI:');
+        console.log('\n STUDENȚI NEALOCAȚI:');
         studentiNealocati.forEach((student, index) => {
           console.log(`${index + 1}. ${student.nume} ${student.prenume} - ${student.motivNealocare}`);
         });
@@ -984,9 +985,9 @@ const AlocareAutomataPage = () => {
           totalMaterii: materii.length,
           statisticiPreferinte: statisticiPreferinte
         });
-        console.log('✅ Pachet actualizat cu succes cu rezultatele alocării');
+        console.log(' Pachet actualizat cu succes cu rezultatele alocării');
       } catch (error) {
-        console.error('❌ Eroare la actualizarea pachetului:', error);
+        console.error(' Eroare la actualizarea pachetului:', error);
         throw new Error(`Eroare la actualizarea pachetului: ${error.message}`);
       }
       
@@ -1042,7 +1043,7 @@ const AlocareAutomataPage = () => {
           });
           
           // Adăugăm materia în istoricul academic existent al studentului
-          console.log(`📚 Adding allocated course to existing academic history for student: ${student.nume} ${student.prenume}`);
+          console.log(`Adding allocated course to existing academic history for student: ${student.nume} ${student.prenume}`);
           
           // Obținem sau creăm istoricul academic al studentului
           const istoricStudentRef = doc(db, 'istoricAcademic', student.id);
@@ -1081,7 +1082,7 @@ const AlocareAutomataPage = () => {
             status: 'neevaluat'
           };
           
-          console.log(`📝 Adding course to Year ${anStudiu}, Semester ${semestruMaterie}: ${student.numeMaterieAlocata}`);
+          console.log(` Adding course to Year ${anStudiu}, Semester ${semestruMaterie}: ${student.numeMaterieAlocata}`);
           
           // Verifică dacă există deja un istoric pentru anul și semestrul specificat (fără anUniversitar)
           const anualIndex = istoricStudentData.istoricAnual.findIndex(
@@ -1097,7 +1098,7 @@ const AlocareAutomataPage = () => {
             if (!materieExistenta) {
               // Adaugă nota la istoricul existent pentru an/semestru
               istoricStudentData.istoricAnual[anualIndex].cursuri.push(newNote);
-              console.log(`✅ Added course to existing Year ${anStudiu}, Semester ${semestruMaterie} record`);
+              console.log(` Added course to existing Year ${anStudiu}, Semester ${semestruMaterie} record`);
             } else {
               console.log(`ℹ️ Course already exists in Year ${anStudiu}, Semester ${semestruMaterie}`);
             }
@@ -1110,7 +1111,7 @@ const AlocareAutomataPage = () => {
             };
             
             istoricStudentData.istoricAnual.push(newAnualRecord);
-            console.log(`✅ Created new record for Year ${anStudiu}, Semester ${semestruMaterie}`);
+            console.log(` Created new record for Year ${anStudiu}, Semester ${semestruMaterie}`);
           }
           
           // Salvăm istoricul academic actualizat
@@ -1231,11 +1232,17 @@ const AlocareAutomataPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
-            Alocare Automată Pachete
-          </h1>
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        {/* Mobile-First Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
+              Alocare Automată Pachete
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
+              Gestionează alocarea automată a studenților la materiile opționale
+            </p>
+          </div>
         </div>
       
       {/* Toast Notification */}
@@ -1247,21 +1254,24 @@ const AlocareAutomataPage = () => {
         />
       )}
       
-      {/* Search Input and Button */}
-      <div className="flex mb-6 shadow-md rounded-lg overflow-hidden">
-        <input
-          type="text"
-          className="flex-grow p-3 border-0 bg-white dark:bg-gray-800/50 text-[#024A76] dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3471B8] dark:focus:ring-yellow-accent transition-all duration-200"
-          placeholder="Caută după nume, specializare sau facultate..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <button 
-          className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold"
-          onClick={handleSearch}
-        >
-          Caută
-        </button>
+      {/* Mobile-Optimized Search */}
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 shadow-md rounded-lg overflow-hidden">
+          <input
+            type="text"
+            className="flex-grow p-3 border-0 bg-white dark:bg-gray-800/50 text-[#024A76] dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3471B8] dark:focus:ring-yellow-accent transition-all duration-200 text-sm sm:text-base"
+            placeholder="Caută după nume, specializare sau facultate..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button 
+            className="bg-gradient-to-r from-[#024A76] to-[#3471B8] text-white px-4 sm:px-6 py-3 hover:from-[#3471B8] hover:to-[#024A76] transition-all duration-300 font-semibold text-sm sm:text-base"
+            onClick={handleSearch}
+          >
+            <span className="hidden sm:inline">Caută</span>
+            <span className="sm:hidden">Caută</span>
+          </button>
+        </div>
       </div>
       
       {successMessage && (
@@ -1276,22 +1286,25 @@ const AlocareAutomataPage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="col-span-1 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-          <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900 p-4">
-            <h2 className="text-lg font-semibold drop-shadow-sm">Pachete disponibile</h2>
+          <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900 p-3 sm:p-4">
+            <h2 className="text-base sm:text-lg font-semibold drop-shadow-sm">
+              <span className="hidden sm:inline">Pachete disponibile</span>
+              <span className="sm:hidden">Pachete ({filteredPachete.length})</span>
+            </h2>
           </div>
           
-          <div className="divide-y">
+          <div className="divide-y max-h-[60vh] sm:max-h-none overflow-y-auto">
             {filteredPachete.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 text-sm sm:text-base">
                 Nu există pachete disponibile
               </div>
             ) : (
               filteredPachete.map(pachet => (
                 <div 
                   key={pachet.id} 
-                  className={`p-4 cursor-pointer transition-all duration-200 ${
+                  className={`p-3 sm:p-4 cursor-pointer transition-all duration-200 ${
                     pachet.statusInscriere === 'activ' 
                       ? (selectedPachet === pachet.id 
                           ? 'bg-gradient-to-r from-[#E3AB23]/20 to-[#E3AB23]/10 border-l-4 border-[#E3AB23] hover:from-[#E3AB23]/30 hover:to-[#E3AB23]/15' 
@@ -1303,9 +1316,9 @@ const AlocareAutomataPage = () => {
                   onClick={() => handleSelectPachet(pachet)}
                 >
                   <div>
-                    <h3 className="font-semibold text-[#024A76] drop-shadow-sm">{pachet.nume || 'Pachet fără nume'}</h3>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {pachet.facultate && <span className="block">Facultate: {pachet.facultate}</span>}
+                    <h3 className="font-semibold text-[#024A76] drop-shadow-sm text-sm sm:text-base truncate">{pachet.nume || 'Pachet fără nume'}</h3>
+                    <div className="mt-1 text-xs text-gray-500 space-y-0.5">
+                      {pachet.facultate && <span className="block truncate">Facultate: {pachet.facultate}</span>}
                       {pachet.specializare && <span className="block">Specializare: {pachet.specializare}</span>}
                       {pachet.an && <span className="block">An: {pachet.an}</span>}
                     </div>
@@ -1346,14 +1359,15 @@ const AlocareAutomataPage = () => {
                   
                   <div className="mt-2 flex space-x-2">
                     <button
-                      className="text-xs bg-gradient-to-r from-[#3471B8] to-[#024A76] text-white px-3 py-1 rounded-full hover:from-[#024A76] hover:to-[#3471B8] transition-all duration-300 font-medium shadow-sm"
+                      className="text-xs bg-gradient-to-r from-[#3471B8] to-[#024A76] text-white px-2 sm:px-3 py-1 rounded-full hover:from-[#024A76] hover:to-[#3471B8] transition-all duration-300 font-medium shadow-sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedPachetData(pachet);
                         setIsDetailsModalOpen(true);
                       }}
                     >
-                      Vezi detalii
+                      <span className="hidden sm:inline">Vezi detalii</span>
+                      <span className="sm:hidden">Detalii</span>
                     </button>
                   </div>
                 </div>
@@ -1364,37 +1378,55 @@ const AlocareAutomataPage = () => {
         
         <div className="col-span-1 lg:col-span-2">
           {!selectedPachet ? (
-            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow p-8 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
+            <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow p-6 sm:p-8 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
               <div>
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-600">Selectați un pachet din listă</h3>
-                <p className="mt-1 text-sm text-gray-500">Pentru a gestiona alocarea automată a materiilor și a vizualiza rezultatele.</p>
+                <h3 className="mt-2 text-sm sm:text-base font-medium text-gray-600">Selectați un pachet din listă</h3>
+                <p className="mt-1 text-xs sm:text-sm text-gray-500">Pentru a gestiona alocarea automată a materiilor și a vizualiza rezultatele.</p>
               </div>
             </div>
           ) : (
             <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-              <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900 p-4 flex justify-between items-center">
-                <h2 className="text-lg font-semibold drop-shadow-sm">
+              <div className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80 text-white dark:text-gray-900 p-3 sm:p-4 flex justify-between items-center">
+                <h2 className="text-base sm:text-lg font-semibold drop-shadow-sm truncate pr-2">
                   {pachete.find(p => p.id === selectedPachet)?.nume || 'Pachet selectat'}
                 </h2>
                 
                 <button
                   onClick={() => setSelectedPachet(null)}
-                  className="text-white hover:text-gray-200"
+                  className="text-white hover:text-gray-200 flex-shrink-0 p-1"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               
-              {/* Tabs */}
-              <div className="border-b border-gray-200">
-                <nav className="flex -mb-px">
+              {/* Mobile-Optimized Tabs */}
+              <div className="border-b border-gray-200 dark:border-gray-700">
+                {/* Mobile: Dropdown Style */}
+                <div className="sm:hidden p-3">
+                  <select
+                    value={activeTab}
+                    onChange={(e) => {
+                      setActiveTab(e.target.value);
+                      if (e.target.value === 'perioadaInscriere' && selectedPachet) {
+                        handleSetarePerioadaInscriere(selectedPachet);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-[#024A76] dark:text-blue-light font-semibold focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent transition-all duration-300 shadow-sm text-sm"
+                  >
+                    <option value="info">Informații</option>
+                    <option value="perioadaInscriere">Setare Perioadă Înscriere</option>
+                  </select>
+                </div>
+
+                {/* Desktop: Traditional Tabs */}
+                <nav className="hidden sm:flex -mb-px">
                   <button
-                    className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
+                    className={`py-2 lg:py-3 px-3 lg:px-4 text-sm font-semibold transition-all duration-300 ${
                       activeTab === 'info'
                         ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
                         : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
@@ -1404,7 +1436,7 @@ const AlocareAutomataPage = () => {
                     Informații
                   </button>
                   <button
-                    className={`py-3 px-4 text-sm font-semibold transition-all duration-300 ${
+                    className={`py-2 lg:py-3 px-3 lg:px-4 text-sm font-semibold transition-all duration-300 ${
                       activeTab === 'perioadaInscriere'
                         ? 'border-b-4 border-[#E3AB23] text-[#024A76] bg-gradient-to-t from-[#E3AB23]/10 to-transparent'
                         : 'text-gray-500 hover:text-[#024A76] hover:bg-gray-50'
@@ -1416,13 +1448,14 @@ const AlocareAutomataPage = () => {
                       }
                     }}
                   >
-                    Setare Perioadă Înscriere
+                    <span className="hidden lg:inline">Setare Perioadă Înscriere</span>
+                    <span className="lg:hidden">Perioadă Înscriere</span>
                   </button>
                 </nav>
               </div>
               
               {/* Tab content */}
-              <div className="p-4">
+              <div className="p-3 sm:p-4">
                 {activeTab === 'info' && (
                   <div>
                     <div className="mb-6">

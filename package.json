@@ -38,7 +38,7 @@
     "server:dev": "npm run start:backend:dev",
     "dev": "concurrently --kill-others-on-fail \"npm run start:backend:dev\" \"npm run start:frontend\"",
     "dev:production": "concurrently --kill-others-on-fail \"npm run start:backend\" \"npm run start:frontend\"",
-    "health": "curl -f http://localhost:5001/health && echo '\\nBackend: ✅ Running' || echo 'Backend: ❌ Not running'",
+    "health": "curl -f http://localhost:5001/health && echo '\\nBackend:  Running' || echo 'Backend:  Not running'",
     "postinstall": "echo 'Setup complete! Run npm start to launch both server and frontend.'"
   },
   "eslintConfig": {

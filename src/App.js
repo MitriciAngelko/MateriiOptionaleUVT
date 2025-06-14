@@ -30,7 +30,7 @@ function App() {
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-dark-bg transition-colors duration-300">
         {!isLoginPage && <Navbar />}
-        <main className={!isLoginPage ? "pt-16" : ""}>
+        <main className={!isLoginPage ? "lg:pt-16" : ""}>
           <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
@@ -76,16 +76,16 @@ function App() {
             </PrivateRoute>
           } />
           
-          {/* Admin Routes */}
+          {/* Admin Routes - Now also accessible by Secretaries for specific functions */}
           <Route path="/admin-utilizatori" element={
-            <AdminRoute>
+            <AdminRoute allowSecretar={true}>
               <MateriiProvider>
                 <AdminPage />
               </MateriiProvider>
             </AdminRoute>
           } />
           <Route path="/admin-materii" element={
-            <AdminRoute>
+            <AdminRoute allowSecretar={true}>
               <MateriiProvider>
                 <AdminMateriiPage />
               </MateriiProvider>
@@ -98,8 +98,16 @@ function App() {
               </MateriiProvider>
             </AdminRoute>
           } />
-          <Route path="/alocare-automata" element={<AdminRoute><AlocareAutomataPage /></AdminRoute>} />
-          <Route path="/inscriere-anul-urmator" element={<AdminRoute><StudentNextYearRegistrationPage /></AdminRoute>} />
+          <Route path="/alocare-automata" element={
+            <AdminRoute allowSecretar={true}>
+              <AlocareAutomataPage />
+            </AdminRoute>
+          } />
+          <Route path="/inscriere-anul-urmator" element={
+            <AdminRoute allowSecretar={true}>
+              <StudentNextYearRegistrationPage />
+            </AdminRoute>
+          } />
           <Route
             path="/registration-settings"
             element={<AdminRoute><RegistrationSettingsPage /></AdminRoute>}

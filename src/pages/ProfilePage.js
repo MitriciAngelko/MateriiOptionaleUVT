@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 
 const ProfilePage = () => {
   const user = useSelector((state) => state.auth.user);
   const [profileData, setProfileData] = useState(null);
+  const [materiiPredate, setMateriiPredate] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -16,7 +17,25 @@ const ProfilePage = () => {
       try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
-          setProfileData(userDoc.data());
+          const userData = userDoc.data();
+          setProfileData(userData);
+          
+          // If user is a professor, fetch their courses from materii collection
+          if (userData.tip === 'profesor') {
+            const materiiSnapshot = await getDocs(collection(db, 'materii'));
+            const professorCourses = materiiSnapshot.docs
+              .map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }))
+              .filter(materie => {
+                // Check if professor is in the profesori array (new format)
+                return materie.profesori && materie.profesori.some(prof => prof.id === user.uid);
+              })
+              .sort((a, b) => a.nume.localeCompare(b.nume));
+            
+            setMateriiPredate(professorCourses);
+          }
         } else {
           setError('Profilul nu a fost găsit');
         }
@@ -165,52 +184,139 @@ const ProfilePage = () => {
 
             {/* Informații specifice pentru profesori */}
             {profileData?.tip === 'profesor' && (
-              <div className="p-6 rounded-lg shadow-lg border-l-4 border-[#E3AB23] dark:border-blue-light bg-gradient-to-r from-[#E3AB23]/5 to-transparent dark:from-yellow-accent/5 dark:to-transparent">
-                <h2 className="text-2xl font-semibold mb-6 flex items-center text-[#024A76] dark:text-blue-light drop-shadow-sm">
-                  <svg className="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z"/>
-                  </svg>
-                  Materii Predate
-                </h2>
-                {profileData?.materiiPredate && profileData.materiiPredate.length > 0 ? (
-                  <div className="space-y-4">
-                    {profileData.materiiPredate.map((materie, index) => (
-                      <div key={index} className="bg-white dark:bg-gray-700/30 p-6 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600/50 hover:shadow-xl hover:border-[#3471B8]/30 dark:hover:border-blue-light/50 transition-all duration-300">
-                        <div className="flex items-center mb-4">
-                          <div className="w-3 h-3 rounded-full mr-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-blue-light dark:to-blue-dark shadow-sm"></div>
-                          <h3 className="text-lg font-semibold text-[#024A76] dark:text-blue-light drop-shadow-sm">
-                            {materie.nume}
-                          </h3>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium mb-1 text-[#024A76] dark:text-blue-light">
-                              An
-                            </label>
-                            <p className="text-gray-800 dark:text-gray-200 font-medium">{materie.an}</p>
+              <div className="p-6 rounded-xl shadow-xl border-l-4 border-[#E3AB23] dark:border-blue-light bg-gradient-to-br from-[#E3AB23]/5 via-white to-transparent dark:from-yellow-accent/5 dark:via-gray-800/50 dark:to-transparent backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-bold flex items-center text-[#024A76] dark:text-blue-light drop-shadow-sm">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#E3AB23] to-[#E3AB23]/70 dark:from-blue-light dark:to-blue-dark flex items-center justify-center mr-4 shadow-lg">
+                      <svg className="w-5 h-5 text-white dark:text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19,19H5V8H19M16,1V3H8V1H6V3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3H18V1M17,12H12V17H17V12Z"/>
+                      </svg>
+                    </div>
+                    Materii Predate
+                  </h2>
+                  {materiiPredate && materiiPredate.length > 0 && (
+                    <div className="flex items-center space-x-2 text-sm font-medium">
+                      <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-blue-light dark:to-blue-dark animate-pulse"></div>
+                      <span className="text-[#024A76]/70 dark:text-blue-light/70">
+                        {materiiPredate.length} {materiiPredate.length === 1 ? 'materie' : 'materii'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {materiiPredate && materiiPredate.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {materiiPredate.map((materie, index) => (
+                      <div 
+                        key={index} 
+                        className="group relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-2xl border border-gray-200/50 dark:border-gray-700/50 hover:border-[#3471B8]/30 dark:hover:border-blue-light/50 transition-all duration-500 hover:scale-[1.02] overflow-hidden"
+                      >
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#024A76]/5 via-transparent to-[#3471B8]/5 dark:from-yellow-accent/5 dark:to-blue-light/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        
+                        {/* Content */}
+                        <div className="relative p-6">
+                          {/* Header with course name and indicator */}
+                          <div className="flex items-start justify-between mb-6">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                <div className="w-3 h-3 rounded-full mr-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-blue-light dark:to-blue-dark shadow-sm group-hover:scale-110 transition-transform duration-300"></div>
+                                <h3 className="text-xl font-bold text-[#024A76] dark:text-blue-light drop-shadow-sm group-hover:text-[#3471B8] dark:group-hover:text-yellow-accent transition-colors duration-300">
+                                  {materie.nume}
+                                </h3>
+                              </div>
+                              {materie.tip && (
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide shadow-sm ${
+                                  materie.tip === 'obligatorie' 
+                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' 
+                                    : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                }`}>
+                                  {materie.tip}
+                                </span>
+                              )}
+                            </div>
+                            
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1 text-[#024A76] dark:text-blue-light">
-                              Facultate
-                            </label>
-                            <p className="text-gray-800 dark:text-gray-200 font-medium">{materie.facultate}</p>
+                          
+                          {/* Course details grid */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-4">
+                              <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-800/50 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50 group-hover:border-[#024A76]/20 dark:group-hover:border-blue-light/20 transition-colors duration-300">
+                                <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#024A76]/70 dark:text-blue-light/70">
+                                  An de studiu
+                                </label>
+                                <p className="text-lg font-bold text-[#024A76] dark:text-blue-light">
+                                  Anul {materie.an}
+                                </p>
+                              </div>
+                              {materie.semestru && (
+                                <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-800/50 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50 group-hover:border-[#024A76]/20 dark:group-hover:border-blue-light/20 transition-colors duration-300">
+                                  <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#024A76]/70 dark:text-blue-light/70">
+                                    Semestru
+                                  </label>
+                                  <p className="text-lg font-bold text-[#024A76] dark:text-blue-light">
+                                    Semestrul {materie.semestru}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-4">
+                              <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-800/50 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50 group-hover:border-[#024A76]/20 dark:group-hover:border-blue-light/20 transition-colors duration-300">
+                                <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#024A76]/70 dark:text-blue-light/70">
+                                  Facultate
+                                </label>
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight">
+                                  {materie.facultate}
+                                </p>
+                              </div>
+                              <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-800/50 p-4 rounded-lg border border-gray-200/50 dark:border-gray-600/50 group-hover:border-[#024A76]/20 dark:group-hover:border-blue-light/20 transition-colors duration-300">
+                                <label className="block text-xs font-bold uppercase tracking-wide mb-2 text-[#024A76]/70 dark:text-blue-light/70">
+                                  Specializare
+                                </label>
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 leading-tight">
+                                  {materie.specializare}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1 text-[#024A76] dark:text-blue-light">
-                              Specializare
-                            </label>
-                            <p className="text-gray-800 dark:text-gray-200 font-medium">{materie.specializare}</p>
-                          </div>
+                          
+                          {/* Additional info */}
+                          {materie.studentiInscrisi && (
+                            <div className="mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center text-[#024A76]/70 dark:text-blue-light/70">
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                                  </svg>
+                                  <span className="text-sm font-medium">
+                                    {materie.studentiInscrisi.length} studenți înscriși
+                                  </span>
+                                </div>
+                                <div className="w-2 h-2 rounded-full bg-green-400 dark:bg-green-500 animate-pulse"></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white dark:bg-gray-700/30 p-6 rounded-lg shadow-lg text-center border border-gray-200 dark:border-gray-600/50">
-                    <svg className="w-12 h-12 mx-auto mb-4 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A2,2 0 0,0 10,8A2,2 0 0,0 12,10A2,2 0 0,0 14,8A2,2 0 0,0 12,6M12,11C10.34,11 9,12.34 9,14C9,15.66 10.34,17 12,17C13.66,17 15,15.66 15,14C15,12.34 13.66,11 12,11Z"/>
-                    </svg>
-                    <p className="text-gray-500 dark:text-gray-400 italic">Nu aveți materii asociate momentan.</p>
+                  <div className="relative bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-600 backdrop-blur-sm">
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#024A76]/5 via-transparent to-[#3471B8]/5 dark:from-yellow-accent/5 dark:to-blue-light/5 rounded-xl"></div>
+                    <div className="relative">
+                      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center shadow-inner">
+                        <svg className="w-10 h-10 text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A2,2 0 0,0 10,8A2,2 0 0,0 12,10A2,2 0 0,0 14,8A2,2 0 0,0 12,6M12,11C10.34,11 9,12.34 9,14C9,15.66 10.34,17 12,17C13.66,17 15,15.66 15,14C15,12.34 13.66,11 12,11Z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-600 dark:text-gray-400 mb-2">
+                        Nicio materie asociată
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-500 text-sm leading-relaxed max-w-md mx-auto">
+                        Nu aveți materii asociate momentan. Contactați administratorul pentru a vă asocia cursurile.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
