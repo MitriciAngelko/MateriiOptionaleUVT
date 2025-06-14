@@ -1,11 +1,11 @@
 export const facultati = [
-  "Facultatea de Matematică și Informatică",
-  "Facultatea de Fizică",
+  "Facultatea de Matematica si Informatica",
+  "Facultatea de Fizica",
   // ... alte facultăți
 ];
 
 export const specializari = {
-  "Facultatea de Matematică și Informatică": ["IR", "IG", "MI", "MA"],
+  "Facultatea de Matematica si Informatica": ["IR", "IE", "IA", "ID"],
   // ... alte specializări pentru alte facultăți
 };
 
