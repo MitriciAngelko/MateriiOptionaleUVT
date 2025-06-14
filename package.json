@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "UVT Academic Management System - Full Stack Application",
   "scripts": {
-    "dev": "concurrently --kill-others-on-fail \"npm run dev --prefix backend\" \"npm run start --prefix frontend\"",
+    "dev": "concurrently --kill-others-on-fail \"npm run dev --prefix api\" \"npm run start --prefix frontend\"",
     "build": "npm run build --prefix frontend",
-    "install:backend": "npm install --prefix api",
+    "install:api": "npm install --prefix api",
     "install:frontend": "npm install --prefix frontend",
-    "install:all": "npm run install:backend && npm run install:frontend",
+    "install:all": "npm run install:api && npm run install:frontend",
     "start": "npm run start --prefix api",
     "start:frontend": "npm run start --prefix frontend",
-    "start:backend": "npm run start --prefix api",
-    "health": "curl -f http://localhost:5001/health && echo '\\nBackend: Running' || echo 'Backend: Not running'"
+    "start:api": "npm run start --prefix api",
+    "health": "curl -f http://localhost:5001/health && echo '\\nAPI: Running' || echo 'API: Not running'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
