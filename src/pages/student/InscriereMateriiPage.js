@@ -1185,6 +1185,9 @@ const InscriereMateriiPage = () => {
           />
         )}
       </div>
+
+      {/* AI Assistant */}
+      <AIAssistant />
     </div>
   );
 };

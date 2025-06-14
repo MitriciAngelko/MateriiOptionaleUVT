@@ -2,11 +2,12 @@ import OpenAI from "openai";
 
 // OpenAI Configuration
 export const OPENAI_CONFIG = {
-  model: "gpt-4.1-mini",
+  model: "gpt-4.1-mini", // Updated to a standard model name
   maxTokens: 200,
   temperature: 1,
   topP: 1,
-  vectorStoreId: "vs_684a2742f1bc8191936efe3e9e734fb3"
+  vectorStoreId: "vs_684a2742f1bc8191936efe3e9e734fb3",
+  streaming: true
 };
 
 // System prompt for the academic assistant
@@ -49,7 +50,7 @@ export const initializeOpenAI = () => {
 };
 
 // Create request parameters for the Responses API
-export const createRequestParams = (userMessage, previousResponseId = null) => {
+export const createRequestParams = (userMessage, previousResponseId = null, streaming = false) => {
   const inputData = [
     {
       "role": "system",
@@ -89,7 +90,8 @@ export const createRequestParams = (userMessage, previousResponseId = null) => {
     temperature: OPENAI_CONFIG.temperature,
     max_output_tokens: OPENAI_CONFIG.maxTokens,
     top_p: OPENAI_CONFIG.topP,
-    store: true
+    store: true,
+    stream: streaming
   };
 
   // Add previous response ID for conversation continuity
@@ -121,4 +123,6 @@ export const extractResponseText = (response) => {
   }
   
   return aiResponseText;
-}; 
+};
+
+ 

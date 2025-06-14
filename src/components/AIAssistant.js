@@ -4,7 +4,7 @@ import { initializeOpenAI, createRequestParams, extractResponseText } from '../c
 const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { text: "Salut! Sunt asistentul AI. Cum te pot ajuta astăzi?", sender: "ai" }
+    { text: "Salut! Sunt asistentul AI. Cum te pot ajuta astăzi?", sender: "ai", isStreaming: false }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +27,7 @@ const AIAssistant = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (chatboxRef.current && !chatboxRef.current.contains(event.target) && 
-          !event.target.classList.contains('ai-assistant-button')) {
+          !event.target.closest('.ai-assistant-button')) {
         setIsOpen(false);
       }
     };
@@ -59,39 +59,62 @@ const AIAssistant = () => {
     // Check if OpenAI client is available
     if (!openaiClient) {
       const errorMessage = "Serviciul AI nu este disponibil momentan. Te rog să verifici configurația și să reîncerci.";
-      const errorResponse = { text: errorMessage, sender: "ai" };
+      const errorResponse = { text: errorMessage, sender: "ai", isStreaming: false };
       setMessages(prev => [...prev, errorResponse]);
       return;
     }
     
     // Add user message to chat
-    const userMessage = { text: inputMessage, sender: "user" };
+    const userMessage = { text: inputMessage, sender: "user", isStreaming: false };
     setMessages(prev => [...prev, userMessage]);
     const currentMessage = inputMessage;
     setInputMessage('');
     setIsLoading(true);
     
+    // Add AI placeholder message for streaming
+    const aiMessageIndex = messages.length + 1;
+    const aiMessage = { text: "", sender: "ai", isStreaming: true };
+    setMessages(prev => [...prev, aiMessage]);
+    
     try {
-      // Create request parameters using the configuration
-      const requestParams = createRequestParams(currentMessage, previousResponseId);
+      // Create request parameters with streaming enabled
+      const requestParams = createRequestParams(currentMessage, previousResponseId, true);
 
-      // Call OpenAI Responses API
-      const response = await openaiClient.responses.create(requestParams);
-
-      // Extract the AI response text
-      const aiResponseText = extractResponseText(response);
-
-      // Store the response ID for conversation continuity
-      if (response.id) {
-        setPreviousResponseId(response.id);
+      // Call OpenAI Responses API with streaming
+      const stream = await openaiClient.responses.create(requestParams);
+      
+      let fullResponse = '';
+      
+      // Handle streaming events
+      for await (const event of stream) {
+        if (event.type === 'response.output_text.delta') {
+          const deltaText = event.delta || '';
+          fullResponse += deltaText;
+          
+          // Update the streaming message
+          setMessages(prev => 
+            prev.map((msg, index) => 
+              index === aiMessageIndex 
+                ? { ...msg, text: fullResponse, isStreaming: true }
+                : msg
+            )
+          );
+        } else if (event.type === 'response.completed') {
+          // Mark as complete
+          setMessages(prev => 
+            prev.map((msg, index) => 
+              index === aiMessageIndex 
+                ? { ...msg, isStreaming: false }
+                : msg
+            )
+          );
+          
+          // Store response ID for conversation continuity
+          if (event.response?.id) {
+            setPreviousResponseId(event.response.id);
+          }
+        }
       }
-
-      // Add AI response to chat
-      const aiResponse = { 
-        text: aiResponseText, 
-        sender: "ai" 
-      };
-      setMessages(prev => [...prev, aiResponse]);
       
     } catch (error) {
       console.error('Error calling OpenAI Responses API:', error);
@@ -105,21 +128,16 @@ const AIAssistant = () => {
         errorMessage = "Limita de utilizare a fost atinsă. Te rog să încerci mai târziu.";
       } else if (error.status === 404) {
         errorMessage = "Modelul AI nu a fost găsit. Te rog să contactezi administratorul.";
-      } else if (error.message?.includes('API key')) {
-        errorMessage = "Cheia API nu este configurată corect. Te rog să contactezi administratorul.";
-      } else if (error.message?.includes('quota')) {
-        errorMessage = "Limita de utilizare a fost atinsă. Te rog să încerci mai târziu.";
-      } else if (error.message?.includes('model')) {
-        errorMessage = "Modelul AI nu este disponibil momentan. Te rog să încerci din nou.";
-      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
-        errorMessage = "Probleme de conectare la internet. Te rog să verifici conexiunea și să încerci din nou.";
       }
       
-      const errorResponse = { 
-        text: errorMessage, 
-        sender: "ai" 
-      };
-      setMessages(prev => [...prev, errorResponse]);
+      // Replace streaming message with error
+      setMessages(prev => 
+        prev.map((msg, index) => 
+          index === aiMessageIndex 
+            ? { text: errorMessage, sender: "ai", isStreaming: false }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +146,7 @@ const AIAssistant = () => {
   // Reset conversation function
   const resetConversation = () => {
     setMessages([
-      { text: "Salut! Sunt asistentul AI. Cum te pot ajuta astăzi?", sender: "ai" }
+      { text: "Salut! Sunt asistentul AI. Cum te pot ajuta astăzi?", sender: "ai", isStreaming: false }
     ]);
     setPreviousResponseId(null);
   };
@@ -196,21 +214,28 @@ const AIAssistant = () => {
                       : 'bg-white border border-gray-300 text-gray-800'
                   }`}
                 >
-                  {message.text}
+                  {message.isStreaming && !message.text ? (
+                    // Loading dots while waiting for stream to start
+                    <div className="flex items-center space-x-1">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                      <span className="text-xs text-gray-500 ml-2">Asistentul se gândește...</span>
+                    </div>
+                  ) : (
+                    // Regular text with streaming cursor
+                    <span className="whitespace-pre-wrap break-words">
+                      {message.text}
+                      {message.isStreaming && message.text && (
+                        <span className="inline-block w-0.5 h-4 ml-1 bg-gray-800 animate-pulse" />
+                      )}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
-            {isLoading && (
-              <div className="flex justify-start mb-3">
-                <div className="bg-white border border-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
           
