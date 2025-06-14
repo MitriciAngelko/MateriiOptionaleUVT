@@ -89,16 +89,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server startup
-const PORT = process.env.PORT || 5001;
-const HOST = process.env.HOST || '0.0.0.0';
+// Export for Vercel
+module.exports = app;
 
-const server = app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-  console.log(`📋 API endpoints available at http://${HOST}:${PORT}/api`);
-  console.log(`🏥 Health check available at http://${HOST}:${PORT}/health`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Only start server if not in Vercel environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  const PORT = process.env.PORT || 5001;
+  const HOST = process.env.HOST || '0.0.0.0';
+  
+  app.listen(PORT, HOST, () => {
+    console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
