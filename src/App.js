@@ -1,14 +1,12 @@
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { Provider, useSelector } from 'react-redux';
-import store from './store';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/auth/LoginPage';
 import HomePage from './pages/HomePage';
 import AdminPage from './pages/admin/AdminPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminRoute from './components/admin/AdminRoute';
-import PrivateRoute from './components/PrivateRoute';
+import { PrivateRoute } from './components/common/RouteGuards';
 import AdminMateriiPage from './pages/admin/AdminMateriiPage';
 import ProfesorMateriileMelePage from './pages/profesor/MateriileMelePage';
 import ProfesorMaterieDetailsPage from './pages/profesor/MaterieDetailsPage';
@@ -28,15 +26,10 @@ function App() {
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
 
-  // Conditional Navbar component
-  const ConditionalNavbar = () => {
-    return !isLoginPage ? <Navbar /> : null;
-  };
-
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-dark-bg transition-colors duration-300">
-        <ConditionalNavbar />
+        {!isLoginPage && <Navbar />}
         <main className={!isLoginPage ? "pt-16" : ""}>
           <Routes>
           <Route path="/login" element={<LoginPage />} />

@@ -32,7 +32,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "server": "node server/server.js",
-    "dev": "concurrently \"npm run server\" \"npm start\""
+    "server:dev": "nodemon server/server.js",
+    "dev": "concurrently \"npm run server:dev\" \"npm start\"",
+    "dev:production": "concurrently \"npm run server\" \"npm start\""
   },
   "eslintConfig": {
     "extends": [
@@ -55,6 +57,7 @@
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
+    "nodemon": "^3.0.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15"
   }
