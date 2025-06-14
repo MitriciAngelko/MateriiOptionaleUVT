@@ -3,14 +3,14 @@
     "buildCommand": "npm run build",
     "outputDirectory": "build",
     "functions": {
-      "server/server.js": {
-        "runtime": "nodejs22.x"
+      "api/server.js": {
+        "runtime": "nodejs20.x"
       }
     },
     "rewrites": [
       {
         "source": "/api/(.*)",
-        "destination": "/server/server.js"
+        "destination": "/api/server.js"
       },
       {
         "source": "/(.*)",
