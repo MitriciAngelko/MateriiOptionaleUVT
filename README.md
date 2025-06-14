@@ -1,6 +1,6 @@
 # Materii Optionale UVT
 
-A web application for managing optional courses at West University of Timișoara (UVT).
+A web application for managing odptional courses at West University of Timișoara (UVT).
 
 ## Architecture Overview
 
