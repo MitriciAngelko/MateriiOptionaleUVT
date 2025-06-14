@@ -21,15 +21,29 @@ const HomePage = () => {
     const now = new Date();
     const hour = now.getHours();
     
-    const fullName = nume || prenume ? `${nume || ''} ${prenume || ''}`.trim() : '';
-    
-    if (hour >= 6 && hour < 12) {
-      return `Bună dimineața${fullName ? ` ${fullName}` : ''}!`;
-    } else if (hour >= 12 && hour < 20) {
-      return `Bună ziua${fullName ? ` ${fullName}` : ''}!`;
-    } else {
-      return `Bună seara${fullName ? ` ${fullName}` : ''}!`;
+    // Handle special case for admin@admin.com
+    if (user?.email === 'admin@admin.com') {
+      const greeting = hour >= 6 && hour < 12 ? 'Bună dimineața' : 
+                     hour >= 12 && hour < 20 ? 'Bună ziua' : 'Bună seara';
+      return `${greeting} Admin Principal!`;
     }
+    
+    // For other users, use actual name data or fallback to email-based name
+    let displayName = '';
+    if (nume || prenume) {
+      displayName = `${prenume || ''} ${nume || ''}`.trim();
+    } else if (userData?.prenume || userData?.nume) {
+      displayName = `${userData.prenume || ''} ${userData.nume || ''}`.trim();
+    } else if (user?.email) {
+      // Extract a name from email as last resort
+      const emailName = user.email.split('@')[0];
+      displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    }
+    
+    const greeting = hour >= 6 && hour < 12 ? 'Bună dimineața' : 
+                    hour >= 12 && hour < 20 ? 'Bună ziua' : 'Bună seara';
+    
+    return `${greeting}${displayName ? ` ${displayName}` : ''}!`;
   };
 
   useEffect(() => {
@@ -48,14 +62,31 @@ const HomePage = () => {
               isProfesor: userData.tip === 'profesor',
               isSecretar: userData.tip === 'secretar'
             });
-          } else if (user.email === 'admin@admin.com') {
-            // Handle main admin account that might not have a user document
-            setUserData({ nume: 'Admin', prenume: 'Principal' });
+          } else {
+            // Handle missing user document - create safe fallback
+            console.warn('⚠️ HomePage: User document not found, using fallback data');
+            
+            let fallbackUserData;
+            if (user.email === 'admin@admin.com') {
+              fallbackUserData = { nume: 'Admin', prenume: 'Principal', tip: 'admin' };
+            } else {
+              // Extract name from email as fallback
+              const emailName = user.email?.split('@')[0] || 'User';
+              fallbackUserData = {
+                nume: 'Unknown',
+                prenume: emailName.charAt(0).toUpperCase() + emailName.slice(1),
+                tip: 'student'
+              };
+            }
+            
+            setUserData(fallbackUserData);
+            const isAdminUser = await isAdmin(user);
+            
             setUserRoles({
-              isAdmin: true,
-              isStudent: false,
-              isProfesor: false,
-              isSecretar: false
+              isAdmin: isAdminUser,
+              isStudent: fallbackUserData.tip === 'student',
+              isProfesor: fallbackUserData.tip === 'profesor',
+              isSecretar: fallbackUserData.tip === 'secretar'
             });
           }
         } catch (error) {
@@ -198,8 +229,8 @@ const HomePage = () => {
         color: 'bg-[#e3ab23]'
       }
     ] : []),
-    // Only show profile for non-admin users
-    ...(!userRoles.isAdmin ? [{
+    // Show profile for secretar, profesor and student users (but not main admin)
+    ...(user?.email !== 'admin@admin.com' ? [{
       title: 'Profil',
       description: 'Vizualizează și editează profilul tău',
       path: '/profile',

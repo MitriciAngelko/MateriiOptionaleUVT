@@ -594,120 +594,7 @@ const AdminPage = () => {
 
     // Legacy table renderer removed - replaced with OptimizedUserTable
 
-  const renderFilters = () => (
-    <div className="mb-6 sm:mb-8 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-      {/* Mobile-First Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent mb-2 sm:mb-0">
-          Filtre
-        </h2>
-        <button
-          onClick={() => {
-            setFilters({
-              tip: 'all',
-              facultate: '',
-              specializare: '',
-              an: '',
-              materie: ''
-            });
-          }}
-          className="text-sm text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent transition-colors duration-200 font-medium self-start sm:self-auto px-3 py-1 rounded-md hover:bg-[#024A76]/5 dark:hover:bg-blue-light/5"
-        >
-          Resetează filtrele
-        </button>
-      </div>
-      
-      {/* Responsive Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div>
-          <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">
-            Tip Utilizator
-          </label>
-          <select
-            value={filters.tip}
-            onChange={handleFilterChange}
-            name="tip"
-            className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
-          >
-            {tipuriUtilizatori.map(tip => (
-              <option key={tip} value={tip}>
-                {tip === 'all' ? 'Toți utilizatorii' : tip.charAt(0).toUpperCase() + tip.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
 
-        {filters.tip === 'student' && (
-          <>
-            <div>
-              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
-              <select
-                value={filters.facultate}
-                onChange={handleFilterChange}
-                name="facultate"
-                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
-              >
-                <option value="">Toate facultățile</option>
-                {facultati.map(fac => (
-                  <option key={fac} value={fac}>{fac}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
-              <select
-                value={filters.specializare}
-                onChange={handleFilterChange}
-                name="specializare"
-                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md disabled:bg-gray-100 dark:disabled:bg-gray-700"
-                disabled={!filters.facultate}
-              >
-                <option value="">Toate specializările</option>
-                {filters.facultate && specializari[filters.facultate]?.map(spec => (
-                  <option key={spec} value={spec}>{spec}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">An</label>
-              <select
-                value={filters.an}
-                onChange={handleFilterChange}
-                name="an"
-                className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
-              >
-                <option value="">Toți anii</option>
-                {ani.map(an => (
-                  <option key={an} value={an}>{an}</option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
-
-        {filters.tip === 'profesor' && (
-          <div>
-            <label className="block text-sm font-semibold text-[#024A76] dark:text-blue-light mb-2">Materie Predată</label>
-            <select
-              value={filters.materie}
-              onChange={handleFilterChange}
-              name="materie"
-              className="w-full px-4 py-3 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300 hover:shadow-md"
-            >
-              <option value="">Toate materiile</option>
-              {materiiList.map(materie => (
-                <option key={materie.id} value={materie.id}>
-                  {materie.nume} ({materie.facultate} - {materie.specializare})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -784,8 +671,6 @@ const AdminPage = () => {
             </div>
           </div>
         </div>
-
-        {renderFilters()}
 
         <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
           {/* Mobile-First Content Header */}

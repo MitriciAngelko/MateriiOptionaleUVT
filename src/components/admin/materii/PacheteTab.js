@@ -32,12 +32,13 @@ const PacheteTab = ({
       <div className="flex justify-between items-center mb-6">
         <button
           onClick={() => setShowPachetModal(true)}
-          className="px-6 py-3 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-[#E3AB23] dark:to-[#E3AB23]/80 text-[#024A76] dark:text-[#024A76] rounded-lg hover:shadow-lg transition-all duration-300 font-semibold flex items-center"
+          className="group relative px-4 py-2.5 font-medium transition-all duration-200 rounded-lg flex items-center bg-gradient-to-r from-[#E3AB23]/10 to-[#E3AB23]/5 dark:from-yellow-accent/10 dark:to-yellow-accent/5 hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 dark:hover:from-yellow-accent/20 dark:hover:to-yellow-accent/10 text-[#024A76] dark:text-yellow-accent hover:text-[#024A76] dark:hover:text-white border border-[#E3AB23]/30 dark:border-yellow-accent/30 hover:border-[#E3AB23]/50 dark:hover:border-yellow-accent/50 hover:shadow-md"
+          title="Creează un pachet nou de materii"
         >
-          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-4 h-4 mr-2 transition-transform duration-200 group-hover:scale-110" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          Adaugă Pachet Nou
+          <span className="text-sm font-semibold">Adaugă Pachet Nou</span>
         </button>
 
         {/* Căutare pachete */}

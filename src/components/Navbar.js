@@ -1,48 +1,54 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { auth, db } from '../firebase';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import React, { useState, useEffect, memo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { isAdmin, isProfesor, isStudent, isSecretar } from '../utils/userRoles';
+import { auth, db } from '../firebase';
+import { isAdmin, isProfesor, isStudent, isSecretar, hasAdminAccess } from '../utils/userRoles';
 import ThemeToggle from './ThemeToggle';
 
 const Navbar = () => {
+  const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
   const location = useLocation();
-  const user = useSelector((state) => state.auth.user);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userData, setUserData] = useState(null);
   const [roles, setRoles] = useState({
     isAdmin: false,
     isProfesor: false,
     isStudent: false,
-    isSecretar: false
+    isSecretar: false,
+    hasAdminAccess: false
   });
-  const [userData, setUserData] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  // Special check for main admin
+
+  // Special case for admin@admin.com
   const isMainAdmin = user?.email === 'admin@admin.com';
   
   useEffect(() => {
     const checkRoles = async () => {
       if (user?.uid) {
         try {
-          // Special case for admin@admin.com
-          const admin = isMainAdmin || await isAdmin(user);
+          console.log('🔍 Navbar: Checking roles for user:', user.email);
           
-          // Utilizăm await pentru toate verificările de rol deoarece acum toate sunt async
-          const [profesor, student, secretar] = await Promise.all([
-            isProfesor(user.uid),
-            isStudent(user.uid),
-            isSecretar(user.uid)
+          // Use Promise.all for better performance
+          const [admin, profesor, student, secretar, adminAccess] = await Promise.all([
+            isAdmin(user),
+            isProfesor(user),
+            isStudent(user),
+            isSecretar(user),
+            hasAdminAccess(user)
           ]);
 
-          setRoles({
+          const roleResults = {
             isAdmin: admin,
             isProfesor: profesor,
             isStudent: student,
-            isSecretar: secretar
-          });
+            isSecretar: secretar,
+            hasAdminAccess: adminAccess
+          };
+
+          console.log('📊 Navbar: Role check results:', roleResults);
+          setRoles(roleResults);
 
           // Obține datele utilizatorului pentru inițiale
           const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -50,7 +56,7 @@ const Navbar = () => {
             setUserData(userDoc.data());
           }
         } catch (error) {
-          console.error('Eroare la verificarea rolurilor:', error);
+          console.error('💥 Navbar: Error checking roles:', error);
         }
       }
     };
@@ -71,40 +77,34 @@ const Navbar = () => {
     navigate('/profile');
   };
 
-  // Generăm elementele de navigare bazate pe roluri
+  // Generăm elementele de navigare bazate pe roluri - SIMPLIFIED
   const getNavItems = () => {
     const items = [];
     
-    // Removed Home link as logo will now serve this purpose
-    
-    // Elemente specifice rolurilor
-    if (roles.isProfesor) {
-      items.push({ path: '/profesor/materiile-mele', label: 'Materiile Mele' });
-    }
-    
-    // Special case for admin@admin.com or other admins
-    if (isMainAdmin || roles.isAdmin) {
+    // For users with admin access (both admin and secretar)
+    if (isMainAdmin || roles.hasAdminAccess) {
       items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
       items.push({ path: '/admin-materii', label: 'Materii' });
       items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
       items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
       items.push({ path: '/inscriere-anul-urmator', label: 'Înscrierea în Anul Următor' });
+      
+      console.log('📋 Navbar: Admin navigation items added for:', user?.email);
+      return items;
     }
     
-    // Elemente pentru secretari - now include admin functionalities
-    if (roles.isSecretar && !isMainAdmin && !roles.isAdmin) {
-      items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
-      items.push({ path: '/admin-materii', label: 'Materii' });
-      items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
-      items.push({ path: '/inscriere-anul-urmator', label: 'Înscrierea în Anul Următor' });
+    // For professors
+    if (roles.isProfesor) {
+      items.push({ path: '/profesor/materiile-mele', label: 'Materiile Mele' });
     }
     
-    // Elemente pentru studenți (când nu sunt admin)
-    if (roles.isStudent && !isMainAdmin && !roles.isAdmin) {
+    // For students
+    if (roles.isStudent) {
       items.push({ path: '/materiile-mele', label: 'Materiile Mele' });
       items.push({ path: '/inscriere-materii', label: 'Înscriere Materii' });
     }
     
+    console.log('📋 Navbar: Navigation items:', items.map(i => i.label).join(', '));
     return items;
   };
 
@@ -187,8 +187,8 @@ const Navbar = () => {
             {user ? (
               <>
                 <ThemeToggle />
-                {/* Profile Button - Only for non-admin users */}
-                {!isMainAdmin && !roles.isAdmin && (
+                {/* Profile Button - Show for secretar and other non-admin users */}
+                {!isMainAdmin && (
                   <button
                     onClick={handleProfileClick}
                     className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-blue-dark dark:to-blue-light text-[#024A76] dark:text-yellow-accent flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 dark:hover:from-yellow-accent dark:hover:to-yellow-accent/80 hover:text-[#024A76] dark:hover:text-blue-dark transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
@@ -229,7 +229,7 @@ const Navbar = () => {
         />
       )}
       
-      {/* Sleek Mobile Sidebar Menu */}
+      {/* Mobile Sidebar Menu */}
       <div className={`lg:hidden fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-gradient-to-b from-[#024A76] via-[#024A76] to-[#3471B8] dark:bg-gradient-to-b dark:from-yellow-accent dark:via-yellow-accent dark:to-yellow-accent/90 text-white dark:text-blue-dark z-50 transform transition-transform duration-300 ease-in-out shadow-2xl ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
@@ -282,64 +282,59 @@ const Navbar = () => {
           </ul>
         </nav>
 
-        {/* Mobile Menu Footer - Icon Bar */}
-        <div className="p-4 border-t border-white/10 dark:border-blue-dark/20">
-          {user ? (
-            <div className="flex items-center justify-center space-x-6">
-              {/* Theme Toggle Icon */}
-              <div className="flex items-center justify-center">
-                <ThemeToggle />
-              </div>
-              
-              {/* Profile Icon - Only for non-admin users */}
-              {!isMainAdmin && !roles.isAdmin && (
-                <button
-                  onClick={() => {
-                    handleProfileClick();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-12 h-12 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-blue-dark dark:to-blue-light text-[#024A76] dark:text-yellow-accent flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 dark:hover:from-yellow-accent dark:hover:to-yellow-accent/80 hover:text-[#024A76] dark:hover:text-blue-dark transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
-                  title="Profil"
-                >
-                  {getInitials()}
-                </button>
-              )}
-              
-              {/* Logout Icon */}
+        {/* Mobile User Section */}
+        <div className="border-t border-white/10 dark:border-blue-dark/20 p-4">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-blue-dark dark:to-blue-light text-[#024A76] dark:text-yellow-accent flex items-center justify-center font-bold text-lg shadow-lg border-2 border-white/20 dark:border-blue-light/30">
+              {getInitials()}
+            </div>
+            <div className="flex-1">
+              <p className="font-medium drop-shadow-sm">
+                {userData?.prenume} {userData?.nume}
+              </p>
+              <p className="text-xs text-white/70 dark:text-blue-dark/70 drop-shadow-sm">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex space-x-2">
+            <ThemeToggle />
+            
+            {/* Profile Button - Mobile */}
+            {!isMainAdmin && (
               <button
                 onClick={() => {
-                  handleLogout();
+                  handleProfileClick();
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
-                title="Deconectare"
+                className="flex-1 px-3 py-2 text-sm bg-white/10 dark:bg-blue-dark/10 hover:bg-white/20 dark:hover:bg-blue-dark/20 rounded-lg transition-all duration-300 font-medium flex items-center justify-center space-x-2 backdrop-blur-sm border border-white/20 dark:border-blue-light/30"
               >
-                <svg className="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
+                <span>Profil</span>
               </button>
-            </div>
-          ) : (
-            /* Login Button for Non-authenticated Users */
-            <div className="flex justify-center">
-              <button
-                onClick={() => {
-                  navigate('/login');
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-12 h-12 rounded-full bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 dark:hover:from-blue-dark dark:hover:to-blue-light transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30 flex items-center justify-center"
-                title="Autentificare"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013 3v1" />
-                </svg>
-              </button>
-            </div>
-          )}
+            )}
+            
+            {/* Logout Button - Mobile */}
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex-1 px-3 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-all duration-300 font-medium flex items-center justify-center space-x-2 backdrop-blur-sm border border-red-500/30"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>Ieșire</span>
+            </button>
+          </div>
         </div>
       </div>
     </>
   );
 };
 
-export default memo(Navbar);
+export default Navbar;

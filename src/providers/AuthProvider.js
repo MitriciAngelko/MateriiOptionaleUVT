@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { setUser, logout } from '../redux/userSlice';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -19,6 +19,45 @@ const AuthProvider = ({ children }) => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
 
+  // Function to create missing user document in Firestore
+  const createMissingUserDocument = async (user) => {
+    try {
+      console.log('🔧 AuthProvider: Creating missing user document for:', user.email);
+      
+      // Determine user type based on email
+      let userType = 'student'; // default
+      if (user.email === 'admin@admin.com' || user.email?.endsWith('@admin.com')) {
+        userType = 'admin';
+      } else if (user.email?.includes('profesor') || user.email?.includes('teacher')) {
+        userType = 'profesor';
+      } else if (user.email?.includes('secretar') || user.email?.includes('secretary')) {
+        userType = 'secretar';
+      }
+      
+      const userData = {
+        email: user.email,
+        uid: user.uid,
+        tip: userType,
+        role: userType,
+        createdAt: new Date(),
+        autoCreated: true,
+        nume: user.displayName?.split(' ')[1] || 'Unknown',
+        prenume: user.displayName?.split(' ')[0] || 'User',
+        facultate: userType === 'student' ? 'Matematică și Informatică' : null,
+        specializare: userType === 'student' ? 'Informatică' : null,
+        an: userType === 'student' ? 'I' : null
+      };
+
+      await setDoc(doc(db, 'users', user.uid), userData);
+      console.log('✅ AuthProvider: Successfully created user document');
+      
+      return userData;
+    } catch (error) {
+      console.error('💥 AuthProvider: Failed to create user document:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -27,33 +66,63 @@ const AuthProvider = ({ children }) => {
           
           // Obține datele utilizatorului din Firestore
           const userDoc = await getDoc(doc(db, 'users', user.uid));
-          const userRole = userDoc.exists() ? userDoc.data().role : 'user';
+          let userRole = 'user';
+          let userTip = null;
+          let userData = null;
           
-          const userData = {
+          if (userDoc.exists()) {
+            userData = userDoc.data();
+            // Store both role and tip for maximum compatibility
+            userRole = userData.role || userData.tip || 'user';
+            userTip = userData.tip || userData.role || null;
+          } else {
+            // User exists in Firebase Auth but not in Firestore - create document
+            console.warn('⚠️ AuthProvider: User missing from Firestore, creating document...');
+            userData = await createMissingUserDocument(user);
+            
+            if (userData) {
+              userRole = userData.role || userData.tip || 'user';
+              userTip = userData.tip || userData.role || null;
+            } else {
+              // If creation failed, use safe defaults
+              userRole = 'user';
+              userTip = 'student';
+            }
+          }
+          
+          // Create comprehensive user data object
+          const userDataForRedux = {
             uid: user.uid,
             email: user.email,
             token: token,
-            role: userRole
+            role: userRole,  // For AuthProvider compatibility
+            tip: userTip     // For userRoles.js compatibility
           };
 
-          dispatch(setUser(userData));
-          localStorage.setItem('user', JSON.stringify(userData));
+          console.log('🔐 AuthProvider: User authenticated', {
+            email: user.email,
+            uid: user.uid,
+            role: userRole,
+            tip: userTip,
+            hadFirestoreDoc: userDoc.exists()
+          });
 
-          // Modificăm logica de redirecționare
+          dispatch(setUser(userDataForRedux));
+          localStorage.setItem('user', JSON.stringify(userDataForRedux));
+
+          // Modificăm logica de redirecționare - toți utilizatorii merg la homepage după login
           if (location.pathname === '/login' || location.pathname === '/register') {
-            if (userRole === 'admin') {
-              navigate('/admin');
-            } else {
-              navigate('/');
-            }
+            console.log('🚀 AuthProvider: Redirecting user to homepage after successful login');
+            navigate('/home');
           }
         } catch (error) {
-          console.error('Error setting up user:', error);
+          console.error('💥 AuthProvider: Error setting up user:', error);
           dispatch(logout());
           localStorage.removeItem('user');
           navigate('/login');
         }
       } else {
+        console.log('🚪 AuthProvider: User logged out');
         dispatch(logout());
         localStorage.removeItem('user');
         if (!PUBLIC_ROUTES.includes(location.pathname)) {
@@ -92,7 +161,14 @@ const AuthProvider = ({ children }) => {
   }, [dispatch]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex flex-col justify-center items-center h-screen bg-gray-50 dark:bg-dark-bg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#024A76] dark:border-blue-light mx-auto mb-4"></div>
+          <p className="text-[#024A76] dark:text-blue-light font-medium">Se încarcă aplicația...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

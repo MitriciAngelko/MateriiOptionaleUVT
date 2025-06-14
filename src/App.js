@@ -193,7 +193,7 @@ function App() {
             <Route 
               path="/istoric-academic" 
               element={
-                <AdminRoute>
+                <AdminRoute allowSecretar={true}>
                   <Suspense fallback={<PageLoadingFallback pageName="Academic History" />}>
                     <AdminIstoricAcademicPageWithProvider />
                   </Suspense>
@@ -226,7 +226,7 @@ function App() {
             <Route
               path="/registration-settings"
               element={
-                <AdminRoute>
+                <AdminRoute allowSecretar={true}>
                   <Suspense fallback={<PageLoadingFallback pageName="Registration Settings" />}>
                     <RegistrationSettingsPage />
                   </Suspense>

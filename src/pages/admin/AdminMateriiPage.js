@@ -446,10 +446,10 @@ const AdminMateriiPage = () => {
           </div>
         </div>
 
-        {/* Mobile-Optimized Tab Navigation */}
+        {/* Action Buttons - Mobile Responsive */}
         <div className="mb-6 sm:mb-8">
           {/* Mobile: Dropdown Style */}
-          <div className="sm:hidden">
+          <div className="sm:hidden mb-4">
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
@@ -461,47 +461,61 @@ const AdminMateriiPage = () => {
             </select>
           </div>
 
-          {/* Desktop: Traditional Tabs */}
-          <div className="hidden sm:flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTab('materii')}
-              className={`px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center text-sm lg:text-base ${
-                activeTab === 'materii'
-                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
-                  : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-              Materii
-            </button>
-            <button
-              onClick={() => setActiveTab('pachete')}
-              className={`px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center text-sm lg:text-base ${
-                activeTab === 'pachete'
-                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
-                  : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 13a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-              Pachete
-            </button>
-            <button
-              onClick={() => setActiveTab('bulk-upload')}
-              className={`px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-semibold transition-all duration-300 flex items-center text-sm lg:text-base ${
-                activeTab === 'bulk-upload'
-                  ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg'
-                  : 'bg-white/80 dark:bg-gray-800/50 text-[#024A76] dark:text-blue-light hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-[#024A76]/10 dark:hover:to-[#3471B8]/10 border border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              <svg className="w-4 h-4 lg:w-5 lg:h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 101.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              Import în Masă
-            </button>
+          {/* Desktop: Beautiful Action Buttons */}
+          <div className="hidden sm:flex flex-col sm:flex-row gap-2 sm:gap-2">
+            {/* Primary Actions Row */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-2 mb-2 sm:mb-0">
+                             {/* Materii Button */}
+               <button
+                 onClick={() => setActiveTab('materii')}
+                 className={`group relative px-4 py-3 sm:py-2 font-medium transition-all duration-200 rounded-lg flex items-center justify-center sm:justify-start flex-1 sm:flex-none ${
+                   activeTab === 'materii'
+                     ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg hover:shadow-xl'
+                     : 'bg-gradient-to-r from-[#E3AB23]/10 to-[#E3AB23]/5 dark:from-blue-light/10 dark:to-blue-light/5 hover:from-[#E3AB23]/20 hover:to-[#E3AB23]/10 dark:hover:from-blue-light/20 dark:hover:to-blue-light/10 text-[#024A76] dark:text-blue-light hover:text-[#024A76] dark:hover:text-white border border-[#E3AB23]/30 dark:border-blue-light/30 hover:border-[#E3AB23]/50 dark:hover:border-blue-light/50 hover:shadow-md'
+                 }`}
+                title="Gestionează materii"
+              >
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-semibold">Materii</span>
+              </button>
+            </div>
+
+            {/* Secondary Actions Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                             {/* Pachete Button */}
+               <button
+                 onClick={() => setActiveTab('pachete')}
+                 className={`group relative px-3 py-2.5 sm:py-2 font-medium transition-all duration-200 rounded-lg flex items-center justify-center sm:justify-start ${
+                   activeTab === 'pachete'
+                     ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-[#024A76] dark:to-[#3471B8] text-white shadow-lg hover:shadow-xl'
+                     : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md'
+                 }`}
+                title="Gestionează pachete de materii"
+              >
+                <svg className="w-4 h-4 mr-2 sm:mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 13a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm">Pachete</span>
+              </button>
+
+              {/* Import în Masă Button */}
+              <button
+                onClick={() => setActiveTab('bulk-upload')}
+                className={`group relative px-3 py-2.5 sm:py-2 font-medium transition-all duration-200 rounded-lg flex items-center justify-center sm:justify-start ${
+                  activeTab === 'bulk-upload'
+                    ? 'bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent text-white dark:text-blue-dark shadow-lg hover:shadow-xl'
+                    : 'bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md'
+                }`}
+                title="Importă materii în masă din fișiere"
+              >
+                <svg className="w-4 h-4 mr-2 sm:mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 101.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm">Import în Masă</span>
+              </button>
+            </div>
           </div>
         </div>
 
