@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc, query, 
 import { db } from '../../firebase';
 import DeleteIcon from '../../components/icons/DeleteIcon';
 import { Link } from 'react-router-dom';
+import { initializeOpenAI, createRequestParams } from '../../config/openai';
 
 const AdminMateriiPage = () => {
   const [activeTab, setActiveTab] = useState('materii'); // 'materii', 'pachete', sau 'bulk-upload'
@@ -49,6 +50,9 @@ const AdminMateriiPage = () => {
     specializare: '',
     file: null
   });
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
+  const [openaiClient, setOpenaiClient] = useState(null);
 
   const facultati = [
     "Facultatea de Matematică și Informatică",
@@ -81,6 +85,10 @@ const AdminMateriiPage = () => {
 
     fetchPachete();
     fetchAvailableProfessors();
+    
+    // Initialize OpenAI client
+    const client = initializeOpenAI();
+    setOpenaiClient(client);
   }, []);
 
   const fetchAvailableProfessors = async () => {
@@ -1111,29 +1119,150 @@ const AdminMateriiPage = () => {
     }
   };
 
+  // Funny Romanian loading messages
+  const funnyLoadingMessages = [
+    "🤖 Învăț să citesc PDF-uri ca un profesor în primul an...",
+    "📚 Caut materiile prin labirintul academic...",
+    "🔍 Analizez planul de învățământ cu lupa...",
+    "💭 Mă gândesc mai tare decât la examenul de licență...",
+    "🎯 Extrag datele cu precizia unui chirurg...",
+    "🚀 Zbor prin semestre ca Superman prin nori...",
+    "🧠 Fac gimnastică mentală cu credite și semestre...",
+    "📊 Organizez materiile ca un bibliotecrar obsesiv...",
+    "⚡ Procesez informațiile cu viteza internetului din cămin...",
+    "🎪 Jonglез cu materii obligatorii și opționale...",
+    "🔥 Ard etapele ca un student în sesiune...",
+    "🎨 Pictez un tabel perfect cu materiile tale...",
+  ];
+
+  const getRandomLoadingMessage = () => {
+    return funnyLoadingMessages[Math.floor(Math.random() * funnyLoadingMessages.length)];
+  };
+
   const handleBulkUploadSubmit = async (e) => {
     e.preventDefault();
     
-    console.log('=== BULK UPLOAD FORM SUBMISSION ===');
-    console.log('Facultate:', bulkUploadData.facultate);
-    console.log('Specializare:', bulkUploadData.specializare);
-    console.log('File:', bulkUploadData.file);
-    console.log('File name:', bulkUploadData.file?.name);
-    console.log('File size:', bulkUploadData.file?.size);
-    console.log('File type:', bulkUploadData.file?.type);
-    console.log('====================================');
+    if (!openaiClient) {
+      setError('Serviciul AI nu este disponibil momentan. Te rog să reîncerci.');
+      return;
+    }
+
+    if (!bulkUploadData.file) {
+      setError('Te rog să selectezi un fișier PDF.');
+      return;
+    }
+
+    // Validate file type
+    if (!bulkUploadData.file.type.includes('pdf') && !bulkUploadData.file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Te rog să selectezi doar fișiere PDF.');
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (bulkUploadData.file.size > 10 * 1024 * 1024) {
+      setError('Fișierul este prea mare. Dimensiunea maximă este 10MB.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
     
-    // Reset form pentru demonstrație
-    setBulkUploadData({
-      facultate: '',
-      specializare: '',
-      file: null
-    });
+    // Start with first message and cycle through them
+    let messageIndex = 0;
+    setProcessingMessage(getRandomLoadingMessage());
     
-    // Reset file input
-    const fileInput = document.getElementById('bulk-upload-file');
-    if (fileInput) {
-      fileInput.value = '';
+    const messageInterval = setInterval(() => {
+      setProcessingMessage(getRandomLoadingMessage());
+    }, 3000); // Change message every 3 seconds
+
+    try {
+      // First, upload the file to OpenAI to get a file_id
+      console.log('Uploading file to OpenAI...');
+      const fileUpload = await openaiClient.files.create({
+        file: bulkUploadData.file,
+        purpose: 'assistants'
+      });
+      
+      console.log('File uploaded with ID:', fileUpload.id);
+
+      // Use the user's exact OpenAI code structure with the Responses API
+      const response = await openaiClient.responses.create({
+        model: "gpt-4.1",
+        instructions: "You are an expert in content extraction from pdf's poorly made. You extract in the most accurate way all the necessary data even when there are mismatches in rows (multiple values in one row should be accounted  and counted as separate values).\n\nExtract a complete list of all courses (mandatory and optional, also facultative) from this academic curriculum document. For each course, extract and present the following information in a structured CSV: Course name, Status (Mandatory or Optional), Semester, Year, Total credits Additionally: Treat every optional course in grouped packages as an individual course (i.e. count all options separately even if only one is chosen).  EXTRACT ONLY IN  CSV Year 1 Semester 1 and Semester 2, Year 2 Semester 1 and Semester 2, Year 3 Semester 1 and Semester 2. \nEveryone is counting on you.\n\nRULES\n- EXTRACT ONLY IN  CSV FORMAT!\n- DON'T FORGET TO DO IT FOR ALL SEMESTERS AND YEARS!\n- RETURN ONLY THE CSV AS RESPONSE AND NOTHING MORE!\n- BE CAREFUL TO EXCTACT THE CORRECT DATA IN THE CORRECT COLUMN!\n- IF THE TITLE HAS COMMA (,) THEN REPLACE IT WITH DASH (-)!\n- Structured CSV: Course name, Status (Mandatory or Optional), Semester, Year, Credits \n- DO NOT INCLUDE ANY quotation mark or double quote",
+        input: [
+          {
+              "role": "user",
+              "content": [
+                  {
+                      "type": "input_file",
+                      "file_id": fileUpload.id,
+                  },
+              ]
+          }
+      ],
+        text: {
+          "format": {
+            "type": "text"
+          }
+        },
+        reasoning: {},
+        tools: [],
+        temperature: 1,
+        max_output_tokens: 32768,
+        top_p: 1,
+        store: true
+      });
+
+      clearInterval(messageInterval);
+      
+      // Parse CSV response and create materii
+      console.log('=== FULL OPENAI RESPONSE ===');
+      console.log('Response object:', response);
+      console.log('Response text:', response.text);
+      console.log('Response output:', response.output);
+      console.log('Response data:', response.data);
+      console.log('===========================');
+      
+      // Try different response paths
+      const csvData = response.text?.content || response.text || response.output?.text || response.data?.text || 'No response found';
+      
+      console.log('=== EXTRACTED CSV DATA ===');
+      console.log(csvData);
+      console.log('==========================');
+      
+      // Here you would parse the CSV and add materii to the database
+      // For now, just show success message
+      setProcessingMessage('✅ Procesarea a fost finalizată cu succes!');
+      
+      setTimeout(() => {
+        setIsProcessing(false);
+        setBulkUploadData({
+          facultate: '',
+          specializare: '',
+          file: null
+        });
+        
+        // Reset file input
+        const fileInput = document.getElementById('bulk-upload-file');
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      }, 2000);
+
+    } catch (error) {
+      clearInterval(messageInterval);
+      console.error('Error calling OpenAI:', error);
+      
+      let errorMessage = "A apărut o eroare în procesarea fișierului. Te rog să încerci din nou.";
+      
+      if (error.status === 401) {
+        errorMessage = "Cheia API nu este validă. Te rog să contactezi administratorul.";
+      } else if (error.status === 429) {
+        errorMessage = "Limita de utilizare a fost atinsă. Te rog să încerci mai târziu.";
+      }
+      
+      setError(errorMessage);
+      setIsProcessing(false);
     }
   };
 
@@ -1143,6 +1272,29 @@ const AdminMateriiPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Processing Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center">
+          <div className="bg-white/95 dark:bg-gray-800/95 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-8 max-w-md mx-4 text-center">
+            {/* Simple Spinning Circle */}
+            <div className="w-16 h-16 mx-auto mb-6">
+              <div className="w-16 h-16 border-4 border-[#024A76]/20 dark:border-blue-light/20 border-t-[#024A76] dark:border-t-blue-light rounded-full animate-spin"></div>
+            </div>
+            
+            {/* Loading Message */}
+            <h3 className="text-xl font-semibold text-[#024A76] dark:text-blue-light mb-3">
+              Procesez Fișierul PDF
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+              {processingMessage}
+            </p>
+            
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
+              Te rog să nu închizi această pagină
+            </p>
+          </div>
+        </div>
+      )}
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent drop-shadow-sm">
@@ -1698,19 +1850,37 @@ const AdminMateriiPage = () => {
                             id="bulk-upload-file"
                             name="bulk-upload-file"
                             type="file"
-                            accept=".pdf"
+                            accept=".pdf,application/pdf"
                             className="sr-only"
                             required
-                            onChange={(e) => setBulkUploadData({
-                              ...bulkUploadData, 
-                              file: e.target.files[0]
-                            })}
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                // Validate file type on selection
+                                if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+                                  setError('Te rog să selectezi doar fișiere PDF.');
+                                  e.target.value = ''; // Clear the input
+                                  return;
+                                }
+                                // Validate file size
+                                if (file.size > 10 * 1024 * 1024) {
+                                  setError('Fișierul este prea mare. Dimensiunea maximă este 10MB.');
+                                  e.target.value = ''; // Clear the input
+                                  return;
+                                }
+                                setError(null); // Clear any previous errors
+                              }
+                              setBulkUploadData({
+                                ...bulkUploadData, 
+                                file: file
+                              });
+                            }}
                           />
                         </label>
                         <p className="pl-1">sau trage și plasează</p>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        PNG, JPG, PDF până la 10MB
+                        Doar fișiere PDF până la 10MB
                       </p>
                       {bulkUploadData.file && (
                         <p className="text-sm text-[#024A76] dark:text-blue-light font-medium">

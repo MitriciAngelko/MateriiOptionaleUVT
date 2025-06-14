@@ -51,3 +51,51 @@ const response = await openai.responses.create({
   top_p: 1,
   store: true
 });
+
+
+Course name,Status,Semester,Year,Credits
+Algebră, Mandatory, 1, 1, 5
+Analiză matematică I, Mandatory, 1, 1, 5
+Bazele programării, Mandatory, 1, 1, 5
+Structuri de date, Mandatory, 1, 1, 5
+Logică matematică, Mandatory, 1, 1, 4
+Limba modernă I, Mandatory, 1, 1, 2
+Educație fizică I, Mandatory, 1, 1, 1
+Analiză matematică II, Mandatory, 2, 1, 5
+Algebră liniară, Mandatory, 2, 1, 5
+Programarea calculatoarelor și limbaje de programare I, Mandatory, 2, 1, 4
+Structuri de date și algoritmi, Mandatory, 2, 1, 5
+Geometrie, Mandatory, 2, 1, 4
+Limba modernă II, Mandatory, 2, 1, 2
+Educație fizică II, Mandatory, 2, 1, 1
+Probabilități și statistică matematică, Mandatory, 1, 2, 5
+Metode numerice, Mandatory, 1, 2, 4
+Programarea calculatoarelor și limbaje de programare II, Mandatory, 1, 2, 5
+Arhitectura sistemelor de calcul, Mandatory, 1, 2, 4
+Sisteme de operare, Mandatory, 1, 2, 4
+Limba modernă III, Mandatory, 1, 2, 2
+Educație fizică III, Mandatory, 1, 2, 1
+Analiză complexă, Mandatory, 2, 2, 4
+Bazele informaticii, Mandatory, 2, 2, 4
+Baze de date, Mandatory, 2, 2, 5
+Rețele de calculatoare, Mandatory, 2, 2, 4
+Tehnici web, Mandatory, 2, 2, 4
+Limba modernă IV, Mandatory, 2, 2, 2
+Educație fizică IV, Mandatory, 2, 2, 1
+Inteligență artificială, Mandatory, 1, 3, 5
+Limbaje formale și automate, Mandatory, 1, 3, 5
+Sisteme distribuite, Mandatory, 1, 3, 5
+Proiectare orientată obiect, Mandatory, 1, 3, 4
+Aplicații software, Mandatory, 1, 3, 4
+Dezvoltarea abilităților de angajare, Mandatory, 1, 3, 2
+Proiect IR - partea I, Mandatory, 1, 3, 1
+Securitatea informației, Mandatory, 2, 3, 4
+Managementul și elaborarea proiectelor, Mandatory, 2, 3, 4
+Proiect IR - partea II, Mandatory, 2, 3, 2
+Practica profesională, Mandatory, 2, 3, 3
+Alegere disciplină opțională pachet I - Proiectare și dezvoltare software distribuit, Optional, 2, 3, 4
+Alegere disciplină opțională pachet I - Grafică pe calculator, Optional, 2, 3, 4
+Alegere disciplină opțională pachet II - Inteligență artificială avansată, Optional, 2, 3, 4
+Alegere disciplină opțională pachet II - Calcul paralel și distribuit, Optional, 2, 3, 4
+Alegere disciplină opțională pachet II - Modelare și simulare, Optional, 2, 3, 4
+Alegere disciplină opțională pachet II - Programare evolutivă, Optional, 2, 3, 4
