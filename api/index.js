@@ -195,12 +195,14 @@ app.use((req, res, next) => {
 // Serve static files from the React app build
 // Try multiple possible paths for different environments
 const staticPaths = [
-  path.join(__dirname, '../frontend/build'),
-  path.join(process.cwd(), 'frontend/build'),
-  path.join(process.cwd(), 'build')
+  path.join(__dirname, 'build'),              // Build copied to api/build (Vercel)
+  path.join(__dirname, '../frontend/build'),  // Local development
+  path.join(process.cwd(), 'frontend/build'), // Alternative local path
+  path.join(process.cwd(), 'build')           // Alternative build path
 ];
 
 let staticPath = staticPaths[0]; // default
+
 for (const testPath of staticPaths) {
   try {
     if (fs.existsSync(testPath)) {
@@ -213,6 +215,7 @@ for (const testPath of staticPaths) {
 }
 
 console.log('Using static path:', staticPath);
+
 app.use(express.static(staticPath));
 
 // Health check route
@@ -310,3 +313,4 @@ process.on('SIGINT', () => {
     process.exit(0);
   }
 });
+
