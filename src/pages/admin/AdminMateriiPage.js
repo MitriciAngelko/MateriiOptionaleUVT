@@ -11,9 +11,11 @@ import MaterieModal from '../../components/admin/materii/MaterieModal';
 import PacheteTab from '../../components/admin/materii/PacheteTab';
 import PachetModal from '../../components/admin/materii/PachetModal';
 import BulkUploadTab from '../../components/admin/materii/BulkUploadTab';
+import BulkUploadPreview from '../../components/admin/materii/BulkUploadPreview';
 
 // Import utilities and constants
 import { removeDiacritics, getRandomLoadingMessage } from '../../components/admin/materii/utils';
+import { parseCsvToMaterii, bulkUploadMaterii, validateCsvData } from '../../components/admin/materii/csvParser';
 
 const AdminMateriiPage = () => {
   const [activeTab, setActiveTab] = useState('materii'); // 'materii', 'pachete', sau 'bulk-upload'
@@ -62,6 +64,11 @@ const AdminMateriiPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('');
   const [openaiClient, setOpenaiClient] = useState(null);
+  
+  // State pentru preview și rezultate
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewMaterii, setPreviewMaterii] = useState([]);
+  const [uploadResults, setUploadResults] = useState(null);
 
   useEffect(() => {
     fetchMaterii();
@@ -194,6 +201,74 @@ const AdminMateriiPage = () => {
     }
   };
 
+  const handlePreviewConfirm = async () => {
+    try {
+      setShowPreview(false);
+      setIsProcessing(true);
+      setProcessingMessage(`📤 Încarc ${previewMaterii.length} materii în baza de date...`);
+      
+      // Bulk upload to Firebase with progress tracking
+      const results = await bulkUploadMaterii(previewMaterii, (progress) => {
+        setProcessingMessage(
+          `📤 Încarc materii: ${progress.current}/${progress.total} (${progress.percentage}%)\n` +
+          `Materia curentă: ${progress.currentMaterie}`
+        );
+      });
+      
+      setIsProcessing(false);
+      setUploadResults(results);
+      setShowPreview(true);
+      
+      // Refresh materii list to show new courses
+      fetchMaterii();
+      
+    } catch (error) {
+      console.error('Error during bulk upload:', error);
+      setIsProcessing(false);
+      setError(`Eroare la încărcarea materiilor: ${error.message}`);
+    }
+  };
+
+  const handlePreviewCancel = () => {
+    setShowPreview(false);
+    setPreviewMaterii([]);
+    setUploadResults(null);
+    
+    // Reset form if canceling before upload
+    if (!uploadResults) {
+      setBulkUploadData({
+        facultate: '',
+        specializare: '',
+        file: null
+      });
+      
+      // Reset file input
+      const fileInput = document.getElementById('bulk-upload-file');
+      if (fileInput) {
+        fileInput.value = '';
+      }
+    }
+  };
+
+  const handleResultsClose = () => {
+    setShowPreview(false);
+    setPreviewMaterii([]);
+    setUploadResults(null);
+    
+    // Reset form after successful upload
+    setBulkUploadData({
+      facultate: '',
+      specializare: '',
+      file: null
+    });
+    
+    // Reset file input
+    const fileInput = document.getElementById('bulk-upload-file');
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   const handleBulkUploadSubmit = async (e) => {
     e.preventDefault();
     
@@ -277,31 +352,63 @@ const AdminMateriiPage = () => {
       console.log('Response data:', response.data);
       console.log('===========================');
       
-      // Try different response paths
-      const csvData = response.text?.content || response.text || response.output?.text || response.data?.text || 'No response found';
+      // Extract CSV data from the output_text field as specified
+      let csvData;
+      
+      if (response.output_text) {
+        csvData = response.output_text;
+      } else if (response.text?.content) {
+        csvData = response.text.content;
+      } else if (response.text) {
+        csvData = response.text;
+      } else if (response.output?.text) {
+        csvData = response.output.text;
+      } else if (response.data?.text) {
+        csvData = response.data.text;
+      } else if (response.content) {
+        csvData = response.content;
+      } else if (typeof response === 'string') {
+        csvData = response;
+      } else {
+        // Last resort - try to stringify the response
+        console.warn('Unexpected response structure, attempting to extract text...');
+        csvData = JSON.stringify(response);
+      }
       
       console.log('=== EXTRACTED CSV DATA ===');
-      console.log(csvData);
+      console.log('CSV Data:', csvData);
+      console.log('CSV Type:', typeof csvData);
+      console.log('CSV Length:', csvData?.length);
+      console.log('Is String:', typeof csvData === 'string');
       console.log('==========================');
       
-      // Here you would parse the CSV and add materii to the database
-      // For now, just show success message
-      setProcessingMessage('✅ Procesarea a fost finalizată cu succes!');
+      // Validate CSV data
+      const validation = validateCsvData(csvData);
+      if (!validation.isValid) {
+        throw new Error(`CSV validation failed: ${validation.errors.join(', ')}`);
+      }
+      
+      if (validation.warnings.length > 0) {
+        console.warn('CSV validation warnings:', validation.warnings);
+      }
+      
+      setProcessingMessage('📊 Procesez datele CSV...');
+      
+      // Parse CSV to materii objects
+      const materiiList = parseCsvToMaterii(csvData, bulkUploadData.facultate, bulkUploadData.specializare);
+      
+      if (materiiList.length === 0) {
+        throw new Error('Nu s-au putut extrage materii valide din fișierul PDF.');
+      }
+      
+      // Show preview instead of immediately uploading
+      setProcessingMessage('✅ Extragerea datelor completă!');
       
       setTimeout(() => {
         setIsProcessing(false);
-        setBulkUploadData({
-          facultate: '',
-          specializare: '',
-          file: null
-        });
-        
-        // Reset file input
-        const fileInput = document.getElementById('bulk-upload-file');
-        if (fileInput) {
-          fileInput.value = '';
-        }
-      }, 2000);
+        setPreviewMaterii(materiiList);
+        setShowPreview(true);
+      }, 1000);
 
     } catch (error) {
       clearInterval(messageInterval);
@@ -452,6 +559,15 @@ const AdminMateriiPage = () => {
             onClose={() => setShowPachetModal(false)}
             setPachete={setPachete}
             materii={materii}
+          />
+        )}
+
+        {showPreview && (
+          <BulkUploadPreview 
+            materiiList={previewMaterii}
+            uploadResults={uploadResults}
+            onConfirm={uploadResults ? handleResultsClose : handlePreviewConfirm}
+            onCancel={handlePreviewCancel}
           />
         )}
       </div>

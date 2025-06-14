@@ -24,9 +24,13 @@ const BulkUploadTab = ({
             <h3 className="text-xl font-semibold text-[#024A76] dark:text-blue-light mb-3">
               Procesez Fișierul PDF
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-              {processingMessage}
-            </p>
+            <div className="text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+              {processingMessage.split('\n').map((line, index) => (
+                <p key={index} className={index > 0 ? 'mt-2' : ''}>
+                  {line}
+                </p>
+              ))}
+            </div>
             
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
               Te rog să nu închizi această pagină
