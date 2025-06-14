@@ -4,7 +4,11 @@ A web application for managing optional courses at West University of Timișoara
 
 ## Architecture Overview
 
-This project has been refactored from a separated frontend/backend structure to a unified full-stack application, preparing it for Next.js migration.
+This project consists of two independent packages:
+- **Frontend**: React application in the root directory
+- **Backend**: Express.js API server in the `server/` directory
+
+Each package can be developed, built, and deployed independently.
 
 ### Project Structure
 
@@ -23,15 +27,19 @@ materiioptionale-uvt/
 │   ├── firebase/                 # Firebase configuration
 │   ├── redux/                    # Redux state management
 │   └── providers/                # Context providers
-├── server/                       # Express.js server (temporary)
+├── server/                       # Express.js server (independent package)
 │   ├── controllers/              # Request handlers
 │   ├── routes/                   # API routes
 │   ├── services/                 # Server-side business logic
 │   ├── middleware/               # Express middleware
 │   ├── config/                   # Server configuration
-│   └── utils/                    # Server utilities
+│   ├── utils/                    # Server utilities
+│   ├── package.json             # Backend dependencies
+│   ├── .env                     # Backend environment variables
+│   └── README.md                # Backend documentation
 ├── public/                       # Static assets
-├── package.json                  # Unified dependencies
+├── package.json                  # Frontend dependencies
+├── .env                         # Frontend environment variables
 └── tailwind.config.js           # Tailwind CSS configuration
 ```
 
@@ -44,29 +52,59 @@ materiioptionale-uvt/
 - **Tailwind CSS** - Utility-first CSS framework
 - **Framer Motion** - Animation library
 - **Lucide React** - Icon library
+- **Firebase SDK** - Client-side Firebase operations
 
-### Backend (Temporary)
+### Backend
 - **Express.js** - Web application framework
 - **Firebase Admin SDK** - Server-side Firebase operations
 - **CORS** - Cross-origin resource sharing
 - **Body Parser** - Request body parsing
+- **OpenAI Integration** - AI-powered features
+- **PDF Generation** - Document creation capabilities
+- **LaTeX Support** - Academic document processing
 
 ### Database & Authentication
 - **Firebase Firestore** - NoSQL document database
 - **Firebase Authentication** - User authentication
 - **Firebase Storage** - File storage
 
-### Additional Features
-- **OpenAI Integration** - AI-powered features
-- **PDF Generation** - Document creation capabilities
-- **LaTeX Support** - Academic document processing
-
 ## Installation
 
-1. **Clone the repository**
+### Frontend Setup
+
+1. **Install dependencies**
    ```bash
-   git clone <repository-url>
-   cd materiioptionale-uvt
+   npm install
+   ```
+
+2. **Environment Configuration**
+   Create a `.env` file in the root directory:
+   ```env
+   # Frontend Environment Variables
+   # All variables must start with REACT_APP_ to be accessible in React
+
+   # Firebase Client Configuration
+   REACT_APP_FIREBASE_API_KEY=your-firebase-api-key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+   REACT_APP_FIREBASE_PROJECT_ID=your-project-id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+   REACT_APP_FIREBASE_APP_ID=your-app-id
+
+   # API Configuration
+   REACT_APP_API_BASE_URL=http://localhost:5001/api
+   REACT_APP_SERVER_URL=http://localhost:5001
+
+   # App Configuration
+   REACT_APP_APP_NAME=MateriiOptionale UVT
+   REACT_APP_VERSION=1.0.0
+   ```
+
+### Backend Setup
+
+1. **Navigate to server directory**
+   ```bash
+   cd server
    ```
 
 2. **Install dependencies**
@@ -75,92 +113,84 @@ materiioptionale-uvt/
    ```
 
 3. **Environment Configuration**
-   Create a `.env` file in the root directory:
+   Create a `.env` file in the server directory:
    ```env
-   # Firebase Client Configuration
-   REACT_APP_FIREBASE_API_KEY=your_api_key
-   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   REACT_APP_FIREBASE_APP_ID=your_app_id
-   REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
-
-   # Firebase Admin SDK (Server-side)
-   FIREBASE_PROJECT_ID=your_project_id
-   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-   FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your_project.iam.gserviceaccount.com
-   FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-
-   # API Configuration
-   REACT_APP_API_URL=http://localhost:5001/api
+   # Server Configuration
    PORT=5001
+   HOST=0.0.0.0
+   NODE_ENV=development
 
-   # OpenAI Integration
-   OPENAI_API_KEY=your_openai_api_key
+   # CORS Configuration
+   ALLOWED_ORIGINS=http://localhost:3000
+
+   # Firebase Admin Configuration
+   FIREBASE_ADMIN_PROJECT_ID=your-project-id
+   FIREBASE_ADMIN_PRIVATE_KEY_ID=your-private-key-id
+   FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour-private-key\n-----END PRIVATE KEY-----\n"
+   FIREBASE_ADMIN_CLIENT_EMAIL=your-service-account-email
+   FIREBASE_ADMIN_CLIENT_ID=your-client-id
+
+   # OpenAI Configuration
+   OPENAI_API_KEY=your-openai-api-key
    ```
 
 ## Running the Application
 
-### Quick Start (Recommended)
+### Development Mode
 
-**Start both frontend and backend with one command:**
+**Start Backend Server:**
+```bash
+cd server
+npm run dev
+```
+Backend will run on `http://localhost:5001`
+
+**Start Frontend (in a new terminal):**
 ```bash
 npm start
 ```
-This will automatically start:
-- Backend server on `http://localhost:5001`
-- Frontend React app on `http://localhost:3000`
-
-### Development Mode
-
-**Option 1: Run both frontend and backend simultaneously (with auto-reload)**
-```bash
-npm run dev
-```
-
-**Option 2: Run separately**
-```bash
-# Terminal 1 - Start the Express server (with auto-reload)
-npm run server:dev
-
-# Terminal 2 - Start the React development server
-npm run start:frontend
-```
-
-**Option 3: Run production versions together**
-```bash
-npm run dev:production
-```
-
-### Individual Services
-
-**Backend only:**
-```bash
-npm run server              # Production mode
-npm run server:dev          # Development mode with nodemon
-npm run start:backend       # Alias for production mode
-npm run start:backend:dev   # Alias for development mode
-```
-
-**Frontend only:**
-```bash
-npm run start:frontend      # Starts on port 3000
-```
+Frontend will run on `http://localhost:3000`
 
 ### Production Mode
-```bash
-# Build the React application
-npm run build
 
-# Start both services in production mode
-npm run dev:production
+**Start Backend Server:**
+```bash
+cd server
+npm start
 ```
 
-### Port Configuration
-- **Frontend**: `http://localhost:3000`
-- **Backend API**: `http://localhost:5001`
-- **Health Check**: `http://localhost:5001/health`
+**Build and Serve Frontend:**
+```bash
+npm run build
+# Use a static file server to serve the build folder
+```
+
+### Individual Package Commands
+
+**Frontend:**
+- `npm start` - Start development server
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npm run analyze` - Analyze bundle size
+
+**Backend:**
+- `npm start` - Start production server
+- `npm run dev` - Start development server with auto-reload
+- `npm run health` - Check server health
+
+## Deployment
+
+### Frontend Deployment
+The frontend can be deployed to any static hosting service (Vercel, Netlify, etc.):
+1. Run `npm run build`
+2. Deploy the `build/` folder
+3. Set environment variables in your hosting provider
+
+### Backend Deployment
+The backend can be deployed to any Node.js hosting service:
+1. Deploy the `server/` folder
+2. Set environment variables
+3. Run `npm install && npm start`
 
 ## API Endpoints
 
@@ -168,92 +198,15 @@ npm run dev:production
 - `POST /api/users/create` - Create new user
 - `GET /api/users/:uid` - Get user information
 - `PUT /api/users/:uid` - Update user profile
-- `PUT /api/users/:uid/media` - Update student academic average
 
 ### Course Enrollment
 - `POST /api/enrollment/process/:pachetId` - Process enrollments (admin only)
 - `POST /api/enrollment/period/:pachetId` - Set enrollment period (admin only)
 - `GET /api/enrollment/preferences/:studentId/:pachetId` - Get student preferences
 - `POST /api/enrollment/preferences/:studentId/:pachetId` - Set student preferences
-- `GET /api/enrollment/status/:pachetId` - Check enrollment status
 
 ## User Roles
 
-The application supports three user roles:
-
-1. **Admin** (`@admin.com` emails)
-   - Process course enrollments
-   - Set enrollment periods
-   - Manage all users
-
-2. **Professor** (`name.surname@e-uvt.ro` emails)
-   - Update student grades
-   - View enrollment statistics
-
-3. **Student** (`name.surname##@e-uvt.ro` emails)
-   - Set course preferences
-   - View enrollment status
-
-## Migration to Next.js
-
-This structure is designed to easily migrate to Next.js:
-
-1. **API Routes**: Move `server/routes/*` to `pages/api/*`
-2. **Components**: Keep `src/components/*` as `components/*`
-3. **Pages**: Convert `src/pages/*` to Next.js pages
-4. **Services**: Keep business logic in `lib/` or `utils/`
-
-### Next.js Migration Steps
-
-1. Create a new Next.js project
-2. Move React components to `components/`
-3. Convert pages to Next.js page structure
-4. Move API routes to `pages/api/`
-5. Update imports and configuration
-6. Deploy on Vercel or similar platform
-
-## Features
-
-### Current Features
-- User authentication with Firebase
-- Role-based access control
-- Course preference management
-- Automated course allocation based on grades
-- Enrollment period management
-- Academic record tracking
-
-### Planned Features
-- Quiz/Assessment system
-- Enhanced reporting
-- PDF generation for enrollment confirmations
-- Email notifications
-- Course evaluation system
-
-## Development Guidelines
-
-### Code Organization
-- Use functional components with hooks
-- Implement proper error handling
-- Follow Redux Toolkit patterns
-- Use TypeScript-ready code structure
-
-### Firebase Usage
-- Client-side operations use Firebase SDK
-- Server-side operations use Firebase Admin SDK
-- Implement proper security rules
-
-### Styling
-- Use Tailwind CSS utility classes
-- Implement responsive design
-- Follow UX best practices
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement changes with proper testing
-4. Submit a pull request
-
-## License
-
-This project is developed for educational purposes at West University of Timișoara.
+1. **Admin** (`@admin.com` emails) - Full system access
+2. **Professor** (`name.surname@e-uvt.ro` emails) - Grade management
+3. **Student** (`name.surname##@e-uvt.ro` emails) - Course enrollment

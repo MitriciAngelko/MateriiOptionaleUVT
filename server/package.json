@@ -1,0 +1,37 @@
+{
+  "name": "materiioptionale-uvt-server",
+  "version": "1.0.0",
+  "description": "Backend server for MateriiOptionale UVT application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "health": "curl -f http://localhost:5001/health && echo '\\nServer: Running' || echo 'Server: Not running'"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "firebase-admin": "^13.0.0",
+    "html-pdf": "^3.0.1",
+    "node-latex": "^3.1.0",
+    "openai": "^4.104.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "express",
+    "api",
+    "backend",
+    "university",
+    "courses"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+} 
