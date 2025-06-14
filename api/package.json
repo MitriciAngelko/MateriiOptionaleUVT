@@ -1,0 +1,29 @@
+{
+  "name": "materiioptionale-uvt-backend",
+  "version": "1.0.0",
+  "description": "Express.js backend server for UVT academic management system",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "postinstall": "cd ../frontend && npm install && npm run build"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "body-parser": "^1.20.3",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "firebase-admin": "^13.0.0",
+    "html-pdf": "^3.0.1",
+    "node-latex": "^3.1.0",
+    "openai": "^4.104.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["express", "backend", "api", "uvt", "academic"],
+  "author": "",
+  "license": "ISC"
+}
