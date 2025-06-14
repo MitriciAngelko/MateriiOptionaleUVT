@@ -42,7 +42,7 @@ const MateriesList = ({
         </div>
       </div>
       
-      <div className="space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+      <div className="space-y-3 max-h-[110vh] overflow-y-auto custom-scrollbar">
         {filteredMaterii.map((materie) => (
           <div 
             key={materie.id} 

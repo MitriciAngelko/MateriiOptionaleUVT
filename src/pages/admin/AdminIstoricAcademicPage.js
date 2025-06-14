@@ -6,6 +6,84 @@ import { db } from '../../firebase';
 import { isAdmin } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
 
+// Toast notification component
+const Toast = ({ message, type = 'success', onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const getToastStyles = () => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-500 text-white';
+      case 'error':
+        return 'bg-red-500 text-white';
+      case 'warning':
+        return 'bg-yellow-500 text-white';
+      case 'info':
+        return 'bg-blue-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'error':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'warning':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+        );
+    }
+  };
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out ${getToastStyles()}`}>
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          {getIcon()}
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium">{message}</p>
+        </div>
+        <div className="ml-4 flex-shrink-0">
+          <button
+            className="inline-flex text-white hover:text-gray-200 focus:outline-none focus:text-gray-200"
+            onClick={onClose}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminIstoricAcademicPage = () => {
   const [loading, setLoading] = useState(true);
   const [students, setStudents] = useState([]);
@@ -27,6 +105,7 @@ const AdminIstoricAcademicPage = () => {
     profesor: '',
     obligatorie: false
   });
+  const [editingGrade, setEditingGrade] = useState(null); // For inline grade editing
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
   const { allMaterii, loading: materiiLoading } = useMaterii();
@@ -46,6 +125,16 @@ const AdminIstoricAcademicPage = () => {
   const [availableCourses, setAvailableCourses] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [toast, setToast] = useState(null);
+
+  // Toast notification functions
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -445,7 +534,7 @@ const AdminIstoricAcademicPage = () => {
       });
       
       setShowAddNoteForm(false);
-      setSuccessMessage('Nota a fost adăugată cu succes!');
+      showToast('Nota a fost adăugată cu succes!');
       
     } catch (error) {
       console.error('Eroare la adăugarea notei:', error);
@@ -484,6 +573,87 @@ const AdminIstoricAcademicPage = () => {
       profesor: '',
       obligatorie: false
     });
+  };
+
+  // Start inline grade editing
+  const startInlineGradeEdit = (anualIndex, noteIndex, currentGrade) => {
+    setEditingGrade({
+      key: `${anualIndex}-${noteIndex}`,
+      value: currentGrade
+    });
+  };
+
+  // Handle inline grade change
+  const handleInlineGradeChange = (value) => {
+    setEditingGrade(prev => ({
+      ...prev,
+      value: value
+    }));
+  };
+
+  // Save inline grade edit
+  const saveInlineGrade = async (anualIndex, noteIndex) => {
+    if (!editingGrade || !selectedStudent) return;
+    
+    const newGrade = parseInt(editingGrade.value) || 0;
+    
+    // Validate grade
+    if (isNaN(newGrade) || newGrade < 0 || newGrade > 10) {
+      setErrorMessage('Nota trebuie să fie un număr întreg între 0 și 10');
+      setEditingGrade(null);
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage('');
+    
+    try {
+      // Get existing note
+      const existingNote = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri[noteIndex];
+      
+      // Determine status based on grade
+      let status = 'neevaluat';
+      if (newGrade > 0) {
+        status = newGrade >= 5 ? 'promovat' : 'nepromovat';
+      }
+      
+      // Update note
+      const updatedNote = {
+        ...existingNote,
+        nota: newGrade,
+        status: status,
+        dataNota: new Date().getTime()
+      };
+      
+      // Update in history
+      const updatedIstoric = {...selectedStudentData.istoric};
+      updatedIstoric.istoricAnual[anualIndex].cursuri[noteIndex] = updatedNote;
+      
+      // Save to database
+      const istoricRef = doc(db, 'istoricAcademic', selectedStudent);
+      await updateDoc(istoricRef, updatedIstoric);
+      
+      // Update local state
+      setSelectedStudentData(prevData => ({
+        ...prevData,
+        istoric: updatedIstoric
+      }));
+      
+      setEditingGrade(null);
+      setLoading(false);
+      showToast('Nota a fost actualizată cu succes!');
+      
+    } catch (error) {
+      console.error('Eroare la actualizarea notei:', error);
+      setErrorMessage('Eroare la actualizarea notei: ' + error.message);
+      setLoading(false);
+      setEditingGrade(null);
+    }
+  };
+
+  // Cancel inline grade edit
+  const cancelInlineGradeEdit = () => {
+    setEditingGrade(null);
   };
 
   // Salvează nota editată
@@ -558,7 +728,7 @@ const AdminIstoricAcademicPage = () => {
       }
       
       setLoading(false);
-      setSuccessMessage('Nota a fost actualizată cu succes!');
+      showToast('Nota a fost actualizată cu succes!');
       
     } catch (error) {
       console.error('Eroare la actualizarea notei:', error);
@@ -654,7 +824,7 @@ const AdminIstoricAcademicPage = () => {
         console.error('Eroare la actualizarea datelor după ștergere:', error);
       }
       
-      setSuccessMessage('Nota a fost ștearsă cu succes!');
+      showToast('Nota a fost ștearsă cu succes!');
       
     } catch (error) {
       console.error('Eroare la ștergerea notei:', error);
@@ -717,16 +887,16 @@ const AdminIstoricAcademicPage = () => {
   const getAllCursuri = () => {
     const istoricFiltrat = getFilteredIstoricAnual();
     
-    // Grupează cursurile pe semestre
+    // Grupează cursurile pe semestre (folosind anStudiu și semestru pentru a grupa corect)
     const cursuriBySemestru = {};
     
     for (const anual of istoricFiltrat) {
-      const semesterId = `${anual.anUniversitar}-${anual.semestru}`;
+      const semesterId = `${anual.anStudiu}-${anual.semestru}`;
       if (!cursuriBySemestru[semesterId]) {
         cursuriBySemestru[semesterId] = {
           anStudiu: anual.anStudiu,
           semestru: anual.semestru,
-          anUniversitar: anual.anUniversitar,
+          anUniversitar: anual.anUniversitar || '', // Handle cases where anUniversitar might be missing
           cursuri: []
         };
       }
@@ -736,15 +906,15 @@ const AdminIstoricAcademicPage = () => {
           ...curs,
           anStudiu: anual.anStudiu,
           semestru: anual.semestru,
-          anUniversitar: anual.anUniversitar
+          anUniversitar: anual.anUniversitar || ''
         });
       }
     }
     
-    // Sortează semestrele după an universitar și semestru
+    // Sortează semestrele după an de studiu și semestru
     return Object.values(cursuriBySemestru).sort((a, b) => {
-      if (a.anUniversitar !== b.anUniversitar) {
-        return a.anUniversitar.localeCompare(b.anUniversitar);
+      if (a.anStudiu !== b.anStudiu) {
+        return a.anStudiu.localeCompare(b.anStudiu);
       }
       return a.semestru - b.semestru;
     });
@@ -993,9 +1163,8 @@ const AdminIstoricAcademicPage = () => {
                           <div className="bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-yellow-accent dark:to-yellow-accent/80 px-6 py-4">
                             <h3 className="text-lg font-semibold text-[#024A76] dark:text-gray-900 flex items-center drop-shadow-sm">
                               <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              Anul {semestru.anStudiu}, Semestrul {semestru.semestru} ({semestru.anUniversitar})
+                              Anul {semestru.anStudiu}, Semestrul {semestru.semestru}
                             </h3>
                           </div>
                           <div className="overflow-x-auto">
@@ -1005,14 +1174,13 @@ const AdminIstoricAcademicPage = () => {
                                   <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Materie</th>
                                   <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Credite</th>
                                   <th className="px-6 py-4 text-center text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Notă</th>
-                                  <th className="px-6 py-4 text-left text-xs font-semibold text-white dark:text-gray-900 uppercase tracking-wider drop-shadow-sm">Acțiuni</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-gray-200 dark:divide-gray-700 bg-white/80 dark:bg-gray-800/50">
                                 {semestru.cursuri.map((curs, courseIndex) => {
                                   // Găsim indexul anual și al notei pentru această notă
                                   const anualIndex = selectedStudentData.istoric.istoricAnual.findIndex(a => 
-                                    a.anStudiu === curs.anStudiu && a.semestru === curs.semestru && a.anUniversitar === curs.anUniversitar
+                                    a.anStudiu === curs.anStudiu && a.semestru === curs.semestru
                                   );
                                   
                                   const noteIndex = selectedStudentData.istoric.istoricAnual[anualIndex].cursuri.findIndex(c => 
@@ -1020,6 +1188,7 @@ const AdminIstoricAcademicPage = () => {
                                   );
                                   
                                   const isEditing = editingNoteId === `${anualIndex}-${noteIndex}`;
+                                  const isGradeEditing = editingGrade?.key === `${anualIndex}-${noteIndex}`;
                                   
                                   return (
                                     <tr key={courseIndex} className="group hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 transition-all duration-200">
@@ -1053,63 +1222,79 @@ const AdminIstoricAcademicPage = () => {
                                       </td>
                                       <td className="px-6 py-4 text-center">
                                         {isEditing ? (
-                                          <input
-                                            type="number"
-                                            min="1"
-                                            max="10"
-                                            step="0.01"
-                                            value={editNoteForm.nota}
-                                            onChange={(e) => setEditNoteForm({...editNoteForm, nota: parseFloat(e.target.value)})}
-                                            className="w-20 px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23] text-center"
-                                          />
-                                        ) : (
-                                          curs.nota === 0 ? 
-                                            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">Neevaluat</span> : 
-                                            <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                                              curs.nota >= 5 
-                                                ? "bg-gradient-to-r from-green-100 to-green-200 text-green-800" 
-                                                : "bg-gradient-to-r from-red-100 to-red-200 text-red-800"
-                                            }`}>
-                                              {curs.nota}
-                                            </span>
-                                        )}
-                                      </td>
-                                      <td className="px-6 py-4">
-                                        {isEditing ? (
-                                          <div className="flex space-x-2">
+                                          <div className="flex items-center justify-center space-x-2">
+                                                                                          <input
+                                                type="number"
+                                                min="1"
+                                                max="10"
+                                                value={editNoteForm.nota}
+                                                onChange={(e) => setEditNoteForm({...editNoteForm, nota: parseInt(e.target.value) || 0})}
+                                                className="w-20 px-3 py-2 border border-[#024A76]/30 rounded-md focus:outline-none focus:ring-2 focus:ring-[#E3AB23] text-center"
+                                              />
                                             <button
                                               onClick={() => handleSaveNote(anualIndex, noteIndex)}
-                                              className="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-md hover:shadow-md transition-all duration-200 text-sm font-medium"
+                                              className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors duration-200"
+                                              title="Salvează modificările"
                                             >
-                                              Salvează
+                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                              </svg>
                                             </button>
                                             <button
                                               onClick={handleCancelEdit}
-                                              className="px-3 py-1 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-md hover:shadow-md transition-all duration-200 text-sm font-medium"
+                                              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded transition-colors duration-200"
+                                              title="Anulează modificările"
                                             >
-                                              Anulează
+                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                              </svg>
+                                            </button>
+                                          </div>
+                                        ) : isGradeEditing ? (
+                                          <div className="flex items-center justify-center space-x-2">
+                                                                                         <input
+                                               type="number"
+                                               min="0"
+                                               max="10"
+                                               value={editingGrade.value}
+                                               onChange={(e) => handleInlineGradeChange(e.target.value)}
+                                               onBlur={() => saveInlineGrade(anualIndex, noteIndex)}
+                                               onKeyPress={(e) => {
+                                                 if (e.key === 'Enter') {
+                                                   saveInlineGrade(anualIndex, noteIndex);
+                                                 } else if (e.key === 'Escape') {
+                                                   cancelInlineGradeEdit();
+                                                 }
+                                               }}
+                                               className="w-16 text-center bg-transparent border-b-2 border-[#E3AB23] dark:border-yellow-accent focus:outline-none text-[#024A76] dark:text-blue-light font-bold text-sm"
+                                               autoFocus
+                                             />
+                                            <button
+                                              onClick={() => saveInlineGrade(anualIndex, noteIndex)}
+                                              className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 p-1 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors duration-200"
+                                              title="Salvează nota"
+                                            >
+                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                              </svg>
                                             </button>
                                           </div>
                                         ) : (
-                                          <div className="flex space-x-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                            <button
-                                              onClick={() => startEditingNote(anualIndex, noteIndex)}
-                                              className="text-[#024A76] hover:text-[#3471B8] transition-colors duration-200"
-                                              title="Editează"
-                                            >
-                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                              </svg>
-                                            </button>
-                                            <button
-                                              onClick={() => handleDeleteNote(anualIndex, noteIndex)}
-                                              className="text-red-500 hover:text-red-700 transition-colors duration-200"
-                                              title="Șterge"
-                                            >
-                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                              </svg>
-                                            </button>
+                                          <div 
+                                            className="cursor-pointer hover:bg-[#024A76]/5 dark:hover:bg-blue-light/10 rounded-md p-2 transition-colors duration-200"
+                                            onClick={() => startInlineGradeEdit(anualIndex, noteIndex, curs.nota)}
+                                            title="Click pentru a edita nota"
+                                          >
+                                            {curs.nota === 0 ? 
+                                              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full text-sm font-medium">Neevaluat</span> : 
+                                              <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                                                curs.nota >= 5 
+                                                  ? "bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900/30 dark:to-green-800/30 text-green-800 dark:text-green-300" 
+                                                  : "bg-gradient-to-r from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 text-red-800 dark:text-red-300"
+                                              }`}>
+                                                {curs.nota}
+                                              </span>
+                                            }
                                           </div>
                                         )}
                                       </td>
@@ -1142,6 +1327,15 @@ const AdminIstoricAcademicPage = () => {
             )}
           </div>
         </div>
+        
+        {/* Toast Notification */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={hideToast}
+          />
+        )}
         
         {/* Custom scrollbar styles */}
         <style jsx>{`

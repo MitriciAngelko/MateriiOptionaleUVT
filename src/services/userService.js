@@ -70,10 +70,15 @@ export const updateMateriiCuProfesor = async (userId, materiiSelectate, numeProf
  */
 export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentData) => {
   try {
+    console.log(`🎓 CRITICAL: Enrolling student ${studentData.prenume} ${studentData.nume} in mandatory courses...`);
+    console.log(`   - Faculty: ${studentData.facultate}`);
+    console.log(`   - Specialization: ${studentData.specializare}`);
+    console.log(`   - Year: ${studentData.an}`);
+
     // Find mandatory courses
     const materiiQuery = query(
       collection(db, 'materii'),
-      where('tip', '==', 'obligatorie'),
+      where('obligatorie', '==', true),
       where('facultate', '==', studentData.facultate),
       where('specializare', '==', studentData.specializare),
       where('an', '==', studentData.an)
@@ -89,43 +94,78 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
       });
     });
 
-    // Create enrollment records
-    for (const materie of materiiObligatorii) {
-      const enrollmentData = {
-        studentId: studentId,
-        studentNume: `${studentData.prenume} ${studentData.nume}`,
-        studentEmail: studentData.email,
-        studentSpecializare: studentData.specializare,
-        studentAn: studentData.an,
-        studentFacultate: studentData.facultate,
-        materieId: materie.id,
-        materieNume: materie.nume,
-        materieFacultate: materie.facultate,
-        materieSpecializare: materie.specializare,
-        materieAn: materie.an,
-        materieTip: materie.tip,
-        dataInscriere: new Date(),
-        status: 'inscris',
-        anAcademic: new Date().getFullYear(),
-        semestru: materie.semestru || 1
-      };
+    console.log(`📚 Found ${materiiObligatorii.length} mandatory courses for this profile`);
 
-      await setDoc(doc(collection(db, 'enrollments')), enrollmentData);
+    if (materiiObligatorii.length === 0) {
+      console.log(`ℹ️ No mandatory courses found for ${studentData.facultate} - ${studentData.specializare} - Year ${studentData.an}`);
+      return;
     }
 
-    // Create academic history record
+    // Prepare student info for enrollment with null checks
+    const studentInfo = {
+      id: studentId || '',
+      nume: `${studentData.prenume || ''} ${studentData.nume || ''}`.trim() || 'Student Necunoscut',
+      numarMatricol: studentData.numarMatricol || 'N/A'
+    };
+
+    const materiiIds = [];
+
+    // CRITICAL: Enroll student in each mandatory course by updating the materii documents
+    for (const materie of materiiObligatorii) {
+      try {
+        console.log(`📝 Enrolling in: ${materie.nume} (${materie.id})`);
+        
+        // Get current materie document to check if student is already enrolled
+        const materieRef = doc(db, 'materii', materie.id);
+        const materieDoc = await getDoc(materieRef);
+        
+        if (materieDoc.exists()) {
+          const materieData = materieDoc.data();
+          const studentiActuali = materieData.studentiInscrisi || [];
+          
+          // Check if student is not already enrolled
+          if (!studentiActuali.some(student => student.id === studentId)) {
+            await updateDoc(materieRef, {
+              studentiInscrisi: arrayUnion(studentInfo)
+            });
+            
+            materiiIds.push(materie.id);
+            console.log(`   ✅ Successfully enrolled in ${materie.nume}`);
+          } else {
+            // If already enrolled, still add to the list for the user document
+            materiiIds.push(materie.id);
+            console.log(`   ℹ️ Already enrolled in ${materie.nume}`);
+          }
+        }
+      } catch (materieError) {
+        console.error(`   ❌ Failed to enroll in ${materie.nume}:`, materieError);
+        // Continue with other courses even if one fails
+      }
+    }
+
+    // CRITICAL: Update student's materiiInscrise array with all mandatory course IDs
+    if (materiiIds.length > 0) {
+      const userRef = doc(db, 'users', studentId);
+      await updateDoc(userRef, {
+        materiiInscrise: arrayUnion(...materiiIds)
+      });
+      
+      console.log(`📝 Updated student document with ${materiiIds.length} mandatory courses`);
+    }
+
+    // Create academic history record with null checks to prevent undefined values
     const istoricData = {
-      studentId: studentId,
-      studentNume: `${studentData.prenume} ${studentData.nume}`,
-      studentEmail: studentData.email,
+      studentId: studentId || '',
+      studentNume: `${studentData.prenume || ''} ${studentData.nume || ''}`.trim() || 'Student Necunoscut',
+      studentEmail: studentData.email || '',
       anAcademic: new Date().getFullYear(),
-      facultate: studentData.facultate,
-      specializare: studentData.specializare,
-      an: studentData.an,
+      facultate: studentData.facultate || '',
+      specializare: studentData.specializare || '',
+      an: studentData.an || '',
       materii: materiiObligatorii.map(materie => ({
-        materieId: materie.id,
-        materieNume: materie.nume,
-        materieTip: materie.tip,
+        materieId: materie.id || '',
+        materieNume: materie.nume || 'Materie Necunoscuta',
+        materieTip: materie.tip || 'obligatorie',
         nota: null,
         status: 'in_curs',
         credite: materie.credite || 5,
@@ -135,10 +175,19 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
       status: 'activ'
     };
 
+    // Debug logging to help identify undefined values
+    console.log(`📝 Creating academic history for student: ${istoricData.studentNume}`);
+    if (!studentId) console.warn('⚠️ Warning: studentId is undefined');
+    if (!studentData.prenume && !studentData.nume) console.warn('⚠️ Warning: student name is undefined');
+
     await setDoc(doc(collection(db, 'istoricAcademic')), istoricData);
 
+    console.log(`🎓 Student enrollment completed successfully!`);
+    console.log(`   - Total mandatory courses: ${materiiObligatorii.length}`);
+    console.log(`   - Successfully enrolled: ${materiiIds.length}`);
+
   } catch (error) {
-    console.error('Error assigning mandatory courses:', error);
+    console.error('❌ Error assigning mandatory courses:', error);
     throw error;
   }
 };

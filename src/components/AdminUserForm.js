@@ -105,6 +105,28 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
     return `${cleanPrenume}.${cleanNume}${ultimeleCifre}@e-uvt.ro`;
   };
 
+  // Funcție pentru resetarea câmpurilor specifice tipului când se schimbă tipul
+  const resetTypeSpecificFields = () => {
+    setFormData(prev => ({
+      ...prev,
+      email: '',
+      facultate: '',
+      specializare: '',
+      an: '',
+      anNastere: '',
+      functie: ''
+    }));
+    setMateriiSelectate([]);
+  };
+
+  // Funcție pentru schimbarea tipului de utilizator
+  const handleTypeChange = (newType) => {
+    if (newType !== formType) {
+      setFormType(newType);
+      resetTypeSpecificFields();
+    }
+  };
+
   // Modificăm handleChange pentru a actualiza emailul automat
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -373,6 +395,156 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* User Type Selector */}
+            {!editingUser && (
+              <div className="bg-gradient-to-r from-[#024A76]/5 to-[#3471B8]/5 dark:from-gray-700/50 dark:to-gray-600/50 p-6 rounded-xl border border-[#024A76]/20 dark:border-gray-600 shadow-lg">
+                <h4 className="text-lg font-semibold text-[#024A76] dark:text-blue-light mb-4 flex items-center">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                  Selectează Tipul de Utilizator
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Student Option */}
+                                     <button
+                     type="button"
+                     onClick={() => handleTypeChange('student')}
+                     className={`relative p-4 rounded-xl border-2 transition-all duration-300 text-left hover:shadow-lg ${
+                      formType === 'student'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-blue-300 dark:hover:border-blue-500'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${
+                        formType === 'student' 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                      }`}>
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <h5 className={`font-semibold ${
+                          formType === 'student' 
+                            ? 'text-blue-700 dark:text-blue-300' 
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          Student
+                        </h5>
+                        <p className={`text-sm ${
+                          formType === 'student' 
+                            ? 'text-blue-600 dark:text-blue-400' 
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          Cont pentru studenți
+                        </p>
+                      </div>
+                    </div>
+                    {formType === 'student' && (
+                      <div className="absolute top-2 right-2">
+                        <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Professor Option */}
+                                     <button
+                     type="button"
+                     onClick={() => handleTypeChange('profesor')}
+                     className={`relative p-4 rounded-xl border-2 transition-all duration-300 text-left hover:shadow-lg ${
+                      formType === 'profesor'
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-md'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-green-300 dark:hover:border-green-500'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${
+                        formType === 'profesor' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                      }`}>
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
+                          <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h5 className={`font-semibold ${
+                          formType === 'profesor' 
+                            ? 'text-green-700 dark:text-green-300' 
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          Profesor
+                        </h5>
+                        <p className={`text-sm ${
+                          formType === 'profesor' 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          Cont pentru profesori
+                        </p>
+                      </div>
+                    </div>
+                    {formType === 'profesor' && (
+                      <div className="absolute top-2 right-2">
+                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Secretary Option */}
+                                     <button
+                     type="button"
+                     onClick={() => handleTypeChange('secretar')}
+                     className={`relative p-4 rounded-xl border-2 transition-all duration-300 text-left hover:shadow-lg ${
+                      formType === 'secretar'
+                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-md'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800/50 hover:border-purple-300 dark:hover:border-purple-500'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg ${
+                        formType === 'secretar' 
+                          ? 'bg-purple-500 text-white' 
+                          : 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                      }`}>
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h5 className={`font-semibold ${
+                          formType === 'secretar' 
+                            ? 'text-purple-700 dark:text-purple-300' 
+                            : 'text-gray-700 dark:text-gray-300'
+                        }`}>
+                          Secretar
+                        </h5>
+                        <p className={`text-sm ${
+                          formType === 'secretar' 
+                            ? 'text-purple-600 dark:text-purple-400' 
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          Cont pentru secretari
+                        </p>
+                      </div>
+                    </div>
+                    {formType === 'secretar' && (
+                      <div className="absolute top-2 right-2">
+                        <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Personal Information */}
             <div className="bg-gradient-to-r from-[#E3AB23]/5 to-transparent dark:from-yellow-accent/10 dark:to-transparent p-6 rounded-xl border-l-4 border-[#E3AB23] dark:border-yellow-accent shadow-lg">

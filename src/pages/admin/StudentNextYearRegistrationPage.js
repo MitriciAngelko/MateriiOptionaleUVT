@@ -5,6 +5,84 @@ import { collection, getDocs, doc, getDoc, updateDoc, query, where, setDoc } fro
 import { db } from '../../firebase';
 import { isAdmin } from '../../utils/userRoles';
 
+// Toast notification component
+const Toast = ({ message, type = 'success', onClose }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const getToastStyles = () => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-500 text-white';
+      case 'error':
+        return 'bg-red-500 text-white';
+      case 'warning':
+        return 'bg-yellow-500 text-white';
+      case 'info':
+        return 'bg-blue-500 text-white';
+      default:
+        return 'bg-gray-500 text-white';
+    }
+  };
+
+  const getIcon = () => {
+    switch (type) {
+      case 'success':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'error':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        );
+      case 'warning':
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+        );
+    }
+  };
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 flex items-center p-4 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out ${getToastStyles()}`}>
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          {getIcon()}
+        </div>
+        <div className="ml-3">
+          <p className="text-sm font-medium">{message}</p>
+        </div>
+        <div className="ml-4 flex-shrink-0">
+          <button
+            className="inline-flex text-white hover:text-gray-200 focus:outline-none focus:text-gray-200"
+            onClick={onClose}
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StudentNextYearRegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [studentsLoading, setStudentsLoading] = useState(false);
@@ -15,6 +93,7 @@ const StudentNextYearRegistrationPage = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
+  const [toast, setToast] = useState(null);
   const [filters, setFilters] = useState({
     facultate: '',
     specializare: '',
@@ -23,6 +102,15 @@ const StudentNextYearRegistrationPage = () => {
 
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
+
+  // Toast notification functions
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
+  const hideToast = () => {
+    setToast(null);
+  };
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -497,13 +585,13 @@ const StudentNextYearRegistrationPage = () => {
       }
 
       if (successCount > 0) {
-        setSuccessMessage(`Au fost înregistrați cu succes ${successCount} studenți în anul următor. Aceștia au fost înscriși automat la cursurile obligatorii și au fost eliminați din cursurile deja promovate.`);
+        showToast(`Au fost înregistrați cu succes ${successCount} studenți în anul următor. Aceștia au fost înscriși automat la cursurile obligatorii și au fost eliminați din cursurile deja promovate.`, 'success');
         // Refresh the list
         await fetchEligibleStudents();
       }
 
       if (errorCount > 0) {
-        setError(`${errorCount} studenți nu au putut fi înregistrați din cauza unor erori.`);
+        showToast(`${errorCount} studenți nu au putut fi înregistrați din cauza unor erori.`, 'error');
       }
 
     } catch (error) {
@@ -548,11 +636,7 @@ const StudentNextYearRegistrationPage = () => {
           </div>
         )}
 
-        {successMessage && (
-          <div className="mb-4 p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg border border-green-200 dark:border-green-700">
-            {successMessage}
-          </div>
-        )}
+
 
         {/* Filters Section */}
         <div className="mb-6 p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
@@ -767,6 +851,15 @@ const StudentNextYearRegistrationPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={hideToast}
+        />
+      )}
     </div>
   );
 };

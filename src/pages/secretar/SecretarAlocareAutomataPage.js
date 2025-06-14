@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -1015,46 +1015,9 @@ const SecretarAlocareAutomataPage = () => {
             statusAlocare: 'alocat'
           });
           
-          // Adăugăm materia în istoricul academic al studentului
-          const dataAlocare = new Date().toISOString();
-          const anUniversitar = new Date().getFullYear() + "-" + (new Date().getFullYear() + 1);
-          const semestru = new Date().getMonth() < 8 ? 2 : 1; // Înainte de septembrie este semestrul 2, altfel 1
+          // Adăugăm materia în istoricul academic existent al studentului
+          console.log(`📚 Adding allocated course to existing academic history for student: ${student.nume} ${student.prenume}`);
           
-          // Verificăm dacă există deja o intrare în istoricAcademic pentru acest student
-          const istoricQuery = query(
-            collection(db, 'istoricAcademic'),
-            where('studentId', '==', student.id),
-            where('materieId', '==', student.materieAlocata)
-          );
-          
-          const istoricDocs = await getDocs(istoricQuery);
-          
-          // Pregătim datele pentru istoricul academic
-          const istoricData = {
-            studentId: student.id,
-            numeStudent: student.nume,
-            prenumeStudent: student.prenume,
-            mediaStudent: student.media,
-            materieId: student.materieAlocata,
-            numeMaterie: student.numeMaterieAlocata,
-            pachetId: selectedPachet,
-            dataAlocare: dataAlocare,
-            anUniversitar: anUniversitar,
-            semestru: semestru,
-            metodaAlocare: 'automata',
-            statusInscriere: 'activ',
-            pozitiePreferinta: student.pozitiePrioritate
-          };
-          
-          if (istoricDocs.empty) {
-            // Dacă nu există, creăm o nouă intrare
-            await addDoc(collection(db, 'istoricAcademic'), istoricData);
-          } else {
-            // Dacă există, actualizăm intrarea existentă
-            await updateDoc(doc(db, 'istoricAcademic', istoricDocs.docs[0].id), istoricData);
-          }
-          
-          // Adăugăm și în structura corectă a istoricului academic (documentul cu ID-ul studentului)
           // Obținem sau creăm istoricul academic al studentului
           const istoricStudentRef = doc(db, 'istoricAcademic', student.id);
           const istoricStudentDoc = await getDoc(istoricStudentRef);
@@ -1077,7 +1040,7 @@ const SecretarAlocareAutomataPage = () => {
           // Căutăm materia pentru a obține informații suplimentare
           let materieInfo = materii.find(m => m.id === student.materieAlocata);
           const anStudiu = materieInfo?.an || 'I';
-          const semestruMaterie = materieInfo?.semestru || semestru;
+          const semestruMaterie = materieInfo?.semestru || 1;
           const credite = materieInfo?.credite || 0;
           
           // Creează nota pentru materie
@@ -1086,39 +1049,42 @@ const SecretarAlocareAutomataPage = () => {
             nume: student.numeMaterieAlocata,
             credite: credite,
             nota: 0, // Nota 0 - neevaluată încă
-            dataNota: new Date(),
+            dataNota: new Date().getTime(), // Use timestamp instead of Date object
             profesor: materieInfo?.profesor?.nume || 'Nespecificat',
             obligatorie: materieInfo?.obligatorie || false,
             status: 'neevaluat'
           };
           
-          // Verifică dacă există deja un istoric pentru anul și semestrul specificat
+          console.log(`📝 Adding course to Year ${anStudiu}, Semester ${semestruMaterie}: ${student.numeMaterieAlocata}`);
+          
+          // Verifică dacă există deja un istoric pentru anul și semestrul specificat (fără anUniversitar)
           const anualIndex = istoricStudentData.istoricAnual.findIndex(
-            item => item.anUniversitar === anUniversitar && 
-                  item.anStudiu === anStudiu &&
-                  item.semestru === parseInt(semestruMaterie)
+            item => item.anStudiu === anStudiu && item.semestru === parseInt(semestruMaterie)
           );
           
           if (anualIndex >= 0) {
-            // Verifică dacă materia există deja în acest an
+            // Verifică dacă materia există deja în acest an/semestru
             const materieExistenta = istoricStudentData.istoricAnual[anualIndex].cursuri.some(
               curs => curs.id === student.materieAlocata
             );
             
             if (!materieExistenta) {
-              // Adaugă nota la un istoric existent
+              // Adaugă nota la istoricul existent pentru an/semestru
               istoricStudentData.istoricAnual[anualIndex].cursuri.push(newNote);
+              console.log(`✅ Added course to existing Year ${anStudiu}, Semester ${semestruMaterie} record`);
+            } else {
+              console.log(`ℹ️ Course already exists in Year ${anStudiu}, Semester ${semestruMaterie}`);
             }
           } else {
-            // Creează un nou istoric anual
+            // Creează un nou istoric anual (fără anUniversitar)
             const newAnualRecord = {
-              anUniversitar: anUniversitar,
               anStudiu: anStudiu,
               semestru: parseInt(semestruMaterie),
               cursuri: [newNote]
             };
             
             istoricStudentData.istoricAnual.push(newAnualRecord);
+            console.log(`✅ Created new record for Year ${anStudiu}, Semester ${semestruMaterie}`);
           }
           
           // Salvăm istoricul academic actualizat
