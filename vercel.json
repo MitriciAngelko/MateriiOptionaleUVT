@@ -1,11 +1,9 @@
 {
     "version": 2,
-    "buildCommand": "npm run build",
-    "outputDirectory": "build",
     "functions": {
-      "api/server.js": {
-        "runtime": "nodejs20.x"
-      }
+        "api/**/*.js": {
+        "runtime": "vercel/node@20.x"
+        }
     },
     "rewrites": [
       {
@@ -17,4 +15,4 @@
         "destination": "/index.html"
       }
     ]
-  }
+}
