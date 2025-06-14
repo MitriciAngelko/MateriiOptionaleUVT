@@ -215,8 +215,6 @@ const HomePage = () => {
         {/* UVT Contact Information */}
         <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-lg p-8 mt-10 border border-gray-200 dark:border-gray-700/50">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-blue-light dark:to-yellow-accent bg-clip-text text-transparent mb-6 text-center drop-shadow-sm">Facultatea de Matematică și Informatică - UVT</h2>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {/* Contact Information */}
               <div className="space-y-5">

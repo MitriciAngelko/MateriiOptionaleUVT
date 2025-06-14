@@ -205,12 +205,12 @@ const AdminMateriiPage = () => {
     try {
       setShowPreview(false);
       setIsProcessing(true);
-      setProcessingMessage(`📤 Încarc ${previewMaterii.length} materii în baza de date...`);
+      setProcessingMessage(`Încarc ${previewMaterii.length} materii în baza de date...`);
       
       // Bulk upload to Firebase with progress tracking
       const results = await bulkUploadMaterii(previewMaterii, (progress) => {
         setProcessingMessage(
-          `📤 Încarc materii: ${progress.current}/${progress.total} (${progress.percentage}%)\n` +
+          `Încarc materii: ${progress.current}/${progress.total} (${progress.percentage}%)\n` +
           `Materia curentă: ${progress.currentMaterie}`
         );
       });

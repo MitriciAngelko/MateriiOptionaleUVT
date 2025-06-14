@@ -41,13 +41,13 @@ const AdminPage = () => {
   const { allMaterii, loading: materiiLoading } = useMaterii();
 
   const facultati = [
-    "Facultatea de Matematică și Informatică",
-    "Facultatea de Fizică",
+    "Facultatea de Matematica si Informatica",
+    "Facultatea de Fizica",
     // ... alte facultăți
   ];
 
   const specializari = {
-    "Facultatea de Matematică și Informatică": ["IR", "IG", "MI", "MA"],
+    "Facultatea de Matematica si Informatica": ["IR", "IE", "IA", "ID"],
     // ... alte specializări
   };
 
@@ -506,7 +506,7 @@ const AdminPage = () => {
       console.log(`Creating user ${index + 1}/${usersData.length}: ${userData.nume} ${userData.prenume}`);
       
       // Generate default password (user can change it later)
-      const defaultPassword = 'TempPass123!';
+      const defaultPassword = '123456';
       
       // Prepare user data for the createUser service
       const userDataForService = {

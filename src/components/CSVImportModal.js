@@ -344,9 +344,6 @@ const CSVImportModal = ({ onClose, onImport }) => {
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
       <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-2xl font-bold text-gray-800">
-            Import utilizatori din CSV
-          </h3>
           {step !== 3 && ( // Don't show close button during processing
             <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

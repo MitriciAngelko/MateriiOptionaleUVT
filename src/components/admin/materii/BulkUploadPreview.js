@@ -29,11 +29,11 @@ const BulkUploadPreview = ({ materiiList, onConfirm, onCancel, uploadResults }) 
             
             <div className="space-y-2 text-sm">
               <p className="text-green-600 dark:text-green-400">
-                ✅ {uploadResults.successful} materii încărcate cu succes
+                {uploadResults.successful} materii încărcate cu succes
               </p>
               {uploadResults.failed > 0 && (
                 <p className="text-red-600 dark:text-red-400">
-                  ❌ {uploadResults.failed} materii cu erori
+                  {uploadResults.failed} materii cu erori
                 </p>
               )}
             </div>

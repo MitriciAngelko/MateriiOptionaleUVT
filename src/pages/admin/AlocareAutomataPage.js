@@ -247,12 +247,7 @@ const AlocareAutomataPage = () => {
 
       // Obține toate pachetele disponibile
       const pacheteSnapshot = await getDocs(collection(db, 'pachete'));
-      
-      if (pacheteSnapshot.empty) {
-        setError('Nu există pachete disponibile.');
-        setLoading(false);
-        return;
-      }
+    
       
       // Construiește lista de pachete cu informații despre perioada de înscriere
       const pacheteData = [];
@@ -334,24 +329,55 @@ const AlocareAutomataPage = () => {
       }
       
       const pachetData = pachetDoc.data();
-      const materii = pachetData.materii || [];
+      const materiiReferinte = pachetData.materii || [];
       
       // Verifică dacă există materii în pachet
-      if (materii.length === 0) {
+      if (materiiReferinte.length === 0) {
         throw new Error('Pachetul nu conține materii');
       }
       
       console.log('=== ÎNCEPE PROCESUL DE ALOCARE AUTOMATĂ ===');
       console.log(`Pachet: ${pachetData.nume}`);
-      console.log(`Materii în pachet: ${materii.length}`);
-      console.log('Lista materiilor:', materii.map(m => `${m.nume} (ID: ${m.id})`));
+      console.log(`Materii în pachet: ${materiiReferinte.length}`);
+      console.log('Lista materiilor:', materiiReferinte.map(m => `${m.nume} (ID: ${m.id})`));
       
-      // Adaugă câmpul locuriRamase pentru fiecare materie (în cazul în care nu există)
-      materii.forEach(materie => {
-        materie.locuriRamase = materie.locuriDisponibile || 0;
-        materie.studentiInscrisi = materie.studentiInscrisi || [];
-        console.log(`Materia: ${materie.nume}, Locuri disponibile: ${materie.locuriRamase}`);
-      });
+      // 1.1. Obține detaliile complete ale materiilor din colecția 'materii'
+      const materii = [];
+      for (const materieRef of materiiReferinte) {
+        try {
+                     const materieDoc = await getDoc(doc(db, 'materii', materieRef.id));
+           if (materieDoc.exists()) {
+             const materieData = materieDoc.data();
+             
+             // Determină numărul de locuri disponibile
+             let locuriDisponibile = 0;
+             if (materieData.obligatorie) {
+               // Materiile obligatorii au locuri nelimitate pentru alocare
+               locuriDisponibile = 999; // Un număr mare pentru a simula locuri nelimitate
+             } else {
+               // Pentru materiile opționale, folosește locuriDisponibile sau un default de 30
+               locuriDisponibile = materieData.locuriDisponibile || 30;
+             }
+             
+             materii.push({
+               id: materieDoc.id,
+               ...materieData,
+               locuriDisponibile: locuriDisponibile,
+               locuriRamase: locuriDisponibile,
+               studentiInscrisi: materieData.studentiInscrisi || []
+             });
+             console.log(`Materia: ${materieData.nume}, Locuri disponibile: ${locuriDisponibile} (${materieData.obligatorie ? 'obligatorie' : 'opțională'})`);
+           } else {
+             console.warn(`Materia cu ID ${materieRef.id} nu a fost găsită în colecția 'materii'`);
+           }
+        } catch (error) {
+          console.error(`Eroare la obținerea materiei ${materieRef.id}:`, error);
+        }
+      }
+      
+      if (materii.length === 0) {
+        throw new Error('Nu s-au putut obține detaliile materiilor din pachet');
+      }
       
       // 2. Obține toți studenții care au preferințe pentru acest pachet
       console.log('Obținere studenți cu preferințe pentru pachetul:', selectedPachet);
