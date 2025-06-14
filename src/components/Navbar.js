@@ -85,7 +85,12 @@ const Navbar = () => {
     if (isMainAdmin || roles.hasAdminAccess) {
       items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
       items.push({ path: '/admin-materii', label: 'Materii' });
-      items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
+      
+      // Only add "Istoric Academic" for admin users, not secretar
+      if (isMainAdmin || roles.isAdmin) {
+        items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
+      }
+      
       items.push({ path: '/alocare-automata', label: 'Alocare Automată' });
       items.push({ path: '/inscriere-anul-urmator', label: 'Înscrierea în Anul Următor' });
       
@@ -120,7 +125,7 @@ const Navbar = () => {
     <>
       {/* Floating Burger Button - Mobile Only */}
       <button 
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-full bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:bg-gradient-to-r dark:from-yellow-accent dark:to-yellow-accent/90 text-white dark:text-blue-dark shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm border border-white/20 dark:border-blue-light/30"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-full bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:bg-gradient-to-r dark:from-yellow-accent dark:to-yellow-accent/70 text-white dark:text-blue-dark shadow-lg hover:shadow-xl transition-all duration-300 group backdrop-blur-sm border border-white/20 dark:border-blue-light/30"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label="Toggle menu"
       >
@@ -138,7 +143,7 @@ const Navbar = () => {
       </button>
 
       {/* Desktop Navbar Only */}
-      <div className="hidden lg:block h-16 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:bg-gradient-to-r dark:from-yellow-accent dark:to-yellow-accent/90 text-white dark:text-blue-dark w-full fixed top-0 z-50 shadow-lg border-b border-[#3471B8]/30 dark:border-blue-light/40 transition-all duration-300">
+      <div className="hidden lg:block h-16 bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:bg-gradient-to-r dark:from-yellow-accent dark:to-yellow-accent/70 text-white dark:text-blue-dark w-full fixed top-0 z-50 shadow-lg border-b border-[#3471B8]/30 dark:border-blue-light/40 transition-all duration-300">
         <div className="flex items-center justify-between px-6 h-full">
           {/* Left Section - Logo & Navigation */}
           <div className="flex items-center h-full">
@@ -189,9 +194,9 @@ const Navbar = () => {
                 <ThemeToggle />
                 {/* Profile Button - Show for secretar and other non-admin users */}
                 {!isMainAdmin && (
-                  <button
-                    onClick={handleProfileClick}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-blue-dark dark:to-blue-light text-[#024A76] dark:text-yellow-accent flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 dark:hover:from-yellow-accent dark:hover:to-yellow-accent/80 hover:text-[#024A76] dark:hover:text-blue-dark transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
+                                  <button
+                  onClick={handleProfileClick}
+                  className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-gray-100 dark:from-blue-dark dark:to-blue-light text-[#024A76] dark:text-yellow-accent flex items-center justify-center font-bold text-lg hover:from-[#E3AB23] hover:to-[#E3AB23]/80 dark:hover:from-yellow-accent dark:hover:to-yellow-accent/80 hover:text-[#024A76] dark:hover:text-blue-dark transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border-2 border-white/20 dark:border-blue-light/30"
                     title="Profil"
                   >
                     {getInitials()}
@@ -210,9 +215,9 @@ const Navbar = () => {
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => navigate('/login')}
-                className="px-4 py-2 text-sm bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 dark:hover:from-blue-dark dark:hover:to-blue-light rounded-lg transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 border border-white/20 dark:border-blue-light/30"
+                              <button
+                  onClick={() => navigate('/login')}
+                  className="px-4 py-2 text-sm bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/80 dark:from-blue-light dark:to-blue-dark text-[#024A76] dark:text-white hover:from-[#E3AB23]/90 hover:to-[#E3AB23]/70 dark:hover:from-blue-dark dark:hover:to-blue-light rounded-lg transition-all duration-300 font-semibold shadow-lg hover:shadow-xl hover:scale-105 border border-white/20 dark:border-blue-light/30"
               >
                 Autentificare
               </button>
@@ -230,7 +235,7 @@ const Navbar = () => {
       )}
       
       {/* Mobile Sidebar Menu */}
-      <div className={`lg:hidden fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-gradient-to-b from-[#024A76] via-[#024A76] to-[#3471B8] dark:bg-gradient-to-b dark:from-yellow-accent dark:via-yellow-accent dark:to-yellow-accent/90 text-white dark:text-blue-dark z-50 transform transition-transform duration-300 ease-in-out shadow-2xl ${
+      <div className={`lg:hidden fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-gradient-to-b from-[#024A76] via-[#024A76] to-[#3471B8] dark:bg-gradient-to-b dark:from-yellow-accent dark:via-yellow-accent/85 dark:to-yellow-accent/70 text-white dark:text-blue-dark z-50 transform transition-transform duration-300 ease-in-out shadow-2xl ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         
