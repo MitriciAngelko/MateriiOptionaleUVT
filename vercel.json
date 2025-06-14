@@ -1,15 +1,8 @@
 {
     "version": 2,
-    "functions": {
-        "api/**/*.js": {
-        "runtime": "vercel/node@22.x"
-        }
-    },
+    "buildCommand": "npm run build",
+    "outputDirectory": "build",
     "rewrites": [
-      {
-        "source": "/api/(.*)",
-        "destination": "/api/server.js"
-      },
       {
         "source": "/(.*)",
         "destination": "/index.html"
