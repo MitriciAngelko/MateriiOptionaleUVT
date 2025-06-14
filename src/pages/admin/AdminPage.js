@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useAuth } from '../../providers/AuthProvider';
-import { db, auth } from '../../firebase';
-import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where } from 'firebase/firestore';
+import { db } from '../../firebase';
+import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import AdminUserForm from '../../components/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import CSVImportModal from '../../components/CSVImportModal';
@@ -20,10 +20,6 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [users, setUsers] = useState([]);
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState('allUsers');
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [filters, setFilters] = useState({
     tip: 'all',
@@ -35,7 +31,6 @@ const AdminPage = () => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [materiiList, setMateriiList] = useState([]);
-  const [hasAccess, setHasAccess] = useState(false);
   const [showCSVImportModal, setShowCSVImportModal] = useState(false);
   const [showMassDeleteModal, setShowMassDeleteModal] = useState(false);
   const { allMaterii, loading: materiiLoading } = useMaterii();
@@ -55,7 +50,7 @@ const AdminPage = () => {
   const tipuriUtilizatori = ["all", "student", "profesor", "secretar"];
   
   // Fetch users function that can be called from different places
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       // Verifică dacă utilizatorul este admin sau secretar
       const adminAccess = await isAdmin(user.uid);
@@ -65,8 +60,6 @@ const AdminPage = () => {
         navigate('/');
         return;
       }
-
-      setHasAccess(true);
 
       // Obține lista de utilizatori
       const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -79,10 +72,6 @@ const AdminPage = () => {
       // Filtrăm utilizatorii
       setUsers(usersData.filter(u => !u.email?.endsWith('@admin.com') && u.tip !== 'admin'));
 
-      // Găsește utilizatorii cu email admin
-      const adminUsers = usersData.filter(u => u.email?.endsWith('@admin.com') || u.tip === 'admin');
-      setAdminUsers(adminUsers);
-
       // Obține lista de materii pentru dropdown-ul de filtrare
       const materiiDropdown = Object.values(allMaterii || {}).map(materie => ({
         id: materie.id,
@@ -92,13 +81,13 @@ const AdminPage = () => {
     } catch (error) {
       console.error('Eroare la încărcarea utilizatorilor:', error);
     }
-  };
+      }, [user, allMaterii, navigate]);
 
   useEffect(() => {
     if (user?.uid && !materiiLoading) {
       fetchUsers();
     }
-  }, [user, navigate, allMaterii, materiiLoading]);
+  }, [user, allMaterii, materiiLoading, fetchUsers]);
 
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Ești sigur că vrei să ștergi acest utilizator? Aceasta va șterge complet toate urmele utilizatorului din sistem (utilizator, istoric academic, înscrieri la materii, etc.)')) {
@@ -200,8 +189,6 @@ const AdminPage = () => {
       console.log(`Found ${materiiSnapshot.docs.length} materii documents to check`);
       
       let materiiUpdated = 0;
-      let totalStudentsFound = 0;
-      let totalProfessorsFound = 0;
 
       // Process each materie document individually to catch individual errors
       for (const materieDoc of materiiSnapshot.docs) {
@@ -230,7 +217,6 @@ const AdminPage = () => {
               const shouldKeep = student.id !== userId;
               if (!shouldKeep) {
                 console.log(`     Removing student: ${student.nume} (ID: ${student.id})`);
-                totalStudentsFound++;
               }
               return shouldKeep;
             });
@@ -263,7 +249,6 @@ const AdminPage = () => {
               const shouldKeep = profesor.id !== userId;
               if (!shouldKeep) {
                 console.log(`     Removing professor: ${profesor.nume} (ID: ${profesor.id})`);
-                totalProfessorsFound++;
               }
               return shouldKeep;
             });
@@ -297,8 +282,6 @@ const AdminPage = () => {
 
       console.log(`📊 Summary:`);
       console.log(`  - Materii updated: ${materiiUpdated}`);
-      console.log(`  - Students removed: ${totalStudentsFound}`);
-      console.log(`  - Professors removed: ${totalProfessorsFound}`);
 
       if (materiiUpdated > 0) {
         console.log(` Successfully updated ${materiiUpdated} materii documents`);
@@ -432,7 +415,7 @@ const AdminPage = () => {
 
   const handleFormSubmit = () => {
     // Ascunde formularul și actualizează lista de utilizatori
-    setShowCreateForm(false);
+    setShowUserModal(false);
     fetchUsers();
   };
 
@@ -590,46 +573,6 @@ const AdminPage = () => {
       alert('Eroare la ștergerea în masă: ' + (error.response?.data?.message || error.message));
     }
   };
-
-  // Helper function to get next matricol number
-  const getNextMatricolNumber = async (specializare) => {
-    try {
-      const prefixMap = {
-        'IR': 'I',
-        'IG': 'G', 
-        'MI': 'M',
-        'MA': 'A'
-      };
-
-      const prefix = prefixMap[specializare];
-      if (!prefix) return null;
-
-      const q = query(
-        collection(db, 'users'),
-        where('specializare', '==', specializare)
-      );
-      const querySnapshot = await getDocs(q);
-      
-      let maxNumber = 0;
-      querySnapshot.forEach(doc => {
-        const matricol = doc.data().numarMatricol;
-        if (matricol) {
-          const number = parseInt(matricol.substring(1));
-          if (!isNaN(number) && number > maxNumber) {
-            maxNumber = number;
-          }
-        }
-      });
-
-      const nextNumber = maxNumber + 1;
-      return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-    } catch (error) {
-      console.error('Error generating matricol number:', error);
-      return null;
-    }
-  };
-
-
 
   if (loading) {
     return <div>Loading...</div>;

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { isAdmin, isSecretar } from '../../utils/userRoles';
 
@@ -93,7 +92,6 @@ const AlocareAutomataPage = () => {
   const [processingPachet, setProcessingPachet] = useState(null);
   const [rezultateAlocare, setRezultateAlocare] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [showSetarePerioadaForm, setShowSetarePerioadaForm] = useState(false);
   const [perioadaStartDate, setPerioadaStartDate] = useState('');
   const [perioadaStartTime, setPerioadaStartTime] = useState('');
   const [perioadaEndDate, setPerioadaEndDate] = useState('');
@@ -155,69 +153,6 @@ const AlocareAutomataPage = () => {
       (pachet.specializare && pachet.specializare.toLowerCase().includes(searchLower))
     );
   });
-
-  // Funcție pentru a verifica și actualiza materiile
-  const verificaSiActualizeazaMateriile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('Verificare și actualizare automată a materiilor...');
-      
-      // Obținem toate materiile din baza de date
-      const materiiSnapshot = await getDocs(collection(db, 'materii'));
-      console.log(`Total materii: ${materiiSnapshot.size}`);
-      
-      // Verificăm fiecare materie
-      let materiiActualizate = 0;
-      for (const materieDoc of materiiSnapshot.docs) {
-        const materieData = materieDoc.data();
-        const materieId = materieDoc.id;
-        
-        // Verificăm dacă materia are deja câmpul codificat
-        if (!materieData.codificat) {
-          console.log(`Materia "${materieData.nume}" (${materieId}) nu are câmpul codificat.`);
-          
-          // Generăm un cod unic pentru materie
-          const codUnic = generateUniqueId(16);
-          
-          // Actualizăm materia cu noul cod
-          await updateDoc(doc(db, 'materii', materieId), {
-            codificat: codUnic
-          });
-          
-          console.log(`Materia "${materieData.nume}" a fost actualizată cu codul: ${codUnic}`);
-          materiiActualizate++;
-        } else {
-          console.log(`Materia "${materieData.nume}" are deja cod: ${materieData.codificat}`);
-        }
-      }
-      
-      if (materiiActualizate > 0) {
-        setSuccessMessage(`${materiiActualizate} materii au fost actualizate cu coduri unice.`);
-        setTimeout(() => setSuccessMessage(null), 3000);
-      } else {
-        setSuccessMessage('Toate materiile au deja coduri unice. Nu au fost necesare actualizări.');
-        setTimeout(() => setSuccessMessage(null), 3000);
-      }
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Eroare la verificarea și actualizarea materiilor:', error);
-      setError('A apărut o eroare la verificarea și actualizarea materiilor');
-      setLoading(false);
-    }
-  };
-  
-  // Funcție pentru generarea unui ID unic
-  const generateUniqueId = (length) => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
 
   // Utility functions
   const formatDateForDateInput = (date) => {
@@ -959,7 +894,7 @@ const AlocareAutomataPage = () => {
       
       // Afișăm statisticile de alocare pe preferințe
       console.log('\n=== STATISTICI ALOCARE PE PREFERINȚE ===');
-      for (const [materieId, stats] of Object.entries(statisticiPreferinte)) {
+      for (const [stats] of Object.entries(statisticiPreferinte)) {
         const total = 
           (stats.preferinta1 || 0) + 
           (stats.preferinta2 || 0) + 
@@ -1000,9 +935,6 @@ const AlocareAutomataPage = () => {
       }
       
       // Actualizăm documentele utilizatorilor cu informații despre alocarea materiei
-      let procesatiCount = 0;
-      const totalStudenti = studentiAlocati.length + studentiNealocati.length;
-      
       // Procesăm studenții alocați
       for (const student of studentiAlocati) {
         if (!student.id.startsWith('student')) { // Evităm actualizarea studenților de test
@@ -1116,10 +1048,6 @@ const AlocareAutomataPage = () => {
           
           // Salvăm istoricul academic actualizat
           await setDoc(istoricStudentRef, istoricStudentData);
-          
-          // Actualizăm contorul și mesajul de progres
-          procesatiCount++;
-          // setSuccessMessage(`Se salvează rezultatele... ${Math.round((procesatiCount / totalStudenti) * 100)}%`);
         }
       }
       
@@ -1130,10 +1058,6 @@ const AlocareAutomataPage = () => {
             statusAlocare: 'nealocat',
             pachetAlocat: selectedPachet
           });
-          
-          // Actualizăm contorul și mesajul de progres
-          procesatiCount++;
-          // setSuccessMessage(`Se salvează rezultatele... ${Math.round((procesatiCount / totalStudenti) * 100)}%`);
         }
       }
       
@@ -1164,17 +1088,6 @@ const AlocareAutomataPage = () => {
     } finally {
       setProcessingPachet(null);
     }
-  };
-
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    
-    const pad = (num) => num.toString().padStart(2, '0');
-    
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   };
 
   const formatDate = (dateString) => {

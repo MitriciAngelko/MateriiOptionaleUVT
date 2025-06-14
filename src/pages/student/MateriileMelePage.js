@@ -11,9 +11,7 @@ const MateriileMelePage = () => {
   const [materiiInscrise, setMateriiInscrise] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedMaterieId, setExpandedMaterieId] = useState(null);
   const [selectedMaterieForModal, setSelectedMaterieForModal] = useState(null);
-  const [stats, setStats] = useState({ totalCredite: 0, medieGenerala: 0, crediteTrecute: 0 });
   const [materiiByAn, setMateriiByAn] = useState({
     'I': [],
     'II': [],
@@ -215,12 +213,7 @@ const MateriileMelePage = () => {
           }
         }
 
-        // Update state
-        setStats({
-          totalCredite,
-          medieGenerala,
-          crediteTrecute
-        });
+        // Stats are calculated but not stored in state anymore
         setMateriiInscrise(toateCursurile);
         setMateriiByAn(byAn);
         setLoading(false);

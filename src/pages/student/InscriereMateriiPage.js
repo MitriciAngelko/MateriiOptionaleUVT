@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import { collection, query, where, getDocs, doc, updateDoc, getDoc, arrayUnion, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useNavigate } from 'react-router-dom';
-import MaterieModal from '../../components/student/MaterieModal';
 import { isStudent } from '../../utils/userRoles';
 import AIAssistant from '../../components/AIAssistant';
 
@@ -149,97 +148,7 @@ const MaterieCard = ({ materie, index, onDragStart, onDragOver, onDrop, onViewDe
   );
 };
 
-// Component to show academic year progress
-const AcademicYearProgress = ({ currentYear, accumulatedECTS, minECTS, isNewRegistration }) => {
-  // Convert Roman numeral to numeric year
-  const yearNumber = currentYear === 'I' ? 1 : currentYear === 'II' ? 2 : 3;
-  
-  return (
-    <div className="mb-4 p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-sm border border-[#034a76]/20 dark:border-gray-700">
-      <h3 className="text-md font-medium text-[#034a76] dark:text-blue-light mb-3">Progresul anului academic</h3>
-      
-      <div className="flex items-center justify-between mb-2">
-        {[1, 2, 3].map(year => (
-          <div 
-            key={year} 
-            className={`relative flex flex-col items-center ${year <= yearNumber ? 'text-[#034a76] dark:text-blue-light' : 'text-gray-400 dark:text-gray-500'}`}
-          >
-            <div 
-              className={`w-12 h-12 rounded-full flex items-center justify-center mb-1 border-2 
-                ${year < yearNumber ? 'bg-[#034a76] text-white border-[#034a76]' : 
-                  year === yearNumber ? 'bg-white dark:bg-gray-700 text-[#034a76] dark:text-blue-light border-[#034a76] dark:border-blue-light' : 
-                  'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600'}`}
-            >
-              {year === 1 ? 'I' : year === 2 ? 'II' : 'III'}
-            </div>
-            <span className="text-xs font-medium">Anul {year === 1 ? 'I' : year === 2 ? 'II' : 'III'}</span>
-            
-            {year === yearNumber && accumulatedECTS >= minECTS && year < 3 && (
-              <div className="absolute -top-2 -right-2">
-                <span 
-                  className="flex items-center justify-center w-6 h-6 rounded-full text-xs bg-green-500 text-white"
-                  title="Ai acumulat suficiente ECTS pentru avansarea în anul următor"
-                >
-                  ✓
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-      
-      {/* Progress bar connecting the circles */}
-      <div className="relative h-2 bg-gray-200 rounded-full mx-12 my-3">
-        <div 
-          className="absolute left-0 top-0 h-2 bg-[#034a76] rounded-full"
-          style={{ 
-            width: yearNumber === 1 ? 
-              `${Math.min(100, (accumulatedECTS / minECTS) * 50)}%` : 
-              yearNumber === 2 ? 
-              `50%` : 
-              '100%' 
-          }}
-        ></div>
-        <div 
-          className="absolute left-0 top-0 h-2 bg-[#e3ab23] rounded-full"
-          style={{ 
-            width: yearNumber === 1 && accumulatedECTS >= minECTS ? 
-              '50%' : 
-              yearNumber === 2 && accumulatedECTS >= minECTS ? 
-              '100%' : 
-              yearNumber === 1 ? 
-              `${Math.min(100, (accumulatedECTS / minECTS) * 50)}%` : 
-              yearNumber === 2 ? 
-              `${50 + Math.min(50, (accumulatedECTS / minECTS) * 50)}%` : 
-              '100%',
-            left: yearNumber === 2 ? '50%' : '0',
-            width: yearNumber === 2 ? `${Math.min(50, (accumulatedECTS / minECTS) * 50)}%` : 'auto'
-          }}
-        ></div>
-      </div>
-      
-      <div className="text-xs text-center text-[#034a76]/70 dark:text-gray-300">
-        {yearNumber < 3 ? (
-          <>
-            {accumulatedECTS}/{minECTS} ECTS acumulate în anul curent
-            {accumulatedECTS >= minECTS && (
-              <span className="ml-1 text-green-600 font-medium">
-                - Îndeplinești criteriile pentru avansarea în anul următor
-              </span>
-            )}
-            {isNewRegistration && (
-              <div className="mt-1 text-blue-600 font-medium">
-                Te-ai înscris recent în noul an universitar. ECTS acumulate sunt pentru noul an.
-              </div>
-            )}
-          </>
-        ) : (
-          <span>Anul final de studiu</span>
-        )}
-      </div>
-    </div>
-  );
-};
+
 
 // Toast Notification Component
 const ToastNotification = ({ message, type, onClose }) => {
@@ -336,13 +245,7 @@ const InscriereMateriiPage = () => {
   const [dragPachet, setDragPachet] = useState(null);
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
-  const [userData, setUserData] = useState(null);
   const [statusInscrieri, setStatusInscrieri] = useState({}); // Status înscrieri pentru fiecare pachet
-  const [academicStats, setAcademicStats] = useState({
-    avgGrade: 0,
-    accumulatedECTS: 0,
-    currentAcademicYear: ''
-  });
   // Registration status removed - now handled by admins
 
   // Function to show toast notifications
@@ -551,12 +454,8 @@ const InscriereMateriiPage = () => {
         throw new Error('Nu s-au putut găsi datele studentului');
       }
       
-      // Salvează datele studentului în state pentru a fi folosite mai târziu
-      setUserData(userData);
-      
       // Calculate academic stats with optional refresh
       const stats = await calculateAcademicStats(user.uid, forceRefresh);
-      setAcademicStats(stats);
       
       // Obține istoricul academic al studentului pentru a verifica materiile promovate
       const istoricRef = doc(db, 'istoricAcademic', user.uid);
@@ -702,14 +601,7 @@ const InscriereMateriiPage = () => {
 
   // Această verificare a fost mutată în fetchPachete pentru a seta valorile implicite direct în baza de date
 
-  // Obține numele materiei după ID
-  const getNumeMaterie = (pachetId, materieId) => {
-    const pachet = pachete.find(p => p.id === pachetId);
-    if (!pachet) return "Materie necunoscută";
-    
-    const materie = pachet.materii.find(m => m.id === materieId);
-    return materie ? materie.nume : "Materie necunoscută";
-  };
+
 
   // Obține obiectul materie după ID
   const getMaterieById = (pachetId, materieId) => {

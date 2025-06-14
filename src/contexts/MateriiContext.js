@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc } from 'firebase/firestore';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const MateriiContext = createContext();
@@ -9,7 +9,7 @@ export const MateriiProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [lastFetch, setLastFetch] = useState(null);
 
-  const fetchAllMaterii = async (force = false) => {
+  const fetchAllMaterii = useCallback(async (force = false) => {
     // Only fetch if we haven't fetched in the last hour or if forced
     if (force || !lastFetch || Date.now() - lastFetch > 60 * 60 * 1000) {
       try {
@@ -30,11 +30,11 @@ export const MateriiProvider = ({ children }) => {
         setLoading(false);
       }
     }
-  };
+  }, [lastFetch]);
 
   useEffect(() => {
     fetchAllMaterii();
-  }, []);
+  }, [fetchAllMaterii]);
 
   return (
     <MateriiContext.Provider value={{ 

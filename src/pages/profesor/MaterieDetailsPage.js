@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, getDocs, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useSelector } from 'react-redux';
 import { isProfesor } from '../../utils/userRoles';
@@ -183,15 +183,6 @@ const MaterieDetailsPage = () => {
     }
   }, [errorMessage]);
 
-  const getGradeColor = (nota) => {
-    if (nota === 'Not graded') return 'bg-gray-100 text-gray-600';
-    const grade = parseFloat(nota);
-    if (grade >= 9) return 'bg-green-100 text-green-800';
-    if (grade >= 7) return 'bg-blue-100 text-blue-800';
-    if (grade >= 5) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-red-100 text-red-800';
-  };
-
   const getGradeDisplay = (nota) => {
     if (nota === 'Not graded') return 'Nenotat';
     return nota;
@@ -208,37 +199,6 @@ const MaterieDetailsPage = () => {
     const search = searchTerm.toLowerCase();
     return fullName.includes(search) || email.includes(search) || student.numarMatricol.includes(search);
   });
-
-  const handleEmailAll = () => {
-    const emails = studenti.map(s => s.email).filter(email => email).join(',');
-    if (emails) {
-      window.location.href = `mailto:${emails}`;
-    }
-  };
-
-  const handleExport = () => {
-    // Create CSV content
-    const headers = ['ID', 'Nume', 'Email', 'Nota', 'Numar Matricol'];
-    const rows = studenti.map((student, index) => [
-      index + 1,
-      `${student.nume} ${student.prenume}`,
-      student.email,
-      student.nota === 'Not graded' ? 'Nenotat' : student.nota,
-      student.numarMatricol
-    ]);
-    
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${materie?.nume || 'course'}_students.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
 
   // Handle starting inline editing
   const startEditingGrade = (student) => {
@@ -288,7 +248,7 @@ const MaterieDetailsPage = () => {
           facultate: selectedStudent.facultate || '',
           istoricAnual: []
         };
-        await setDoc(istoricRef, istoricData);
+        await updateDoc(istoricRef, istoricData);
       } else {
         istoricData = istoricDoc.data();
       }
@@ -437,18 +397,6 @@ const MaterieDetailsPage = () => {
           <div className="h-0.5 w-16 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-yellow-accent dark:to-yellow-accent/70 rounded ml-14 shadow-sm"></div>
         </div>
         
-        <div className="flex justify-end space-x-3 mb-6">
-          <button
-            onClick={handleExport}
-            className="bg-white/80 dark:bg-gray-800/50 hover:bg-gradient-to-r hover:from-[#024A76]/10 hover:to-[#3471B8]/10 dark:hover:from-yellow-accent/10 dark:hover:to-blue-light/10 text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent px-4 py-2 rounded-lg font-medium border border-[#024A76]/30 dark:border-gray-700 hover:border-[#3471B8]/50 dark:hover:border-yellow-accent flex items-center space-x-2 shadow-sm hover:shadow-md transition-all duration-300"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>Exportă</span>
-          </button>
-        </div>
-
         {/* Search Bar */}
         <div className="mb-6">
           <div className="relative max-w-md">

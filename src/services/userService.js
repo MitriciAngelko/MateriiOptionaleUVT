@@ -1,6 +1,5 @@
 import { 
   createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
   getAuth
 } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
@@ -15,7 +14,7 @@ import {
   updateDoc, 
   arrayUnion 
 } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { db } from '../firebase';
 import { getNextMatricolNumber } from '../utils/generators/matricolGenerator';
 import { executeWithRetry } from '../utils/rateLimiter';
 

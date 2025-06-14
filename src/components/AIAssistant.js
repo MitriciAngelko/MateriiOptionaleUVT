@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { initializeOpenAI, createRequestParams, extractResponseText } from '../config/openai';
+import { initializeOpenAI, createRequestParams } from '../config/openai';
 
 const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -91,11 +91,14 @@ const AIAssistant = () => {
           const deltaText = event.delta || '';
           fullResponse += deltaText;
           
+          // Capture fullResponse to avoid closure issues
+          const currentResponse = fullResponse;
+          
           // Update the streaming message
           setMessages(prev => 
             prev.map((msg, index) => 
               index === aiMessageIndex 
-                ? { ...msg, text: fullResponse, isStreaming: true }
+                ? { ...msg, text: currentResponse, isStreaming: true }
                 : msg
             )
           );

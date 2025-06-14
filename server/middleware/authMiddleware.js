@@ -2,19 +2,36 @@
 
 const admin = require('../config/firebase');
 
+// Simple logger that respects environment
+const logger = {
+  info: (message, data = {}) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[AUTH] ${message}`, data);
+    }
+  },
+  error: (message, error = {}) => {
+    console.error(`[AUTH ERROR] ${message}`, error);
+  },
+  warn: (message, data = {}) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[AUTH WARN] ${message}`, data);
+    }
+  }
+};
+
 const verifyToken = async (req, res, next) => {
-  console.log('Auth Middleware - Headers:', req.headers);
+  logger.info('Verifying token', { headers: Object.keys(req.headers) });
   const token = req.body.token || req.headers.authorization?.split('Bearer ')[1];
 
   if (!token) {
-    console.log('Auth Middleware - No token provided');
+    logger.warn('No token provided');
     return res.status(401).json({ message: 'Unauthorized - No token provided' });
   }
 
-  console.log('Auth Middleware - Token received, verifying...');
+  logger.info('Token received, verifying...');
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
-    console.log('Auth Middleware - Token verified successfully for user:', decodedToken.uid);
+    logger.info('Token verified successfully', { uid: decodedToken.uid });
     
     req.user = {
       uid: decodedToken.uid,
@@ -29,17 +46,17 @@ const verifyToken = async (req, res, next) => {
         const userData = userDoc.data();
         req.user.role = userData.role || userData.tip || 'user';
         req.user.admin = req.user.role === 'admin' || userData.email?.endsWith('@admin.com');
-        console.log('Auth Middleware - User role:', req.user.role, 'Admin:', req.user.admin);
+        logger.info('User role determined', { role: req.user.role, admin: req.user.admin });
       } else {
-        console.log('Auth Middleware - User document not found in Firestore');
+        logger.warn('User document not found in Firestore');
       }
     } catch (firestoreError) {
-      console.error('Auth Middleware - Error fetching user data from Firestore:', firestoreError);
+      logger.error('Error fetching user data from Firestore', firestoreError);
     }
     
     next();
   } catch (error) {
-    console.error('Auth Middleware - Token verification failed:', error);
+    logger.error('Token verification failed', error);
     res.status(401).json({ message: 'Unauthorized - Invalid token', error: error.message });
   }
 };

@@ -1,17 +1,34 @@
 const admin = require('firebase-admin');
 require('dotenv').config({ path: '../.env' });
 
-// Debug environment variables
-console.log('Firebase Admin SDK Initialization:');
-console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
-console.log('FIREBASE_CLIENT_EMAIL exists:', !!process.env.FIREBASE_CLIENT_EMAIL);
-console.log('FIREBASE_PRIVATE_KEY exists:', !!process.env.FIREBASE_PRIVATE_KEY);
+// Environment-aware logger
+const logger = {
+  info: (message, data = {}) => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[FIREBASE] ${message}`, data);
+    }
+  },
+  error: (message, error = {}) => {
+    console.error(`[FIREBASE ERROR] ${message}`, error);
+  }
+};
 
-if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-  console.error('ERROR: Missing Firebase configuration environment variables!');
-  console.error('Make sure .env file exists with the required Firebase configuration.');
+// Validate required environment variables
+const requiredEnvVars = ['FIREBASE_PROJECT_ID', 'FIREBASE_CLIENT_EMAIL', 'FIREBASE_PRIVATE_KEY'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  logger.error('Missing Firebase configuration environment variables', { missing: missingEnvVars });
+  logger.error('Make sure .env file exists with the required Firebase configuration.');
   process.exit(1);
 }
+
+// Debug environment variables (only in development)
+logger.info('Firebase Admin SDK Initialization', {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+  hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY
+});
 
 try {
   const serviceAccount = {
@@ -26,9 +43,9 @@ try {
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET
   });
 
-  console.log('Firebase Admin SDK initialized successfully!');
+  logger.info('Firebase Admin SDK initialized successfully!');
 } catch (error) {
-  console.error('ERROR initializing Firebase Admin SDK:', error);
+  logger.error('ERROR initializing Firebase Admin SDK', error);
   process.exit(1);
 }
 

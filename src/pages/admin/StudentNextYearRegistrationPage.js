@@ -84,14 +84,11 @@ const Toast = ({ message, type = 'success', onClose }) => {
 };
 
 const StudentNextYearRegistrationPage = () => {
-  const [loading, setLoading] = useState(false);
   const [studentsLoading, setStudentsLoading] = useState(false);
-  const [students, setStudents] = useState([]);
   const [eligibleStudents, setEligibleStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [hasAccess, setHasAccess] = useState(false);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
   const [registrationInProgress, setRegistrationInProgress] = useState(false);
   const [toast, setToast] = useState(null);
   const [filters, setFilters] = useState({
@@ -244,7 +241,6 @@ const StudentNextYearRegistrationPage = () => {
       eligible.sort((a, b) => b.currentAverageGrade - a.currentAverageGrade);
 
       setEligibleStudents(eligible);
-      setStudents(studentsData);
     } catch (error) {
       console.error('Error fetching eligible students:', error);
       setError('Eroare la încărcarea studenților: ' + error.message);
@@ -262,16 +258,6 @@ const StudentNextYearRegistrationPage = () => {
         return [...prev, studentId];
       }
     });
-  };
-
-  // Select all filtered students
-  const selectAllStudents = () => {
-    setSelectedStudents(filteredStudents.map(student => student.id));
-  };
-
-  // Deselect all students
-  const deselectAllStudents = () => {
-    setSelectedStudents([]);
   };
 
   // Get unique values for filters
@@ -539,7 +525,6 @@ const StudentNextYearRegistrationPage = () => {
 
     setRegistrationInProgress(true);
     setError(null);
-    setSuccessMessage(null);
 
     const currentAcademicYear = getCurrentAcademicYear();
     const nextAcademicYear = getNextAcademicYear();

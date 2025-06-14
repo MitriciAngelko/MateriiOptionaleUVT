@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 const MaterieModal = ({ materie, onClose }) => {
   const user = useSelector((state) => state.auth.user);
   const [isInscris, setIsInscris] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Verifică dacă studentul este deja înscris
@@ -62,15 +61,13 @@ const MaterieModal = ({ materie, onClose }) => {
           {user && !isInscris && (
             <button
               onClick={handleInscriere}
-              disabled={!areLocuriLibere || loading}
+              disabled={!areLocuriLibere}
               className={`w-full mt-4 px-4 py-2 rounded-md transition-colors
-                ${!areLocuriLibere || loading
+                ${!areLocuriLibere
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-[#034a76] text-white hover:bg-[#023557]'}`}
             >
-              {loading ? 'Se procesează...' : 
-               !areLocuriLibere ? 'Locuri epuizate' : 
-               'Înscriere'}
+              {!areLocuriLibere ? 'Locuri epuizate' : 'Înscriere'}
             </button>
           )}
 

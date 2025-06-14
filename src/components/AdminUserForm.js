@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { auth, db } from '../firebase';
-import { setDoc, doc, collection, getDocs, query, where, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { createUser, updateUser } from '../services/userService';
 
 const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
@@ -22,15 +21,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [adminCredentials, setAdminCredentials] = useState(null);
-  const navigate = useNavigate();
-  const [materii, setMaterii] = useState([]);
-  const [materieNoua, setMaterieNoua] = useState({
-    facultate: '',
-    specializare: '',
-    nume: '',
-    an: ''
-  });
   const [materiiDisponibile, setMateriiDisponibile] = useState([]);
   const [materiiSelectate, setMateriiSelectate] = useState([]);
   const [materiiFilter, setMateriiFilter] = useState({
@@ -59,17 +49,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
       onClose();
     }
   };
-
-  // Salvăm credențialele adminului când componenta se încarcă
-  useEffect(() => {
-    const currentAdmin = auth.currentUser;
-    if (currentAdmin) {
-      setAdminCredentials({
-        email: currentAdmin.email,
-        // Nu putem salva parola, dar o vom cere în formular
-      });
-    }
-  }, []);
 
   // Funcție pentru generarea emailului profesorului
   const generateProfesorEmail = (nume, prenume) => {
@@ -150,70 +129,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
     });
   };
 
-  const validateStudentEmail = (email) => {
-    const studentEmailPattern = /^[a-z]+\.[a-z]+[0-9]{2}@e-uvt\.ro$/;
-    return studentEmailPattern.test(email.toLowerCase());
-  };
-
-  const getNextMatricolNumber = async (specializare) => {
-    try {
-      // Prefix pentru fiecare specializare
-      const prefixMap = {
-        'IR': 'I', // Informatică Română
-        'IG': 'G', // Informatică Germană
-        'MI': 'M', // Matematică-Informatică
-        'MA': 'A'  // Matematică
-      };
-
-      const prefix = prefixMap[specializare];
-      if (!prefix) return null;
-
-      // Caută toți studenții cu același prefix
-      const q = query(
-        collection(db, 'users'),
-        where('specializare', '==', specializare)
-      );
-      const querySnapshot = await getDocs(q);
-      
-      // Găsește cel mai mare număr matricol existent
-      let maxNumber = 0;
-      querySnapshot.forEach(doc => {
-        const matricol = doc.data().numarMatricol;
-        if (matricol) {
-          const number = parseInt(matricol.substring(1));
-          if (!isNaN(number) && number > maxNumber) {
-            maxNumber = number;
-          }
-        }
-      });
-
-      // Generează următorul număr matricol
-      const nextNumber = maxNumber + 1;
-      return `${prefix}${nextNumber.toString().padStart(4, '0')}`;
-    } catch (error) {
-      console.error('Error generating matricol number:', error);
-      return null;
-    }
-  };
-
-  // Adaugă o nouă materie în listă
-  const adaugaMaterie = () => {
-    if (materieNoua.facultate && materieNoua.specializare && materieNoua.nume && materieNoua.an) {
-      setMaterii([...materii, { ...materieNoua }]);
-      setMaterieNoua({
-        facultate: '',
-        specializare: '',
-        nume: '',
-        an: ''
-      });
-    }
-  };
-
-  // Șterge o materie din listă
-  const stergeMaterie = (index) => {
-    setMaterii(materii.filter((_, idx) => idx !== index));
-  };
-
   useEffect(() => {
     if (formType === 'profesor') {
       // Încărcăm materiile disponibile din Firestore
@@ -232,10 +147,6 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
       fetchMaterii();
     }
   }, [formType]);
-
-
-
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
