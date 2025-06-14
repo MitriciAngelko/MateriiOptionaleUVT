@@ -45,7 +45,7 @@ const LoginPage = () => {
       {/* Left Side - Enhanced Image Section */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden">
         <img
-          src="public/fundal-login.jpg"
+          src="fundal-login.jpg"
           alt="UVT Login"
           className="absolute inset-0 w-full h-full object-cover scale-105 transition-transform duration-700 hover:scale-100"
         />
