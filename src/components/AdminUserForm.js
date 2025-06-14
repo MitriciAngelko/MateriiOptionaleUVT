@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { setDoc, doc, collection, getDocs, query, where, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { getAuth } from 'firebase/auth';
-import { browserLocalPersistence } from 'firebase/auth';
+import { createUser, updateUser } from '../services/userService';
 
 const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
   const [formType, setFormType] = useState(editingUser?.tip || 'student');
@@ -213,170 +211,9 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
     }
   }, [formType]);
 
-  // Funcție pentru actualizarea materiilor în Firestore
-  const updateMateriiCuProfesor = async (userId, materiiSelectate, numeProfesor) => {
-    try {
-      for (const materieId of materiiSelectate) {
-        const materieRef = doc(db, 'materii', materieId);
-        const materieDoc = await getDoc(materieRef);
-        
-        if (materieDoc.exists()) {
-          const profesoriActuali = materieDoc.data().profesori || [];
-          // Adăugăm noul profesor dacă nu există deja
-          if (!profesoriActuali.some(prof => prof.id === userId)) {
-            await updateDoc(materieRef, {
-              profesori: [...profesoriActuali, {
-                id: userId,
-                nume: `${numeProfesor.prenume} ${numeProfesor.nume}`
-              }]
-            });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Eroare la actualizarea materiilor:', error);
-      throw error;
-    }
-  };
 
-  // Funcție pentru assignarea automată a cursurilor obligatorii și crearea istoricului academic
-  const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentData) => {
-    try {
-      console.log('Starting automatic assignment of mandatory courses for student:', studentId);
-      
-      // 1. Găsim toate cursurile obligatorii pentru studentul nou creat
-      const materiiQuery = query(
-        collection(db, 'materii'),
-        where('facultate', '==', studentData.facultate),
-        where('specializare', '==', studentData.specializare),
-        where('an', '==', studentData.an),
-        where('obligatorie', '==', true)
-      );
-      
-      const materiiSnapshot = await getDocs(materiiQuery);
-      const materiiObligatorii = materiiSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      console.log(`Found ${materiiObligatorii.length} mandatory courses for ${studentData.facultate}, ${studentData.specializare}, year ${studentData.an}`);
-      
-      if (materiiObligatorii.length === 0) {
-        console.log('No mandatory courses found - skipping assignment');
-        return;
-      }
-      
-      // 2. Creăm istoricul academic pentru student
-      const istoricRef = doc(db, 'istoricAcademic', studentId);
-      
-      // Determină anul universitar curent
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-11
-      const anUniversitar = month < 9 ? 
-        `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
-        `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
-      
-      const istoricData = {
-        studentId: studentId,
-        nume: studentData.nume || '',
-        prenume: studentData.prenume || '',
-        specializare: studentData.specializare || '',
-        facultate: studentData.facultate || '',
-        istoricAnual: []
-      };
-      
-      // Grupăm cursurile obligatorii pe semestre
-      const cursuriBySemestru = {};
-      
-      materiiObligatorii.forEach(materie => {
-        const semestru = materie.semestru || 1;
-        if (!cursuriBySemestru[semestru]) {
-          cursuriBySemestru[semestru] = [];
-        }
-        
-        // Creăm înregistrarea pentru materia obligatorie
-        const courseRecord = {
-          id: materie.id,
-          nume: materie.nume,
-          credite: materie.credite || 0,
-          nota: 0, // Nota 0 - neevaluată încă
-          dataNota: currentDate.getTime(),
-          profesor: 'Nespecificat', // Profesorul va fi adăugat când se va asigna
-          obligatorie: true,
-          status: 'neevaluat',
-          dataInregistrare: new Date().toISOString()
-        };
-        
-        cursuriBySemestru[semestru].push(courseRecord);
-      });
-      
-      // Creăm înregistrările anuale pentru fiecare semestru
-      Object.keys(cursuriBySemestru).forEach(semestru => {
-        const anualRecord = {
-          anUniversitar: anUniversitar,
-          anStudiu: studentData.an,
-          semestru: parseInt(semestru),
-          cursuri: cursuriBySemestru[semestru]
-        };
-        
-        istoricData.istoricAnual.push(anualRecord);
-      });
-      
-      // Salvăm istoricul academic
-      await setDoc(istoricRef, istoricData);
-      console.log('Created academic history for student');
-      
-      // 3. Adăugăm studentul la fiecare curs obligatoriu
-      const studentInfo = {
-        id: studentId,
-        nume: `${studentData.prenume} ${studentData.nume}`,
-        numarMatricol: studentData.numarMatricol || 'N/A'
-      };
-      
-      const materiiInscrised = [];
-      
-      for (const materie of materiiObligatorii) {
-        try {
-          const materieRef = doc(db, 'materii', materie.id);
-          const materieDoc = await getDoc(materieRef);
-          
-          if (materieDoc.exists()) {
-            const materieData = materieDoc.data();
-            const studentiActuali = materieData.studentiInscrisi || [];
-            
-            // Verificăm dacă studentul nu este deja înscris
-            if (!studentiActuali.some(student => student.id === studentId)) {
-              await updateDoc(materieRef, {
-                studentiInscrisi: [...studentiActuali, studentInfo]
-              });
-              
-              materiiInscrised.push(materie.id);
-              console.log(`Added student to mandatory course: ${materie.nume}`);
-            }
-          }
-        } catch (error) {
-          console.error(`Error adding student to course ${materie.id}:`, error);
-        }
-      }
-      
-      // 4. Actualizăm și documentul utilizatorului cu lista de materii înscrise
-      if (materiiInscrised.length > 0) {
-        const userRef = doc(db, 'users', studentId);
-        await updateDoc(userRef, {
-          materiiInscrise: materiiInscrised
-        });
-        console.log(`Updated student's enrolled courses list with ${materiiInscrised.length} mandatory courses`);
-      }
-      
-      console.log('Successfully completed automatic assignment of mandatory courses');
-      
-    } catch (error) {
-      console.error('Error in automatic assignment of mandatory courses:', error);
-      // Nu aruncăm eroarea pentru a nu întrerupe crearea utilizatorului
-      // Doar logăm eroarea pentru debugging
-    }
-  };
+
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -385,180 +222,51 @@ const AdminUserForm = ({ onClose, onUserCreated, editingUser }) => {
 
     try {
       if (editingUser) {
-        // Actualizăm datele utilizatorului în Firestore
-        const userRef = doc(db, 'users', editingUser.id);
-        const updateData = {
+        // Use the updateUser service for editing
+        const userData = {
           nume: formData.nume,
           prenume: formData.prenume,
           tip: formType,
           anNastere: formData.anNastere,
           specializare: formData.specializare,
           an: formData.an,
-          facultate: formData.facultate // Adăugăm și facultatea
+          facultate: formData.facultate,
+          functie: formData.functie
         };
 
-        // Adăugăm câmpuri specifice în funcție de tipul utilizatorului
-        if (formType === 'profesor') {
-          // Pentru profesori, actualizăm și materiile predate
-          const materiiComplete = materiiSelectate.map(materieId => {
-            const materie = materiiDisponibile.find(m => m.id === materieId);
-            return {
-              id: materieId,
-              nume: materie.nume,
-              facultate: materie.facultate,
-              specializare: materie.specializare,
-              an: materie.an,
-              credite: materie.credite
-            };
-          });
-          updateData.materiiPredate = materiiComplete;
-          updateData.functie = formData.functie;
+        // Convert materiiSelectate to the format expected by the service
+        const materiiForService = materiiSelectate.map(materieId => {
+          const materie = materiiDisponibile.find(m => m.id === materieId);
+          return materie ? { id: materieId, ...materie } : null;
+        }).filter(Boolean);
 
-          // Actualizăm și referințele din colecția materii
-          const materiiPromises = [];
-          
-          // 1. Mai întâi eliminăm profesorul din toate materiile
-          const materiiSnapshot = await getDocs(collection(db, 'materii'));
-          materiiSnapshot.docs.forEach(async (materieDoc) => {
-            const materieRef = doc(db, 'materii', materieDoc.id);
-            const materieData = materieDoc.data();
-            const profesoriActualizati = (materieData.profesori || [])
-              .filter(prof => prof.id !== editingUser.id);
-            
-            materiiPromises.push(updateDoc(materieRef, {
-              profesori: profesoriActualizati
-            }));
-          });
-
-          // 2. Adăugăm profesorul la materiile selectate
-          materiiSelectate.forEach(async (materieId) => {
-            const materieRef = doc(db, 'materii', materieId);
-            const materieDoc = await getDoc(materieRef);
-            
-            if (materieDoc.exists()) {
-              const profesoriActuali = materieDoc.data().profesori || [];
-              if (!profesoriActuali.some(prof => prof.id === editingUser.id)) {
-                materiiPromises.push(updateDoc(materieRef, {
-                  profesori: [...profesoriActuali, {
-                    id: editingUser.id,
-                    nume: `${formData.prenume} ${formData.nume}`
-                  }]
-                }));
-              }
-            }
-          });
-
-          // Așteptăm să se termine toate actualizările materiilor
-          await Promise.all(materiiPromises);
-        } else if (formType === 'student') {
-          // Pentru studenți, actualizăm numărul matricol dacă există
-          if (editingUser.numarMatricol) {
-            updateData.numarMatricol = editingUser.numarMatricol;
-          }
-        } else if (formType === 'secretar') {
-          // Pentru secretari, nu sunt câmpuri suplimentare
-        }
-
-        // Actualizăm documentul utilizatorului
-        await updateDoc(userRef, updateData);
+        await updateUser(editingUser.id, userData, materiiForService);
         setSuccess(true);
         onUserCreated?.();
       } else {
-        // Logica existentă pentru crearea unui utilizator nou
-        const tempAuth = getAuth();
-        await tempAuth.setPersistence(browserLocalPersistence);
-        
-        const userCredential = await createUserWithEmailAndPassword(
-          tempAuth,
-          formData.email.toLowerCase(),
-          formData.password
-        );
-
-        // Construim datele pentru Firestore
+        // Use the createUser service for new users
         const userData = {
           email: formData.email.toLowerCase(),
-          uid: userCredential.user.uid,
+          password: formData.password,
           nume: formData.nume,
           prenume: formData.prenume,
           tip: formType,
-          createdAt: new Date(),
+          facultate: formData.facultate,
+          anNastere: formData.anNastere,
+          specializare: formData.specializare,
+          an: formData.an,
+          functie: formData.functie
         };
 
-        // Adăugăm date specifice pentru student
-        if (formType === 'student') {
-          const numarMatricol = await getNextMatricolNumber(formData.specializare);
-          userData.facultate = formData.facultate;
-          userData.specializare = formData.specializare;
-          userData.an = formData.an;
-          userData.anNastere = formData.anNastere;
-          userData.numarMatricol = numarMatricol;
-        }
-        // Adăugăm date specifice pentru profesor
-        else if (formType === 'profesor') {
-          const materiiComplete = materiiSelectate.map(materieId => {
-            const materie = materiiDisponibile.find(m => m.id === materieId);
-            if (!materie) {
-              console.error(`Materia cu ID-ul ${materieId} nu a fost găsită`);
-              return null;
-            }
-            return {
-              id: materieId,
-              nume: materie.nume,
-              facultate: materie.facultate,
-              specializare: materie.specializare,
-              an: materie.an,
-              credite: materie.credite
-            };
-          }).filter(Boolean);
-          
-          userData.materiiPredate = materiiComplete;
-          userData.facultate = formData.facultate;
-          userData.functie = formData.functie;
-        }
-        // Adăugăm date specifice pentru secretar
-        else if (formType === 'secretar') {
-          userData.facultate = formData.facultate;
-        }
+        // Convert materiiSelectate to the format expected by the service
+        const materiiForService = materiiSelectate.map(materieId => {
+          const materie = materiiDisponibile.find(m => m.id === materieId);
+          return materie ? { id: materieId, ...materie } : null;
+        }).filter(Boolean);
 
-        // Salvăm utilizatorul în Firestore
-        await setDoc(doc(db, 'users', userCredential.user.uid), userData);
-
-        // Pentru studenți noi, îi assignez automat la cursurile obligatorii și creez istoricul academic
-        if (formType === 'student') {
-          await assignMandatoryCoursesAndCreateIstoric(userCredential.user.uid, userData);
-        }
-
-        // Actualizăm materiile pentru profesor
-        if (formType === 'profesor' && materiiSelectate.length > 0) {
-          for (const materieId of materiiSelectate) {
-            try {
-              const materieRef = doc(db, 'materii', materieId);
-              const materieDoc = await getDoc(materieRef);
-              
-              if (materieDoc.exists()) {
-                const materieData = materieDoc.data();
-                const profesoriActuali = materieData.profesori || [];
-                
-                if (!profesoriActuali.some(prof => prof.id === userCredential.user.uid)) {
-                  await updateDoc(materieRef, {
-                    profesori: [...profesoriActuali, {
-                      id: userCredential.user.uid,
-                      nume: `${formData.prenume} ${formData.nume}`
-                    }]
-                  });
-                }
-              }
-            } catch (error) {
-              console.error(`Eroare la actualizarea materiei ${materieId}:`, error);
-            }
-          }
-        }
-
-        await tempAuth.signOut();
+        await createUser(userData, materiiForService, onUserCreated);
+        setSuccess(true);
       }
-
-      setSuccess(true);
-      onUserCreated?.();
     } catch (error) {
       console.error('Error:', error);
       setError(error.message);

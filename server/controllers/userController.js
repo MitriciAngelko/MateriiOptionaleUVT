@@ -172,6 +172,101 @@ const getUserInfo = async (req, res) => {
 };
 
 /**
+ * Mass delete all users from Firebase Authentication and Firestore
+ * EXTREMELY DANGEROUS OPERATION - USE WITH CAUTION
+ */
+const massDeleteAllUsers = async (req, res) => {
+  try {
+    console.log('Starting mass deletion of all users...');
+    
+    let authDeletedCount = 0;
+    let firestoreDeletedCount = 0;
+    let errors = [];
+
+    // Get all users from Firebase Auth
+    let allUsers = [];
+    let nextPageToken;
+    
+    do {
+      const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+      allUsers = allUsers.concat(listUsersResult.users);
+      nextPageToken = listUsersResult.pageToken;
+    } while (nextPageToken);
+
+    console.log(`Found ${allUsers.length} users in Firebase Auth`);
+
+    // Delete users from Firebase Auth
+    for (const user of allUsers) {
+      try {
+        await admin.auth().deleteUser(user.uid);
+        authDeletedCount++;
+        console.log(`Deleted user from Auth: ${user.email || user.uid}`);
+      } catch (error) {
+        console.error(`Failed to delete user from Auth: ${user.uid}`, error);
+        errors.push(`Auth deletion failed for ${user.uid}: ${error.message}`);
+      }
+    }
+
+    // Delete user documents from Firestore
+    const usersSnapshot = await admin.firestore().collection('users').get();
+    
+    for (const doc of usersSnapshot.docs) {
+      try {
+        // Delete related collections
+        const uid = doc.id;
+        
+        // Delete istoric academic
+        const istoricSnapshot = await admin.firestore()
+          .collection('istoricAcademic')
+          .where('studentId', '==', uid)
+          .get();
+        
+        for (const istoricDoc of istoricSnapshot.docs) {
+          await istoricDoc.ref.delete();
+        }
+
+        // Delete enrollments
+        const enrollmentsSnapshot = await admin.firestore()
+          .collection('enrollments')
+          .where('studentId', '==', uid)
+          .get();
+        
+        for (const enrollmentDoc of enrollmentsSnapshot.docs) {
+          await enrollmentDoc.ref.delete();
+        }
+
+        // Delete user document
+        await doc.ref.delete();
+        firestoreDeletedCount++;
+        console.log(`Deleted user document: ${uid}`);
+      } catch (error) {
+        console.error(`Failed to delete user document: ${doc.id}`, error);
+        errors.push(`Firestore deletion failed for ${doc.id}: ${error.message}`);
+      }
+    }
+
+    console.log(`Mass deletion completed. Auth: ${authDeletedCount}, Firestore: ${firestoreDeletedCount}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Mass deletion completed',
+      authDeletedCount,
+      firestoreDeletedCount,
+      totalErrors: errors.length,
+      errors: errors.slice(0, 10) // Only return first 10 errors to avoid huge response
+    });
+
+  } catch (error) {
+    console.error('Mass deletion error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Mass deletion failed',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Șterge un utilizator din Firebase Authentication
  */
 const deleteUser = async (req, res) => {
@@ -229,10 +324,11 @@ const deleteUser = async (req, res) => {
     });
 };
 
-module.exports = { 
-  createUser, 
-  updateUserProfile, 
-  updateStudentMedia, 
+module.exports = {
+  createUser,
+  updateUserProfile,
+  updateStudentMedia,
   getUserInfo,
-  deleteUser
+  deleteUser,
+  massDeleteAllUsers
 };

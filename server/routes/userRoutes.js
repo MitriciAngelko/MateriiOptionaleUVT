@@ -5,7 +5,8 @@ const {
   updateUserProfile, 
   updateStudentMedia, 
   getUserInfo,
-  deleteUser
+  deleteUser,
+  massDeleteAllUsers
 } = require('../controllers/userController');
 const { isAdmin, isAdminOrProfessor } = require('../middleware/roleMiddleware');
 
@@ -26,5 +27,8 @@ router.get('/:uid', verifyToken, getUserInfo);
 // Rută pentru ștergerea unui utilizator (doar admin)
 // Use the plain verifyToken middleware first, then in the controller we check for admin rights
 router.delete('/:uid', verifyToken, deleteUser);
+
+// Rută pentru ștergerea în masă a tuturor utilizatorilor (EXTREM DE PERICULOASĂ - doar admin)
+router.post('/mass-delete', massDeleteAllUsers);
 
 module.exports = router;

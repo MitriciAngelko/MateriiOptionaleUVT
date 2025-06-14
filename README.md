@@ -102,20 +102,50 @@ materiioptionale-uvt/
 
 ## Running the Application
 
+### Quick Start (Recommended)
+
+**Start both frontend and backend with one command:**
+```bash
+npm start
+```
+This will automatically start:
+- Backend server on `http://localhost:5001`
+- Frontend React app on `http://localhost:3000`
+
 ### Development Mode
 
-**Option 1: Run both frontend and backend simultaneously**
+**Option 1: Run both frontend and backend simultaneously (with auto-reload)**
 ```bash
 npm run dev
 ```
 
 **Option 2: Run separately**
 ```bash
-# Terminal 1 - Start the Express server
-npm run server
+# Terminal 1 - Start the Express server (with auto-reload)
+npm run server:dev
 
 # Terminal 2 - Start the React development server
-npm start
+npm run start:frontend
+```
+
+**Option 3: Run production versions together**
+```bash
+npm run dev:production
+```
+
+### Individual Services
+
+**Backend only:**
+```bash
+npm run server              # Production mode
+npm run server:dev          # Development mode with nodemon
+npm run start:backend       # Alias for production mode
+npm run start:backend:dev   # Alias for development mode
+```
+
+**Frontend only:**
+```bash
+npm run start:frontend      # Starts on port 3000
 ```
 
 ### Production Mode
@@ -123,9 +153,14 @@ npm start
 # Build the React application
 npm run build
 
-# Start the Express server
-npm run server
+# Start both services in production mode
+npm run dev:production
 ```
+
+### Port Configuration
+- **Frontend**: `http://localhost:3000`
+- **Backend API**: `http://localhost:5001`
+- **Health Check**: `http://localhost:5001/health`
 
 ## API Endpoints
 

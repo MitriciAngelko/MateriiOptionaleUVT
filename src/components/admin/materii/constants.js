@@ -6,6 +6,7 @@ export const facultati = [
 
 export const specializari = {
   "Facultatea de Matematica si Informatica": ["IR", "IE", "IA", "ID"],
+  "Facultatea de Fizica": ["FR", "FI", "FM"],
   // ... alte specializări pentru alte facultăți
 };
 

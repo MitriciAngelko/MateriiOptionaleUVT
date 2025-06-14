@@ -4,14 +4,16 @@ import { useSelector } from 'react-redux';
 import { useAuth } from '../../providers/AuthProvider';
 import { db, auth } from '../../firebase';
 import { collection, getDocs, deleteDoc, doc, updateDoc, getDoc, setDoc, query, where } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import AdminUserForm from '../../components/AdminUserForm';
 import UserDetailsModal from '../../components/UserDetailsModal';
 import CSVImportModal from '../../components/CSVImportModal';
+import MassDeleteModal from '../../components/MassDeleteModal';
 import { isAdmin } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
 import { generateUserCSVTemplate, downloadCSV } from '../../utils/csvUtils';
+import { createUser } from '../../services/userService';
 import axios from 'axios';
+import { executeBatchedOperationsWithRetry } from '../../utils/rateLimiter';
 
 const AdminPage = () => {
   const { loading } = useAuth();
@@ -35,6 +37,7 @@ const AdminPage = () => {
   const [materiiList, setMateriiList] = useState([]);
   const [hasAccess, setHasAccess] = useState(false);
   const [showCSVImportModal, setShowCSVImportModal] = useState(false);
+  const [showMassDeleteModal, setShowMassDeleteModal] = useState(false);
   const { allMaterii, loading: materiiLoading } = useMaterii();
 
   const facultati = [
@@ -99,7 +102,7 @@ const AdminPage = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Ești sigur că vrei să ștergi acest utilizator? Aceasta va șterge complet toate urmele utilizatorului din sistem (utilizator, istoric academic, înscrieri la materii, etc.)')) {
       try {
-        console.log(`🚀 Starting comprehensive deletion for user: ${userId}`);
+        console.log(`Starting comprehensive deletion for user: ${userId}`);
         
         // Get user data before deletion for logging
         const userDoc = await getDoc(doc(db, 'users', userId));
@@ -189,7 +192,7 @@ const AdminPage = () => {
   // Function to remove user from all materii documents
   const removeUserFromAllMaterii = async (userId) => {
     try {
-      console.log(`🔍 Starting removal of user ${userId} from all materii documents...`);
+      console.log(`Starting removal of user ${userId} from all materii documents...`);
       
       // Get all materii documents
       const materiiSnapshot = await getDocs(collection(db, 'materii'));
@@ -494,69 +497,97 @@ const AdminPage = () => {
     downloadCSV('template_utilizatori.csv', templateData);
   };
 
-  // CSV Import Handler
-  const handleCSVImport = async (usersData) => {
-    const results = {
-      success: 0,
-      errors: []
+  // CSV Import Handler with rate limiting
+  const handleCSVImport = async (usersData, onProgress = null) => {
+    console.log(`Starting bulk user creation for ${usersData.length} users`);
+    
+    // Create operation function for each user
+    const createUserOperation = async (userData, index) => {
+      console.log(`Creating user ${index + 1}/${usersData.length}: ${userData.nume} ${userData.prenume}`);
+      
+      // Generate default password (user can change it later)
+      const defaultPassword = 'TempPass123!';
+      
+      // Prepare user data for the createUser service
+      const userDataForService = {
+        email: userData.email.toLowerCase(),
+        password: defaultPassword,
+        nume: userData.nume,
+        prenume: userData.prenume,
+        tip: userData.tip,
+        facultate: userData.facultate,
+      };
+
+      // Add type-specific data
+      if (userData.tip === 'student') {
+        userDataForService.specializare = userData.specializare;
+        userDataForService.an = userData.an;
+        userDataForService.anNastere = userData.anNastere;
+      } else if (userData.tip === 'profesor') {
+        userDataForService.functie = userData.functie || 'Profesor';
+      }
+
+      // Use the createUser service which handles secondary auth
+      await createUser(userDataForService, []);
+      
+      return { success: true, user: userData };
     };
 
-    for (let i = 0; i < usersData.length; i++) {
-      const userData = usersData[i];
-      try {
-        // Generate default password (user can change it later)
-        const defaultPassword = 'TempPass123!';
-        
-        // Create user in Firebase Auth
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          userData.email.toLowerCase(),
-          defaultPassword
-        );
-
-        // Prepare user data for Firestore
-        const firestoreData = {
-          email: userData.email.toLowerCase(),
-          uid: userCredential.user.uid,
-          nume: userData.nume,
-          prenume: userData.prenume,
-          tip: userData.tip,
-          facultate: userData.facultate,
-          createdAt: new Date(),
-        };
-
-        // Add type-specific data
-        if (userData.tip === 'student') {
-          // Generate matricol number
-          const numarMatricol = await getNextMatricolNumber(userData.specializare);
-          
-          firestoreData.specializare = userData.specializare;
-          firestoreData.an = userData.an;
-          firestoreData.anNastere = userData.anNastere;
-          firestoreData.numarMatricol = numarMatricol;
-        } else if (userData.tip === 'profesor') {
-          firestoreData.materiiPredate = [];
+    try {
+      // Execute with rate limiting and retry logic
+      const results = await executeBatchedOperationsWithRetry(
+        usersData, 
+        createUserOperation,
+        {
+          batchSize: 3, // Small batch size to avoid rate limits
+          delayBetweenBatches: 3000, // 3 seconds between batches
+          delayBetweenItems: 1000, // 1 second between individual users
+          maxRetries: 3, // Retry failed operations up to 3 times
+          onProgress: onProgress, // Pass through the progress callback
+          onBatchComplete: (batchInfo) => {
+            console.log(`Completed batch ${batchInfo.batchNumber}/${batchInfo.totalBatches}`);
+            console.log(`Success: ${batchInfo.successCount}, Errors: ${batchInfo.errorCount}`);
+          }
         }
+      );
 
-        // Save to Firestore
-        await setDoc(doc(db, 'users', userCredential.user.uid), firestoreData);
+      // Refresh users list
+      await fetchUsers();
+      
+      console.log(`Bulk user creation completed!`);
+      console.log(`Final results: ${results.success} successful, ${results.errors.length} failed`);
+      
+      return {
+        success: results.success,
+        errors: results.errors.map(error => `${error.item.nume} ${error.item.prenume}: ${error.error}`)
+      };
 
-        // For students, assign mandatory courses
-        if (userData.tip === 'student') {
-          await assignMandatoryCoursesAndCreateIstoric(userCredential.user.uid, firestoreData);
-        }
-
-        results.success++;
-      } catch (error) {
-        console.error(`Error creating user ${userData.nume} ${userData.prenume}:`, error);
-        results.errors.push(`${userData.nume} ${userData.prenume}: ${error.message}`);
-      }
+    } catch (error) {
+      console.error('Bulk user creation failed:', error);
+      throw error;
     }
+  };
 
-    // Refresh users list
-    await fetchUsers();
-    
-    return results;
+  // Mass deletion function
+  const handleMassDeleteAllUsers = async () => {
+    try {
+      console.log('Starting mass deletion of all users...');
+      
+      const response = await axios.post('http://localhost:5001/api/users/mass-delete');
+      
+      console.log('Mass deletion completed successfully');
+      console.log('Response:', response.data);
+      
+      // Refresh the users list
+      await fetchUsers();
+      
+      alert(`Ștergerea în masă a fost completată cu succes!\n\nDetalii:\n- Utilizatori șterși din Auth: ${response.data.authDeletedCount || 0}\n- Documente șterge din Firestore: ${response.data.firestoreDeletedCount || 0}`);
+      
+    } catch (error) {
+      console.error('Mass deletion failed:', error);
+      console.error('Server response:', error.response?.data);
+      alert('Eroare la ștergerea în masă: ' + (error.response?.data?.message || error.message));
+    }
   };
 
   // Helper function to get next matricol number
@@ -597,80 +628,7 @@ const AdminPage = () => {
     }
   };
 
-  // Helper function for assigning mandatory courses
-  const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentData) => {
-    try {
-      // Find mandatory courses for the student's specialization and year
-      const materiiSnapshot = await getDocs(collection(db, 'materii'));
-      const mandatoryCourses = [];
-      
-      materiiSnapshot.docs.forEach(doc => {
-        const materie = doc.data();
-        if (materie.facultate === studentData.facultate && 
-            materie.specializare === studentData.specializare && 
-            materie.an === studentData.an && 
-            materie.obligatorie === true) {
-          mandatoryCourses.push({
-            id: doc.id,
-            nume: materie.nume
-          });
-        }
-      });
 
-      // Add student to mandatory courses
-      for (const course of mandatoryCourses) {
-        const materieRef = doc(db, 'materii', course.id);
-        const materieDoc = await getDoc(materieRef);
-        
-        if (materieDoc.exists()) {
-          const materieData = materieDoc.data();
-          const studentiInscrisi = materieData.studentiInscrisi || [];
-          
-          // Check if student is not already enrolled
-          if (!studentiInscrisi.some(student => student.id === studentId)) {
-            studentiInscrisi.push({
-              id: studentId,
-              nume: `${studentData.nume} ${studentData.prenume}`
-            });
-            
-            await updateDoc(materieRef, {
-              studentiInscrisi: studentiInscrisi
-            });
-          }
-        }
-      }
-
-      // Update student's materiiInscrise
-      const studentRef = doc(db, 'users', studentId);
-      await updateDoc(studentRef, {
-        materiiInscrise: mandatoryCourses.map(course => course.id)
-      });
-
-      // Create academic history
-      const istoricData = {
-        studentId: studentId,
-        facultate: studentData.facultate,
-        specializare: studentData.specializare,
-        anCurent: studentData.an,
-        [studentData.an]: {
-          semestru1: mandatoryCourses.map(course => ({
-            id: course.id,
-            nume: course.nume,
-            credite: 6, // Default credits
-            nota: null,
-            status: 'nenotat',
-            obligatorie: true
-          })),
-          semestru2: []
-        }
-      };
-
-      await setDoc(doc(db, 'istoricAcademic', studentId), istoricData);
-      
-    } catch (error) {
-      console.error('Error assigning mandatory courses:', error);
-    }
-  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -876,6 +834,17 @@ const AdminPage = () => {
             Administrare Utilizatori
           </h1>
           <div className="flex space-x-3">
+            {/* Mass Delete Button - DANGEROUS */}
+            <button
+              onClick={() => setShowMassDeleteModal(true)}
+              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl border border-red-500 hover:border-red-600"
+            >
+              <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Șterge Toți Utilizatorii
+            </button>
+
             {/* CSV Template Download Button */}
             <button
               onClick={handleDownloadCSVTemplate}
@@ -968,6 +937,14 @@ const AdminPage = () => {
           <CSVImportModal 
             onClose={() => setShowCSVImportModal(false)}
             onImport={handleCSVImport}
+          />
+        )}
+
+        {showMassDeleteModal && (
+          <MassDeleteModal 
+            isOpen={showMassDeleteModal}
+            onClose={() => setShowMassDeleteModal(false)}
+            onConfirm={handleMassDeleteAllUsers}
           />
         )}
       </div>

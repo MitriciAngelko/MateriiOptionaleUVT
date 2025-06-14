@@ -27,14 +27,19 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "npm run dev",
+    "start:frontend": "PORT=3000 react-scripts start",
+    "start:backend": "cd server && PORT=5001 node server.js",
+    "start:backend:dev": "cd server && PORT=5001 nodemon server.js",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "server": "node server/server.js",
-    "server:dev": "nodemon server/server.js",
-    "dev": "concurrently \"npm run server:dev\" \"npm start\"",
-    "dev:production": "concurrently \"npm run server\" \"npm start\""
+    "server": "npm run start:backend",
+    "server:dev": "npm run start:backend:dev",
+    "dev": "concurrently --kill-others-on-fail \"npm run start:backend:dev\" \"npm run start:frontend\"",
+    "dev:production": "concurrently --kill-others-on-fail \"npm run start:backend\" \"npm run start:frontend\"",
+    "health": "curl -f http://localhost:5001/health && echo '\\nBackend: ✅ Running' || echo 'Backend: ❌ Not running'",
+    "postinstall": "echo 'Setup complete! Run npm start to launch both server and frontend.'"
   },
   "eslintConfig": {
     "extends": [

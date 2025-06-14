@@ -7,8 +7,9 @@ const CSVImportModal = ({ onClose, onImport }) => {
   const [validationErrors, setValidationErrors] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewData, setPreviewData] = useState([]);
-  const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Results
+  const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Processing, 4: Results
   const [importResults, setImportResults] = useState(null);
+  const [progressInfo, setProgressInfo] = useState(null);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -78,12 +79,36 @@ const CSVImportModal = ({ onClose, onImport }) => {
 
   const handleImport = async () => {
     setIsProcessing(true);
+    setStep(3); // Move to processing step
+    setProgressInfo({
+      current: 0,
+      total: csvData.length,
+      percentage: 0,
+      currentUser: '',
+      batchNumber: 0,
+      totalBatches: 0,
+      status: 'Inițializare...'
+    });
+
     try {
-      const results = await onImport(csvData);
+      // Create a wrapper for onImport that tracks progress
+      const results = await onImport(csvData, (progress) => {
+        setProgressInfo({
+          current: progress.current,
+          total: progress.total,
+          percentage: progress.percentage,
+          currentUser: progress.currentItem ? `${progress.currentItem.nume} ${progress.currentItem.prenume}` : '',
+          batchNumber: progress.batchNumber,
+          totalBatches: progress.totalBatches,
+          status: `Procesez batch ${progress.batchNumber}/${progress.totalBatches}`
+        });
+      });
+      
       setImportResults(results);
-      setStep(3);
+      setStep(4); // Move to results step
     } catch (error) {
       setValidationErrors(['Eroare la importul utilizatorilor: ' + error.message]);
+      setStep(2); // Go back to preview step
     } finally {
       setIsProcessing(false);
     }
@@ -156,6 +181,21 @@ const CSVImportModal = ({ onClose, onImport }) => {
         </p>
       </div>
 
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="flex items-start">
+          <svg className="w-5 h-5 text-yellow-600 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <div>
+            <h4 className="text-sm font-medium text-yellow-800">Importul va fi procesat în batch-uri</h4>
+            <p className="text-sm text-yellow-700 mt-1">
+              Pentru a evita limitările Firebase, utilizatorii vor fi creați în grupuri mici cu pauze între ele. 
+              Procesul poate dura câteva minute pentru un număr mare de utilizatori.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -211,6 +251,43 @@ const CSVImportModal = ({ onClose, onImport }) => {
           {isProcessing ? 'Se importă...' : 'Importă utilizatorii'}
         </button>
       </div>
+    </div>
+  );
+
+  const renderProcessingStep = () => (
+    <div className="text-center py-12">
+      <div className="w-16 h-16 mx-auto mb-6">
+        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+      </div>
+      
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Se importă utilizatorii...
+      </h3>
+      
+      {progressInfo && (
+        <div className="max-w-md mx-auto space-y-4">
+          <div className="bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progressInfo.percentage}%` }}
+            ></div>
+          </div>
+          
+          <div className="text-sm text-gray-600 space-y-1">
+            <p><strong>{progressInfo.current}</strong> din <strong>{progressInfo.total}</strong> utilizatori procesați</p>
+            <p>{progressInfo.status}</p>
+            {progressInfo.currentUser && (
+              <p className="text-blue-600">Utilizator curent: <strong>{progressInfo.currentUser}</strong></p>
+            )}
+          </div>
+          
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+            <p className="text-xs text-yellow-700">
+              <strong>Nu închide această fereastră!</strong> Procesul poate dura câteva minute.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -270,16 +347,19 @@ const CSVImportModal = ({ onClose, onImport }) => {
           <h3 className="text-2xl font-bold text-gray-800">
             Import utilizatori din CSV
           </h3>
-          <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {step !== 3 && ( // Don't show close button during processing
+            <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {step === 1 && renderUploadStep()}
         {step === 2 && renderPreviewStep()}
-        {step === 3 && renderResultsStep()}
+        {step === 3 && renderProcessingStep()}
+        {step === 4 && renderResultsStep()}
       </div>
     </div>
   );
