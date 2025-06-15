@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useSelector } from 'react-redux';
 import { isProfesor } from '../../utils/userRoles';
+import { arrayToCSV, downloadCSV } from '../../utils/csvUtils';
 
 const MaterieDetailsPage = () => {
   const { materieId } = useParams();
@@ -330,6 +331,35 @@ const MaterieDetailsPage = () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!studenti || studenti.length === 0) {
+      showToastMessage('Nu există date pentru export');
+      return;
+    }
+
+    // Prepare CSV data with headers
+    const headers = ['Nr.', 'Nume Complet', 'Număr Matricol', 'Email', 'Nota'];
+    const csvData = [headers];
+
+    // Add student data rows
+    filteredStudenti.forEach((student, index) => {
+      csvData.push([
+        (index + 1).toString(),
+        `${student.nume} ${student.prenume}`,
+        student.numarMatricol,
+        student.email,
+        getGradeDisplay(student.nota)
+      ]);
+    });
+
+    // Generate filename with course name and current date
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `${materie?.nume?.replace(/[^a-zA-Z0-9]/g, '_')}_studenti_${currentDate}.csv`;
+    
+    downloadCSV(filename, csvData);
+    showToastMessage('Fișierul CSV a fost descărcat cu succes');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#024A76]/5 via-white to-[#3471B8]/5 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -397,9 +427,9 @@ const MaterieDetailsPage = () => {
           <div className="h-0.5 w-16 bg-gradient-to-r from-[#E3AB23] to-[#E3AB23]/70 dark:from-yellow-accent dark:to-yellow-accent/70 rounded ml-14 shadow-sm"></div>
         </div>
         
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
+        {/* Search Bar and Export Button */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="relative max-w-md flex-1">
             <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#024A76]/60 dark:text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -411,6 +441,18 @@ const MaterieDetailsPage = () => {
               className="pl-10 pr-4 py-2 w-full bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 border border-[#024A76]/30 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent shadow-sm hover:shadow-md transition-all duration-300"
             />
           </div>
+          
+          {/* Export Button */}
+          <button
+            onClick={exportCSV}
+            className="group relative px-4 py-2 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg font-medium transition-all duration-200 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-md flex items-center"
+            title="Exportă lista de studenți în format CSV"
+          >
+            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            <span className="text-sm">Exportă CSV</span>
+          </button>
         </div>
 
         {/* Students Table */}
@@ -522,8 +564,6 @@ const MaterieDetailsPage = () => {
           )}
         </div>
       </div>
-
-
     </div>
   );
 };
