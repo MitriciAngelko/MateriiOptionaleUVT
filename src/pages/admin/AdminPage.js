@@ -13,7 +13,6 @@ import { isAdmin, isSecretar } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
 import { generateUserCSVTemplate, downloadCSV } from '../../utils/csvUtils';
 import { createUser } from '../../services/userService';
-import { optimizedFirebaseService } from '../../services/optimizedFirebaseService';
 import axios from 'axios';
 import { executeBatchedOperationsWithRetry } from '../../utils/rateLimiter';
 import SkeletonLoader from '../../components/common/SkeletonLoader';
@@ -67,11 +66,12 @@ const AdminPage = () => {
         return;
       }
 
-      // Use optimized Firebase service with caching
-      const usersData = await optimizedFirebaseService.getPaginatedCollection('users', {
-        pageSize: 100, // Load first 100 users
-        filters: [] // Add filters as needed
-      });
+      // Get all users without pagination limit for admin interface
+      const usersSnapshot = await getDocs(collection(db, 'users'));
+      const usersData = usersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
 
       // Filtrăm utilizatorii (exclude admin accounts)
       const filteredUsers = usersData

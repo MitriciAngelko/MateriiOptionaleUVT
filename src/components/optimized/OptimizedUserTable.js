@@ -7,7 +7,7 @@ import { searchUsers, filterUsers } from '../../utils/userUtils';
 
 // Memoized user row component
 const UserRow = memo(({ index, style, data }) => {
-  const { users, onEditUser, onDeleteUser, onUpdateField } = data;
+  const { users, onEditUser, onDeleteUser } = data;
   const user = users[index];
 
   const handleEdit = useCallback(() => {
@@ -17,10 +17,6 @@ const UserRow = memo(({ index, style, data }) => {
   const handleDelete = useCallback(() => {
     onDeleteUser(user.id);
   }, [user.id, onDeleteUser]);
-
-  const handleFieldUpdate = useCallback((field, value) => {
-    onUpdateField(user.id, field, value);
-  }, [user.id, onUpdateField]);
 
   if (!user) return null;
 
@@ -89,6 +85,7 @@ const UserFilters = memo(({
   onSearchChange, 
   filters, 
   onFilterChange,
+  onResetFilters,
   totalUsers,
   filteredCount 
 }) => {
@@ -114,7 +111,7 @@ const UserFilters = memo(({
           />
         </div>
         <button
-          onClick={() => onFilterChange({})}
+          onClick={onResetFilters}
           className="px-3 py-2 text-sm text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10 rounded-lg transition-all duration-200 font-medium border border-[#024A76]/30 dark:border-blue-light/30 hover:border-[#024A76]/50 dark:hover:border-blue-light/50"
         >
           Resetează filtrele
@@ -215,6 +212,11 @@ const OptimizedUserTable = memo(({
     setFilters(newFilters);
   }, []);
 
+  const handleResetFilters = useCallback(() => {
+    setFilters({});
+    setSearchTerm('');
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 bg-white dark:bg-gray-800/50 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
@@ -233,6 +235,7 @@ const OptimizedUserTable = memo(({
         onSearchChange={handleSearchChange}
         filters={filters}
         onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
         totalUsers={users.length}
         filteredCount={filteredUsers.length}
       />

@@ -6,7 +6,6 @@ const CSVImportModal = ({ onClose, onImport }) => {
   const [csvData, setCsvData] = useState([]);
   const [validationErrors, setValidationErrors] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [previewData, setPreviewData] = useState([]);
   const [step, setStep] = useState(1); // 1: Upload, 2: Preview, 3: Processing, 4: Results
   const [importResults, setImportResults] = useState(null);
   const [progressInfo, setProgressInfo] = useState(null);
@@ -64,7 +63,6 @@ const CSVImportModal = ({ onClose, onImport }) => {
 
         setCsvData(processedData);
         setValidationErrors(errors);
-        setPreviewData(processedData.slice(0, 5)); // Show first 5 rows for preview
         
         if (errors.length === 0) {
           setStep(2);
@@ -196,45 +194,7 @@ const CSVImportModal = ({ onClose, onImport }) => {
         </div>
       </div>
 
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="min-w-full bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700">
-          <thead className="bg-gradient-to-r from-[#024A76] to-[#3471B8] dark:from-yellow-accent dark:to-yellow-accent/80">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white dark:text-gray-900 uppercase tracking-wide">Tip</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white dark:text-gray-900 uppercase tracking-wide">Nume</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white dark:text-gray-900 uppercase tracking-wide">Prenume</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white dark:text-gray-900 uppercase tracking-wide">Email</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white dark:text-gray-900 uppercase tracking-wide">Facultate</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-white dark:text-gray-900 uppercase tracking-wide">Specializare</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {previewData.map((user, index) => (
-              <tr key={index} className="hover:bg-gradient-to-r hover:from-[#E3AB23]/5 hover:to-transparent dark:hover:from-yellow-accent/5 dark:hover:to-blue-light/5 transition-all duration-300">
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    user.tip === 'student' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
-                    user.tip === 'profesor' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
-                    'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
-                  }`}>
-                    {user.tip}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 font-medium">{user.nume}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 font-medium">{user.prenume}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{user.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{user.facultate}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{user.specializare || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {csvData.length > 5 && (
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
-            ... și încă {csvData.length - 5} utilizatori
-          </p>
-        )}
-      </div>
+
 
       <div className="flex justify-end space-x-3">
         <button

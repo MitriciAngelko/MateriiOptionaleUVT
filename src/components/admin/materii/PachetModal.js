@@ -13,17 +13,19 @@ const PachetModal = ({ onClose, setPachete, materii }) => {
   });
   const [selectedMaterii, setSelectedMaterii] = useState([]);
   const [filteredMaterii, setFilteredMaterii] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Filtrează materiile în funcție de selecțiile făcute
+  // Filtrează materiile în funcție de selecțiile făcute și termenul de căutare
   useEffect(() => {
     const filtered = materii.filter(materie => {
       const matchFacultate = !newPachet.facultate || materie.facultate === newPachet.facultate;
       const matchSpecializare = !newPachet.specializare || materie.specializare === newPachet.specializare;
       const matchAn = !newPachet.an || materie.an === newPachet.an;
-      return matchFacultate && matchSpecializare && matchAn;
+      const matchSearch = !searchTerm || materie.nume.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchFacultate && matchSpecializare && matchAn && matchSearch;
     });
     setFilteredMaterii(filtered);
-  }, [materii, newPachet.facultate, newPachet.specializare, newPachet.an]);
+  }, [materii, newPachet.facultate, newPachet.specializare, newPachet.an, searchTerm]);
 
   const handleAddPachet = async () => {
     try {
@@ -136,6 +138,33 @@ const PachetModal = ({ onClose, setPachete, materii }) => {
               </svg>
               Selectează Materii
             </h3>
+            
+            {/* Search bar for courses */}
+            <div className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Caută materii..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 pl-10 border border-[#024A76]/30 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-800/50 text-gray-900 dark:text-gray-200 transition-all duration-300"
+                />
+                <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-2.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            
             <div className="max-h-60 overflow-y-auto border border-[#024A76]/30 dark:border-gray-600 rounded-lg p-4 bg-gray-50/50 dark:bg-gray-700/30">
               {filteredMaterii.length > 0 ? (
                 filteredMaterii.map((materie) => (
