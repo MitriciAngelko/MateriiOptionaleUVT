@@ -103,6 +103,15 @@ const AlocareAutomataPage = () => {
   const [toast, setToast] = useState(null);
   const [hasAccess, setHasAccess] = useState(false);
   
+  // Filter states
+  const [filters, setFilters] = useState({
+    facultate: '',
+    specializare: '',
+    an: '',
+    status: '',
+    semestru: ''
+  });
+  
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigate();
 
@@ -142,16 +151,80 @@ const AlocareAutomataPage = () => {
     // Căutarea se face direct în frontend deoarece avem deja toate pachetele încărcate
   };
 
-  // Filtrarea pachetelor în funcție de termenul de căutare
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      facultate: '',
+      specializare: '',
+      an: '',
+      status: '',
+      semestru: ''
+    });
+    setSearchTerm('');
+  };
+
+  // Get unique values for filter options
+  const getUniqueValues = (field) => {
+    const values = pachete.map(pachet => pachet[field]).filter(Boolean);
+    return [...new Set(values)].sort();
+  };
+
+  // Filtrarea pachetelor în funcție de termenul de căutare și filtre
   const filteredPachete = pachete.filter(pachet => {
-    if (!searchTerm.trim()) return true;
+    // Search term filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = (
+        (pachet.nume && pachet.nume.toLowerCase().includes(searchLower)) ||
+        (pachet.facultate && pachet.facultate.toLowerCase().includes(searchLower)) ||
+        (pachet.specializare && pachet.specializare.toLowerCase().includes(searchLower))
+      );
+      if (!matchesSearch) return false;
+    }
     
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (pachet.nume && pachet.nume.toLowerCase().includes(searchLower)) ||
-      (pachet.facultate && pachet.facultate.toLowerCase().includes(searchLower)) ||
-      (pachet.specializare && pachet.specializare.toLowerCase().includes(searchLower))
-    );
+    // Faculty filter
+    if (filters.facultate && pachet.facultate !== filters.facultate) {
+      return false;
+    }
+    
+    // Specialization filter
+    if (filters.specializare && pachet.specializare !== filters.specializare) {
+      return false;
+    }
+    
+    // Year filter
+    if (filters.an && pachet.an !== filters.an) {
+      return false;
+    }
+    
+    // Semester filter
+    if (filters.semestru && pachet.semestru !== filters.semestru) {
+      return false;
+    }
+    
+    // Status filter
+    if (filters.status) {
+      if (filters.status === 'activ' && pachet.statusInscriere !== 'activ') {
+        return false;
+      }
+      if (filters.status === 'inactiv' && pachet.statusInscriere === 'activ') {
+        return false;
+      }
+      if (filters.status === 'cu_alocare' && !pachet.dataUltimaAlocare) {
+        return false;
+      }
+      if (filters.status === 'fara_alocare' && pachet.dataUltimaAlocare) {
+        return false;
+      }
+    }
+    
+    return true;
   });
 
   // Utility functions
@@ -1185,6 +1258,117 @@ const AlocareAutomataPage = () => {
             <span className="sm:hidden">Caută</span>
           </button>
         </div>
+      </div>
+
+      {/* Advanced Filters */}
+      <div className="mb-4 sm:mb-6 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-[#024A76] dark:text-blue-light flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+            </svg>
+            Filtre Avansate
+          </h3>
+          <button
+            onClick={resetFilters}
+            className="px-3 py-1 text-sm text-[#024A76] dark:text-blue-light hover:text-[#3471B8] dark:hover:text-yellow-accent hover:bg-[#024A76]/10 dark:hover:bg-blue-light/10 rounded-lg transition-all duration-200 font-medium border border-[#024A76]/30 dark:border-blue-light/30 hover:border-[#024A76]/50 dark:hover:border-blue-light/50"
+          >
+            Resetează filtrele
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Faculty Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] dark:text-blue-light mb-2">Facultate</label>
+            <select
+              value={filters.facultate}
+              onChange={(e) => handleFilterChange('facultate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors duration-200"
+            >
+              <option value="">Toate facultățile</option>
+              {getUniqueValues('facultate').map(facultate => (
+                <option key={facultate} value={facultate}>{facultate}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Specialization Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] dark:text-blue-light mb-2">Specializare</label>
+            <select
+              value={filters.specializare}
+              onChange={(e) => handleFilterChange('specializare', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors duration-200"
+            >
+              <option value="">Toate specializările</option>
+              {getUniqueValues('specializare').map(specializare => (
+                <option key={specializare} value={specializare}>{specializare}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] dark:text-blue-light mb-2">An</label>
+            <select
+              value={filters.an}
+              onChange={(e) => handleFilterChange('an', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors duration-200"
+            >
+              <option value="">Toți anii</option>
+              {getUniqueValues('an').map(an => (
+                <option key={an} value={an}>Anul {an}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Semester Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] dark:text-blue-light mb-2">Semestru</label>
+            <select
+              value={filters.semestru}
+              onChange={(e) => handleFilterChange('semestru', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors duration-200"
+            >
+              <option value="">Toate semestrele</option>
+              <option value="1">Semestrul 1</option>
+              <option value="2">Semestrul 2</option>
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="block text-sm font-medium text-[#024A76] dark:text-blue-light mb-2">Status</label>
+            <select
+              value={filters.status}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-[#E3AB23] dark:focus:ring-yellow-accent focus:border-[#E3AB23] dark:focus:border-yellow-accent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 transition-colors duration-200"
+            >
+              <option value="">Toate statusurile</option>
+              <option value="activ">Înscriere activă</option>
+              <option value="inactiv">Înscriere inactivă</option>
+              <option value="cu_alocare">Cu alocare procesată</option>
+              <option value="fara_alocare">Fără alocare procesată</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Filter Summary */}
+        {(searchTerm || Object.values(filters).some(filter => filter)) && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Se afișează <span className="font-semibold text-[#024A76] dark:text-blue-light">{filteredPachete.length}</span> din <span className="font-semibold">{pachete.length}</span> pachete
+              </span>
+              {filteredPachete.length === 0 && (
+                <span className="text-sm text-red-600 dark:text-red-400 font-medium">
+                  Nu s-au găsit pachete care să corespundă criteriilor
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       
       {successMessage && (
