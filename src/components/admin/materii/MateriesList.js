@@ -11,13 +11,18 @@ const MateriesList = ({
   return (
     <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
       <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-[#024A76] dark:text-blue-light flex items-center">
-          <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-          </svg>
-          <span className="hidden sm:inline">Materii Existente</span>
-          <span className="sm:hidden">Materii ({filteredMaterii.length})</span>
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#024A76] dark:text-blue-light flex items-center">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+            <span className="hidden sm:inline">Materii Existente</span>
+            <span className="sm:hidden">Materii</span>
+          </h2>
+          <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-full">
+            <span className="font-semibold">{filteredMaterii.length}</span> materii
+          </div>
+        </div>
       </div>
       
       <div className="mb-6">

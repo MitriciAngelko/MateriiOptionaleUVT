@@ -182,6 +182,11 @@ const massDeleteAllUsers = async (req, res) => {
     let authDeletedCount = 0;
     let firestoreDeletedCount = 0;
     let errors = [];
+    let skippedCount = 0;
+
+    // Define protected admin emails that should never be deleted
+    // These accounts are critical for system administration and must be preserved
+    const protectedEmails = ['admin@admin.com'];
 
     // Get all users from Firebase Auth
     let allUsers = [];
@@ -194,10 +199,18 @@ const massDeleteAllUsers = async (req, res) => {
     } while (nextPageToken);
 
     console.log(`Found ${allUsers.length} users in Firebase Auth`);
+    console.log(`Protected emails that will be preserved: ${protectedEmails.join(', ')}`);
 
-    // Delete users from Firebase Auth
+    // Delete users from Firebase Auth (excluding protected accounts)
     for (const user of allUsers) {
       try {
+        // Skip protected admin accounts
+        if (protectedEmails.includes(user.email)) {
+          console.log(`🔒 SKIPPING protected admin account: ${user.email}`);
+          skippedCount++;
+          continue;
+        }
+
         await admin.auth().deleteUser(user.uid);
         authDeletedCount++;
         console.log(`Deleted user from Auth: ${user.email || user.uid}`);
@@ -207,14 +220,28 @@ const massDeleteAllUsers = async (req, res) => {
       }
     }
 
-    // Delete user documents from Firestore
+    // Collect all user IDs that will be deleted (for materii cleanup)
+    const deletedUserIds = [];
+    
+    // Delete user documents from Firestore (excluding protected accounts)
     const usersSnapshot = await admin.firestore().collection('users').get();
     
     for (const doc of usersSnapshot.docs) {
       try {
-        // Delete related collections
         const uid = doc.id;
+        const userData = doc.data();
         
+        // Skip protected admin accounts
+        if (protectedEmails.includes(userData.email)) {
+          console.log(`🔒 SKIPPING protected admin document: ${userData.email} (${uid})`);
+          skippedCount++;
+          continue;
+        }
+        
+        // Add to deletion list for materii cleanup
+        deletedUserIds.push(uid);
+        
+        // Delete related collections
         // Delete istoric academic
         const istoricSnapshot = await admin.firestore()
           .collection('istoricAcademic')
@@ -245,13 +272,91 @@ const massDeleteAllUsers = async (req, res) => {
       }
     }
 
-    console.log(`Mass deletion completed. Auth: ${authDeletedCount}, Firestore: ${firestoreDeletedCount}`);
+    // Cleanup user references from materii documents
+    console.log(`Starting cleanup of user references from materii documents...`);
+    console.log(`Will remove ${deletedUserIds.length} user IDs from materii collections`);
+    
+    let materiiUpdatedCount = 0;
+    try {
+      const materiiSnapshot = await admin.firestore().collection('materii').get();
+      
+      for (const materieDoc of materiiSnapshot.docs) {
+        try {
+          const materieData = materieDoc.data();
+          const materieId = materieDoc.id;
+          let needsUpdate = false;
+          const updates = {};
+
+          console.log(`🔍 Checking materie: ${materieData.nume} (ID: ${materieId})`);
+
+          // Clean up studentiInscrisi array
+          if (materieData.studentiInscrisi && Array.isArray(materieData.studentiInscrisi)) {
+            const originalLength = materieData.studentiInscrisi.length;
+            const cleanedStudenti = materieData.studentiInscrisi.filter(student => {
+              const shouldKeep = !deletedUserIds.includes(student.id);
+              if (!shouldKeep) {
+                console.log(`  📋 Removing student: ${student.nume} (ID: ${student.id})`);
+              }
+              return shouldKeep;
+            });
+
+            if (cleanedStudenti.length !== originalLength) {
+              updates.studentiInscrisi = cleanedStudenti;
+              needsUpdate = true;
+              console.log(`  ✏️  Updated studentiInscrisi: ${originalLength} -> ${cleanedStudenti.length}`);
+            }
+          }
+
+          // Clean up profesori array
+          if (materieData.profesori && Array.isArray(materieData.profesori)) {
+            const originalLength = materieData.profesori.length;
+            const cleanedProfesori = materieData.profesori.filter(profesor => {
+              const shouldKeep = !deletedUserIds.includes(profesor.id);
+              if (!shouldKeep) {
+                console.log(`  👨‍🏫 Removing professor: ${profesor.nume} (ID: ${profesor.id})`);
+              }
+              return shouldKeep;
+            });
+
+            if (cleanedProfesori.length !== originalLength) {
+              updates.profesori = cleanedProfesori;
+              needsUpdate = true;
+              console.log(`  ✏️  Updated profesori: ${originalLength} -> ${cleanedProfesori.length}`);
+            }
+          }
+
+          // Apply updates if needed
+          if (needsUpdate) {
+            await admin.firestore().collection('materii').doc(materieId).update(updates);
+            materiiUpdatedCount++;
+            console.log(`  ✅ Successfully updated materie: ${materieData.nume}`);
+          } else {
+            console.log(`  ⏭️  No updates needed for materie: ${materieData.nume}`);
+          }
+
+        } catch (materieError) {
+          console.error(`  ❌ Error processing materie ${materieDoc.id}:`, materieError);
+          errors.push(`Materie cleanup failed for ${materieDoc.id}: ${materieError.message}`);
+        }
+      }
+
+      console.log(`📊 Materii cleanup summary: ${materiiUpdatedCount} materii documents updated`);
+
+    } catch (materiiError) {
+      console.error('Error during materii cleanup:', materiiError);
+      errors.push(`Materii cleanup failed: ${materiiError.message}`);
+    }
+
+    console.log(`Mass deletion completed. Auth: ${authDeletedCount}, Firestore: ${firestoreDeletedCount}, Skipped: ${skippedCount}, Materii Updated: ${materiiUpdatedCount}`);
 
     res.status(200).json({
       success: true,
-      message: 'Mass deletion completed',
+      message: 'Mass deletion completed (protected admin accounts preserved, materii references cleaned)',
       authDeletedCount,
       firestoreDeletedCount,
+      skippedCount,
+      materiiUpdatedCount,
+      protectedEmails,
       totalErrors: errors.length,
       errors: errors.slice(0, 10) // Only return first 10 errors to avoid huge response
     });

@@ -67,6 +67,18 @@ class SimpleRateLimiter {
       }
     }
   }
+
+  // Method to reset rate limit for a specific key (for development/testing)
+  reset(key = null) {
+    if (key) {
+      this.hits.delete(key);
+      this.resetTime.delete(key);
+    } else {
+      // Reset all if no key specified
+      this.hits.clear();
+      this.resetTime.clear();
+    }
+  }
 }
 
 // Predefined rate limiters for different endpoints
@@ -108,5 +120,13 @@ module.exports = {
   generalLimit: rateLimiters.general.middleware(),
   strictLimit: rateLimiters.strict.middleware(),
   authLimit: rateLimiters.auth.middleware(),
-  massOperationsLimit: rateLimiters.massOperations.middleware()
+  massOperationsLimit: rateLimiters.massOperations.middleware(),
+  
+  // Development utility to reset rate limiters
+  resetRateLimiter: (limiterName = 'massOperations', key = null) => {
+    if (rateLimiters[limiterName]) {
+      rateLimiters[limiterName].reset(key);
+      console.log(`Rate limiter '${limiterName}' reset for key: ${key || 'all keys'}`);
+    }
+  }
 }; 

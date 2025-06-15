@@ -69,6 +69,9 @@ const MassDeleteModal = ({ isOpen, onClose, onConfirm }) => {
             <p className="text-gray-700 dark:text-gray-300 text-lg">
               Ești sigur că vrei să ștergi toți utilizatorii din sistem?
             </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              <span className="text-green-600 dark:text-green-400 font-medium">Notă:</span> Contul admin@admin.com va fi păstrat pentru securitate.
+            </p>
           </div>
 
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg p-4">
@@ -78,10 +81,10 @@ const MassDeleteModal = ({ isOpen, onClose, onConfirm }) => {
               </svg>
               <div>
                 <p className="text-red-700 dark:text-red-300 text-sm font-medium">
-                  <strong>Atenție:</strong> Această acțiune va șterge permanent toți utilizatorii din Firebase Authentication și Firestore.
+                  <strong>Atenție:</strong> Această acțiune va șterge permanent toți utilizatorii din Firebase Authentication și Firestore (exceptând conturile admin protejate).
                 </p>
                 <p className="text-red-600 dark:text-red-400 text-sm mt-1">
-                  Acțiunea nu poate fi anulată.
+                  Acțiunea nu poate fi anulată și va curăța toate referințele din materii.
                 </p>
               </div>
             </div>

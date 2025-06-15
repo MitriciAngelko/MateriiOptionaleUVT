@@ -54,7 +54,7 @@ const Toast = ({ message, type = 'success', onClose }) => {
       default:
         return (
           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 000 16zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
         );
     }
@@ -215,7 +215,7 @@ const AdminIstoricAcademicPage = () => {
         ...studentDoc.data()
       };
       
-      // Verifică dacă există istoric academic pentru student
+      // 🔍 ONLY READ existing academic history - don't create on-demand
       const istoricRef = doc(db, 'istoricAcademic', studentId);
       const istoricDoc = await getDoc(istoricRef);
       
@@ -223,30 +223,12 @@ const AdminIstoricAcademicPage = () => {
       
       if (istoricDoc.exists()) {
         istoricData = istoricDoc.data();
+        console.log(`📚 Found existing academic history for ${studentData.nume} ${studentData.prenume}`);
       } else {
-        // Creează un istoric gol dacă nu există
-        istoricData = {
-          studentId: studentId,
-          nume: studentData.nume || '',
-          prenume: studentData.prenume || '',
-          specializare: studentData.specializare || '',
-          facultate: studentData.facultate || '',
-          istoricAnual: []
-        };
-        
-        // Salvează istoricul gol în baza de date
-        await setDoc(istoricRef, istoricData);
-      }
-      
-      // Adaugă materii obligatorii care lipsesc
-      const hasUpdatedCourses = await addMateriiObligatorii(studentData, istoricData, istoricRef);
-      
-      // Doar dacă cursurile au fost actualizate, reîncarcă istoricul
-      if (hasUpdatedCourses) {
-        const updatedIstoricDoc = await getDoc(istoricRef);
-        if (updatedIstoricDoc.exists()) {
-          istoricData = updatedIstoricDoc.data();
-        }
+        console.log(`⚠️ No academic history found for ${studentData.nume} ${studentData.prenume}`);
+        console.log(`💡 Academic history should have been created during user registration`);
+        // Don't create anything - just show empty state
+        istoricData = null;
       }
       
       setSelectedStudent(studentId);
@@ -263,119 +245,8 @@ const AdminIstoricAcademicPage = () => {
     }
   };
 
-  // Adaugă materii obligatorii care nu sunt deja în istoric
-  const addMateriiObligatorii = async (studentData, istoricData, istoricRef) => {
-    try {
-      const materiiObligatorii = availableCourses.filter(
-        course => course.obligatorie && 
-        course.facultate === studentData.facultate && 
-        course.specializare === studentData.specializare
-      );
-      
-      if (materiiObligatorii.length === 0) return false;
-      
-      let shouldUpdateIstoric = false;
-      const updatedIstoric = {...istoricData};
-      
-      // Asigură-te că avem array-ul istoricAnual
-      if (!updatedIstoric.istoricAnual) {
-        updatedIstoric.istoricAnual = [];
-      }
-      
-      // Determină anul universitar curent
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth(); // 0-11
-      const anUniversitar = month < 9 ? 
-        `${year-1}-${year}` : // Pentru lunile ian-aug, folosim anul precedent-anul curent
-        `${year}-${year+1}`;  // Pentru lunile sep-dec, folosim anul curent-anul următor
-      
-      // Create a Set to track which courses have already been added
-      const addedCourses = new Set();
-      
-      // First, identify all courses that already exist in the history
-      if (updatedIstoric.istoricAnual) {
-        for (const anual of updatedIstoric.istoricAnual) {
-          if (anual.cursuri) {
-            for (const curs of anual.cursuri) {
-              addedCourses.add(curs.id);
-            }
-          }
-        }
-      }
-      
-      for (const materie of materiiObligatorii) {
-        // Skip if this course is already in the history
-        if (addedCourses.has(materie.id)) {
-          continue;
-        }
-        
-        // Add the mandatory course with a default grade of 0 (or other default value)
-        const newNote = {
-          id: materie.id,
-          nume: materie.nume,
-          credite: materie.credite || 0,
-          nota: 0, // Nota 0 - neevaluată încă
-          dataNota: new Date().getTime(), // Folosim timestamp în loc de Date object
-          profesor: 'Nespecificat',
-          obligatorie: true,
-          status: 'neevaluat'
-        };
-        
-        const anStudiu = materie.an || 'I'; // Presupunem anul I dacă nu este specificat
-        const semestru = materie.semestru || 1; // Presupunem semestrul 1 dacă nu este specificat
-        
-        // Verifică dacă există deja un istoric pentru anul și semestrul specificat
-        const anualIndex = updatedIstoric.istoricAnual.findIndex(
-          item => item.anUniversitar === anUniversitar && 
-                item.anStudiu === anStudiu &&
-                item.semestru === semestru
-        );
-        
-        if (anualIndex >= 0) {
-          // Verifică dacă istoricul are proprietatea cursuri și este un array
-          if (!updatedIstoric.istoricAnual[anualIndex].cursuri) {
-            updatedIstoric.istoricAnual[anualIndex].cursuri = [];
-          }
-          
-          // Verifică din nou dacă materia nu există deja în acest an/semestru specific
-          const materieExistentaInAn = updatedIstoric.istoricAnual[anualIndex].cursuri.some(
-            curs => curs.id === materie.id
-          );
-          
-          if (!materieExistentaInAn) {
-            // Adaugă nota la un istoric existent
-            updatedIstoric.istoricAnual[anualIndex].cursuri.push(newNote);
-          }
-        } else {
-          // Creează un nou istoric anual
-          const newAnualRecord = {
-            anUniversitar: anUniversitar,
-            anStudiu: anStudiu,
-            semestru: semestru,
-            cursuri: [newNote]
-          };
-          
-          updatedIstoric.istoricAnual.push(newAnualRecord);
-        }
-        
-        // Mark the course as added
-        addedCourses.add(materie.id);
-        shouldUpdateIstoric = true;
-      }
-      
-      if (shouldUpdateIstoric) {
-        await updateDoc(istoricRef, updatedIstoric);
-        return true;
-      }
-      
-      return false;
-      
-    } catch (error) {
-      console.error('Eroare la adăugarea materiilor obligatorii:', error);
-      return false;
-    }
-  };
+  // 🚫 REMOVED: addMateriiObligatorii function
+  // Academic history is now created during user registration, not on-demand
 
   // Adaugă o notă nouă în istoricul studentului
   const handleAddNote = async (e) => {
@@ -885,6 +756,8 @@ const AdminIstoricAcademicPage = () => {
 
   // Obține toate cursurile pentru afișare într-un tabel unic
   const getAllCursuri = () => {
+    if (!selectedStudentData?.istoric?.istoricAnual) return [];
+    
     const istoricFiltrat = getFilteredIstoricAnual();
     
     // Grupează cursurile pe semestre (folosind anStudiu și semestru pentru a grupa corect)
@@ -1175,7 +1048,21 @@ const AdminIstoricAcademicPage = () => {
                 
                 {/* Istoric în tabel grupat pe semestre */}
                 <div className="overflow-x-auto">
-                  {selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
+                  {selectedStudentData.istoric === null ? (
+                    // Case: No academic history exists at all
+                    <div className="text-center py-12 bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <svg className="mx-auto h-16 w-16 text-amber-400 dark:text-amber-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <p className="text-amber-600 dark:text-amber-400 font-medium text-lg mb-2">Nu există istoric academic pentru acest student</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        Istoricul academic ar fi trebuit să fie creat automat la înregistrarea studentului.
+                        <br />
+                        Contactați administratorul pentru a rezolva această problemă.
+                      </p>
+                    </div>
+                  ) : selectedStudentData.istoric?.istoricAnual && selectedStudentData.istoric.istoricAnual.length > 0 ? (
+                    // Case: Academic history exists and has data
                     <div className="space-y-4 sm:space-y-8">
                       {getAllCursuri().map((semestru, semestruIndex) => (
                         <div key={semestruIndex} className="bg-white/80 backdrop-blur-sm dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">

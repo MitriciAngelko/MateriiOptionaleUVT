@@ -127,20 +127,72 @@ export const removeProfessorFromMaterii = async (userId, materiiToRemove, numePr
  * @param {string} studentId - Student ID
  * @param {Object} studentData - Student data
  */
+/**
+ * Creates basic academic history structure for non-student users
+ * @param {string} userId - User ID
+ * @param {Object} userData - User data
+ */
+export const createBasicAcademicHistory = async (userId, userData) => {
+  try {
+    console.log(`📋 Creating basic academic history for ${userData.tip}: ${userData.prenume} ${userData.nume}`);
+
+    // Check if academic history already exists
+    const existingIstoricRef = doc(db, 'istoricAcademic', userId);
+    const existingIstoricDoc = await getDoc(existingIstoricRef);
+    
+    if (existingIstoricDoc.exists()) {
+      console.log(`ℹ️ Academic history already exists for ${userData.tip}: ${userData.prenume} ${userData.nume} - skipping creation`);
+      return;
+    }
+
+    // Create basic academic history structure
+    const basicIstoricData = {
+      studentId: userId, // Keep the field name consistent, even for non-students
+      nume: userData.nume || '',
+      prenume: userData.prenume || '',
+      specializare: userData.specializare || '', // Will be empty for professors/secretaries
+      facultate: userData.facultate || '',
+      tip: userData.tip, // Store user type for reference
+      istoricAnual: [] // Empty array - can be used later if needed
+    };
+
+    // Save using the userId as the document ID
+    await setDoc(doc(db, 'istoricAcademic', userId), basicIstoricData);
+
+    console.log(`✅ Created basic academic history for ${userData.tip}: ${basicIstoricData.prenume} ${basicIstoricData.nume}`);
+
+  } catch (error) {
+    console.error(`❌ Error creating basic academic history for ${userData.tip}:`, error);
+    throw error;
+  }
+};
+
 export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentData) => {
   try {
-    console.log(` CRITICAL: Enrolling student ${studentData.prenume} ${studentData.nume} in mandatory courses...`);
+    console.log(`📚 CRITICAL: Enrolling student ${studentData.prenume} ${studentData.nume} in mandatory courses...`);
     console.log(`   - Faculty: ${studentData.facultate}`);
     console.log(`   - Specialization: ${studentData.specializare}`);
     console.log(`   - Year: ${studentData.an}`);
 
-    // Find mandatory courses
+    // ✅ CHECK: Don't overwrite existing academic history
+    const existingIstoricRef = doc(db, 'istoricAcademic', studentId);
+    const existingIstoricDoc = await getDoc(existingIstoricRef);
+    
+    if (existingIstoricDoc.exists()) {
+      console.log(`ℹ️ Academic history already exists for student ${studentData.prenume} ${studentData.nume} - skipping creation`);
+      console.log(`📚 Proceeding with mandatory course enrollment only...`);
+      // Continue with course enrollment but skip history creation
+    } else {
+      console.log(`📝 No existing academic history found - will create new structure`);
+    }
+
+    // Find mandatory courses for ALL 3 academic years (I, II, III)
     const materiiQuery = query(
       collection(db, 'materii'),
       where('obligatorie', '==', true),
       where('facultate', '==', studentData.facultate),
-      where('specializare', '==', studentData.specializare),
-      where('an', '==', studentData.an)
+      where('specializare', '==', studentData.specializare)
+      // Remove the 'an' filter to get courses for all years
     );
 
     const materiiSnapshot = await getDocs(materiiQuery);
@@ -153,11 +205,34 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
       });
     });
 
-    console.log(`Found ${materiiObligatorii.length} mandatory courses for this profile`);
+    console.log(`📖 Found ${materiiObligatorii.length} mandatory courses for ALL years (${studentData.facultate} - ${studentData.specializare})`);
 
     if (materiiObligatorii.length === 0) {
-      console.log(`No mandatory courses found for ${studentData.facultate} - ${studentData.specializare} - Year ${studentData.an}`);
-      return;
+      console.log(`ℹ️ No mandatory courses found for ${studentData.facultate} - ${studentData.specializare} - ALL YEARS`);
+      
+      // Only create academic history if it doesn't already exist
+      if (!existingIstoricDoc.exists()) {
+        console.log(`📝 Creating empty academic history structure...`);
+        
+        // Create empty academic history structure even if no mandatory courses exist
+        const emptyIstoricData = {
+          studentId: studentId,
+          nume: studentData.nume || '',
+          prenume: studentData.prenume || '',
+          specializare: studentData.specializare || '',
+          facultate: studentData.facultate || '',
+          istoricAnual: [] // Empty array - courses will be added later
+        };
+
+        // Save the empty structure
+        await setDoc(doc(db, 'istoricAcademic', studentId), emptyIstoricData);
+        
+        console.log(`✅ Created empty academic history structure for: ${emptyIstoricData.prenume} ${emptyIstoricData.nume}`);
+      } else {
+        console.log(`ℹ️ Academic history already exists, skipping creation`);
+      }
+      
+      return; // Exit early since no courses to process
     }
 
     // Prepare student info for enrollment with null checks
@@ -169,10 +244,13 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
 
     const materiiIds = [];
 
-    // CRITICAL: Enroll student in each mandatory course by updating the materii documents
-    for (const materie of materiiObligatorii) {
+    // CRITICAL: Enroll student ONLY in courses for their CURRENT year
+    const currentYearCourses = materiiObligatorii.filter(materie => materie.an === studentData.an);
+    console.log(`📚 Enrolling in ${currentYearCourses.length} courses for current year (${studentData.an})`);
+    
+    for (const materie of currentYearCourses) {
       try {
-        console.log(` Enrolling in: ${materie.nume} (${materie.id})`);
+        console.log(`📖 Enrolling in: ${materie.nume} (${materie.id}) - Year ${materie.an}`);
         
         // Get current materie document to check if student is already enrolled
         const materieRef = doc(db, 'materii', materie.id);
@@ -189,7 +267,7 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
             });
             
             materiiIds.push(materie.id);
-            console.log(`    Successfully enrolled in ${materie.nume}`);
+            console.log(`   ✅ Successfully enrolled in ${materie.nume}`);
           } else {
             // If already enrolled, still add to the list for the user document
             materiiIds.push(materie.id);
@@ -197,7 +275,7 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
           }
         }
       } catch (materieError) {
-        console.error(`    Failed to enroll in ${materie.nume}:`, materieError);
+        console.error(`   ❌ Failed to enroll in ${materie.nume}:`, materieError);
         // Continue with other courses even if one fails
       }
     }
@@ -209,44 +287,107 @@ export const assignMandatoryCoursesAndCreateIstoric = async (studentId, studentD
         materiiInscrise: arrayUnion(...materiiIds)
       });
       
-      console.log(` Updated student document with ${materiiIds.length} mandatory courses`);
+      console.log(`✅ Updated student document with ${materiiIds.length} mandatory courses`);
     }
 
-    // Create academic history record with null checks to prevent undefined values
-    const istoricData = {
-      studentId: studentId || '',
-      studentNume: `${studentData.prenume || ''} ${studentData.nume || ''}`.trim() || 'Student Necunoscut',
-      studentEmail: studentData.email || '',
-      anAcademic: new Date().getFullYear(),
-      facultate: studentData.facultate || '',
+    // 🆕 CREATE MODERN ACADEMIC HISTORY STRUCTURE
+    console.log(`📋 Creating modern academic history structure...`);
+
+    // Determine current academic year
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth(); // 0-11
+    const anUniversitar = month < 9 ? 
+      `${year-1}-${year}` : // For months Jan-Aug, use previous-current year
+      `${year}-${year+1}`;  // For months Sep-Dec, use current-next year
+
+    // 🎯 Group courses by YEAR and SEMESTER for ALL 3 academic years
+    const cursuriBySemestru = {};
+    const academicYears = ['I', 'II', 'III'];
+    
+    // Process courses for ALL academic years
+    academicYears.forEach(anStudiu => {
+      const coursesForYear = materiiObligatorii.filter(materie => materie.an === anStudiu);
+      console.log(`📚 Processing ${coursesForYear.length} courses for Year ${anStudiu}`);
+      
+      coursesForYear.forEach(materie => {
+        const semestru = materie.semestru || 1;
+        const key = `${anStudiu}-${semestru}`; // e.g., "I-1", "I-2", "II-1", etc.
+        
+        if (!cursuriBySemestru[key]) {
+          cursuriBySemestru[key] = {
+            anStudiu: anStudiu,
+            semestru: semestru,
+            cursuri: []
+          };
+        }
+        
+        // Create course record with modern structure
+        const courseRecord = {
+          id: materie.id,
+          nume: materie.nume,
+          credite: materie.credite || 0,
+          nota: 0, // Grade 0 - not evaluated yet
+          dataNota: new Date().getTime(), // Use timestamp
+          profesor: 'Nespecificat', // Professor will be assigned when available
+          obligatorie: true,
+          status: 'neevaluat'
+        };
+        
+        cursuriBySemestru[key].cursuri.push(courseRecord);
+      });
+    });
+
+    // Create the modern academic history structure for ALL years
+    const istoricAnual = [];
+
+    // Add records for each year-semester combination that has courses
+    Object.keys(cursuriBySemestru).forEach(key => {
+      const semesterData = cursuriBySemestru[key];
+      
+      const anualRecord = {
+        anUniversitar: anUniversitar,
+        anStudiu: semesterData.anStudiu,
+        semestru: semesterData.semestru,
+        cursuri: semesterData.cursuri
+      };
+      
+      istoricAnual.push(anualRecord);
+      console.log(`📋 Added academic record: Year ${semesterData.anStudiu}, Semester ${semesterData.semestru}, Courses: ${semesterData.cursuri.length}`);
+    });
+
+    // Create the complete academic history document with modern structure
+    const modernIstoricData = {
+      studentId: studentId,
+      nume: studentData.nume || '',
+      prenume: studentData.prenume || '',
       specializare: studentData.specializare || '',
-      an: studentData.an || '',
-      materii: materiiObligatorii.map(materie => ({
-        materieId: materie.id || '',
-        materieNume: materie.nume || 'Materie Necunoscuta',
-        materieTip: materie.tip || 'obligatorie',
-        nota: null,
-        status: 'in_curs',
-        credite: materie.credite || 5,
-        semestru: materie.semestru || 1
-      })),
-      dataCreare: new Date(),
-      status: 'activ'
+      facultate: studentData.facultate || '',
+      istoricAnual: istoricAnual
     };
 
-    // Debug logging to help identify undefined values
-    console.log(` Creating academic history for student: ${istoricData.studentNume}`);
-    if (!studentId) console.warn('⚠️ Warning: studentId is undefined');
-    if (!studentData.prenume && !studentData.nume) console.warn('⚠️ Warning: student name is undefined');
+    // Only create academic history if it doesn't already exist
+    if (!existingIstoricDoc.exists()) {
+      // Save using the studentId as the document ID (this is critical!)
+      await setDoc(doc(db, 'istoricAcademic', studentId), modernIstoricData);
 
-    await setDoc(doc(collection(db, 'istoricAcademic')), istoricData);
-
-    console.log(` Student enrollment completed successfully!`);
-    console.log(`   - Total mandatory courses: ${materiiObligatorii.length}`);
-    console.log(`   - Successfully enrolled: ${materiiIds.length}`);
+      console.log(`✅ Created modern academic history for student: ${modernIstoricData.prenume} ${modernIstoricData.nume}`);
+      console.log(`📊 Academic history summary:`);
+      console.log(`   - Academic year: ${anUniversitar}`);
+      console.log(`   - Student's current year: ${studentData.an}`);
+      console.log(`   - Academic records created for ALL 3 years (I, II, III)`);
+      console.log(`   - Year-Semester combinations: ${Object.keys(cursuriBySemestru).join(', ')}`);
+      console.log(`   - Total courses added to history: ${materiiObligatorii.length}`);
+      console.log(`   - Successfully enrolled in current year courses: ${materiiIds.length}`);
+    } else {
+      console.log(`ℹ️ Academic history already exists, skipping creation`);
+      console.log(`📊 Enrollment summary:`);
+      console.log(`   - Total courses found: ${materiiObligatorii.length}`);
+      console.log(`   - Successfully enrolled in materii: ${materiiIds.length}`);
+    }
 
   } catch (error) {
-    console.error(' Error assigning mandatory courses:', error);
+    console.error('❌ Error assigning mandatory courses and creating academic history:', error);
     throw error;
   }
 };
@@ -328,6 +469,11 @@ export const createUser = async (userData, materiiSelectate = [], onUserCreated)
       if (userData.tip === 'student') {
         await assignMandatoryCoursesAndCreateIstoric(user.uid, firestoreData);
         console.log('Student mandatory courses assigned');
+      } else {
+        // Create basic academic history structure for non-students (professors, secretaries)
+        // This ensures all users have an academic history document for consistency
+        await createBasicAcademicHistory(user.uid, firestoreData);
+        console.log('Basic academic history created for non-student user');
       }
 
       // Sign out from secondary auth to clean up

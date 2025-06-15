@@ -32,4 +32,29 @@ router.delete('/:uid', strictLimit, verifyToken, deleteUser);
 // Rută pentru ștergerea în masă a tuturor utilizatorilor (EXTREM DE PERICULOASĂ - doar admin)
 router.post('/mass-delete', massOperationsLimit, verifyToken, isAdmin, massDeleteAllUsers);
 
+// Development-only endpoint to reset rate limiter (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  const { resetRateLimiter } = require('../middleware/rateLimiter');
+  
+  router.post('/reset-rate-limit', verifyToken, isAdmin, (req, res) => {
+    try {
+      const clientIP = req.ip || req.connection.remoteAddress;
+      resetRateLimiter('massOperations', clientIP);
+      
+      res.status(200).json({
+        success: true,
+        message: 'Mass operations rate limiter reset successfully',
+        resetFor: clientIP
+      });
+    } catch (error) {
+      console.error('Error resetting rate limiter:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to reset rate limiter',
+        error: error.message
+      });
+    }
+  });
+}
+
 module.exports = router;
