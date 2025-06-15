@@ -12,11 +12,7 @@ const MateriileMelePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedMaterieForModal, setSelectedMaterieForModal] = useState(null);
-  const [materiiByAn, setMateriiByAn] = useState({
-    'I': [],
-    'II': [],
-    'III': []
-  });
+  const [materiiByAn, setMateriiByAn] = useState({});
   const [selectedYear, setSelectedYear] = useState('I');
   
   const { allMaterii, loading: materiiLoading } = useMaterii();
@@ -101,19 +97,34 @@ const MateriileMelePage = () => {
           });
         }
 
-        // Organize by year
-        const byAn = {
-          'I': [],
-          'II': [],
-          'III': []
-        };
+        // Get student's current year and determine which years to show
+        const currentStudentYear = userData.an || 'I';
+        const allowedYears = [];
+        
+        // Add current year and all previous years
+        switch (currentStudentYear) {
+          case 'III':
+            allowedYears.push('III', 'II', 'I');
+            break;
+          case 'II':
+            allowedYears.push('II', 'I');
+            break;
+          case 'I':
+          default:
+            allowedYears.push('I');
+            break;
+        }
+
+        // Organize by year - only include allowed years
+        const byAn = {};
+        allowedYears.forEach(year => {
+          byAn[year] = [];
+        });
 
         toateCursurile.forEach(materie => {
           const an = materie.an || materie.anStudiu || 'I';
           if (byAn[an]) {
             byAn[an].push(materie);
-          } else {
-            byAn['I'].push(materie);
           }
         });
 
@@ -121,6 +132,9 @@ const MateriileMelePage = () => {
         Object.keys(byAn).forEach(an => {
           byAn[an].sort((a, b) => a.nume.localeCompare(b.nume));
         });
+
+        // Set default selected year to current student year
+        setSelectedYear(currentStudentYear);
 
         // Calculate statistics with proper type conversion and validation
         let totalCredite = 0;
@@ -159,9 +173,9 @@ const MateriileMelePage = () => {
           medieGenerala = parseFloat((sumaNotes / cursurilePromovate.length).toFixed(2));
         }
 
-        // Calculate averages for each academic year
+        // Calculate averages for each allowed academic year
         const mediiAcademice = {};
-        ['I', 'II', 'III'].forEach(an => {
+        allowedYears.forEach(an => {
           const materiiAnCurent = byAn[an];
           const materiiPromovateAnCurent = materiiAnCurent.filter(materie => parseFloat(materie.nota) >= 5);
           
@@ -185,7 +199,9 @@ const MateriileMelePage = () => {
           medieGenerala,
           materiiPromovate: cursurilePromovate.length,
           totalCourses: toateCursurile.length,
-          mediiAcademice
+          mediiAcademice,
+          currentStudentYear,
+          allowedYears
         });
 
         // Check if any of the averages have changed
