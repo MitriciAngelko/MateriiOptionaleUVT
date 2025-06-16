@@ -86,8 +86,8 @@ const Navbar = () => {
       items.push({ path: '/admin-utilizatori', label: 'Utilizatori' });
       items.push({ path: '/admin-materii', label: 'Materii' });
       
-      // Only add "Istoric Academic" for admin users, not secretar
-      if (isMainAdmin || roles.isAdmin) {
+      // Include "Istoric Academic" for both admin users and secretaries
+      if (isMainAdmin || roles.isAdmin || roles.isSecretar) {
         items.push({ path: '/istoric-academic', label: 'Istoric Academic' });
       }
       

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { collection, getDocs, doc, getDoc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { isAdmin } from '../../utils/userRoles';
+import { isAdmin, isSecretar } from '../../utils/userRoles';
 import { useMaterii } from '../../contexts/MateriiContext';
 
 // Toast notification component
@@ -140,9 +140,11 @@ const AdminIstoricAcademicPage = () => {
     const checkAccess = async () => {
       if (user) {
         const adminAccess = await isAdmin(user);
-        setHasAccess(adminAccess);
+        const secretarAccess = await isSecretar(user);
+        const hasPageAccess = adminAccess || secretarAccess;
+        setHasAccess(hasPageAccess);
         
-        if (!adminAccess) {
+        if (!hasPageAccess) {
           navigate('/');
         }
       }

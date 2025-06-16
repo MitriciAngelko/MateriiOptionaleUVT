@@ -136,8 +136,7 @@ const LoginPage = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="block w-full px-4 py-4 rounded-xl border-2 border-[#024A76]/20 dark:border-gray-600 shadow-sm focus:border-[#E3AB23] dark:focus:border-yellow-accent focus:ring-4 focus:ring-[#E3AB23]/20 dark:focus:ring-yellow-accent/20 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:text-gray-200 transition-all duration-300 hover:shadow-lg hover:border-[#024A76]/40 dark:hover:border-gray-500 placeholder-gray-400 dark:placeholder-gray-500"
-                    placeholder="exemplu@student.uvt.ro"
+                    className="block w-full px-4 py-4 rounded-xl border-2 border-[#024A76]/20 dark:border-gray-600 shadow-sm focus:border-[#E3AB23] dark:focus:border-yellow-accent focus:ring-4 focus:ring-[#E3AB23]/20 dark:focus:ring-yellow-accent/20 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm dark:text-gray-200 transition-all duration-300 hover:shadow-lg hover:border-[#024A76]/40 dark:hover:border-gray-500 placeholder-gray-400 dark:placeholder-gray-500"ç
                   />
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#024A76]/5 to-[#E3AB23]/5 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                 </div>
