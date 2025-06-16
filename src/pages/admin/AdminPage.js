@@ -566,35 +566,7 @@ const AdminPage = () => {
     }
   };
 
-  // Development helper to reset rate limiter
-  const resetRateLimit = async () => {
-    try {
-      const currentUser = JSON.parse(localStorage.getItem('user'));
-      if (!currentUser || !currentUser.token) {
-        throw new Error('User not authenticated');
-      }
 
-      const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api';
-      
-      const response = await axios.post(`${apiBaseUrl}/users/reset-rate-limit`, {}, {
-        headers: {
-          'Authorization': `Bearer ${currentUser.token}`
-        }
-      });
-      
-      console.log('Rate limiter reset successfully:', response.data);
-      alert('Rate limiter resetat cu succes! Puteți încerca din nou ștergerea în masă.');
-      
-    } catch (error) {
-      console.error('Failed to reset rate limiter:', error);
-      alert('Eroare la resetarea rate limiter-ului: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  // Expose reset function globally for development console access
-  if (process.env.NODE_ENV === 'development') {
-    window.resetMassDeleteRateLimit = resetRateLimit;
-  }
 
   // Mass deletion function
   const handleMassDeleteAllUsers = async () => {
@@ -690,7 +662,7 @@ const AdminPage = () => {
             </div>
 
             {/* Secondary Actions Row */}
-            <div className={`grid grid-cols-1 ${process.env.NODE_ENV === 'development' ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-2`}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* CSV Template Download Button */}
               <button
                 onClick={handleDownloadCSVTemplate}
@@ -727,19 +699,7 @@ const AdminPage = () => {
                 <span className="text-sm">Șterge Toți</span>
               </button>
 
-              {/* Development Only: Reset Rate Limiter Button */}
-              {process.env.NODE_ENV === 'development' && (
-                <button
-                  onClick={resetRateLimit}
-                  className="group relative px-3 py-2.5 sm:py-2 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 hover:text-yellow-700 dark:hover:text-yellow-300 rounded-lg font-medium transition-all duration-200 border border-yellow-200 dark:border-yellow-800 hover:border-yellow-300 dark:hover:border-yellow-700 hover:shadow-md flex items-center justify-center sm:justify-start"
-                  title="Reset Mass Delete Rate Limiter (Development Only)"
-                >
-                  <svg className="w-4 h-4 mr-2 sm:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span className="text-sm">Reset Limit</span>
-                </button>
-              )}
+
             </div>
           </div>
         </div>
