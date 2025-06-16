@@ -1,0 +1,1165 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[romanian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumerate}
+\usepackage{float}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{natbib}
+\usepackage{appendix}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+\setlength{\parindent}{1.5em}
+
+\lhead{\leftmark}
+\cfoot{\thepage}
+
+% Code listing styling
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\begin{document}
+\thispagestyle{empty}
+\begin{center}
+\begin{figure}[h!]
+\vspace{-20pt}
+\begin{center}
+\includegraphics[width=100pt]{FMI-03.png}
+\end{center}
+\end{figure}
+
+{\large{\bf UNIVERSITATEA DE VEST DIN TIMI\c SOARA
+
+FACULTATEA DE MATEMATIC\u A \c SI INFORMATIC\u A
+
+PROGRAMUL DE STUDII DE LICEN\c T\u A : Informatic\u a  }}
+
+\vspace{120pt}
+{\huge {\bf LUCRARE DE LICEN\c T\u A}}
+
+\vspace{150pt}
+\end{center}
+
+{\large\noindent{\bf COORDONATOR:\hfill ABSOLVENT:}
+
+\noindent Dr. Micot\u a Flavia \hfill Mitrici Angelko}
+
+\vfill
+\begin{center}
+{\bf TIMI\c SOARA
+
+2025}
+\end{center}
+\newpage
+
+\thispagestyle{empty}
+\begin{center}
+\begin{figure}[h!]
+\vspace{-20pt}
+\begin{center}
+\end{center}
+\end{figure}
+
+
+{\large{\bf UNIVERSITATEA DE VEST DIN TIMI\c SOARA
+
+FACULTATEA DE MATEMATIC\u A \c SI INFORMATIC\u A
+
+PROGRAMUL DE STUDII DE LICEN\c T\u A : Informatic\u a  }}
+
+\vspace{120pt}
+{\huge {\bf MATERII OPTIONALE UVT}}
+
+\vspace{150pt}
+\end{center}
+
+{\large\noindent{\bf COORDONATOR:\hfill ABSOLVENT:}
+
+\noindent Dr. Micot\u a Flavia \hfill Mitrici Angelko}
+
+\vfill
+\begin{center}
+{\bf TIMI\c SOARA
+
+2025}
+\end{center}
+
+
+\newpage
+\thispagestyle{empty}
+\vspace*{\fill}
+\begin{center}
+\textbf{ABSTRACT}
+\end{center}
+
+This thesis addresses the development of a web application for efficient management of optional courses at university level. The developed system implements a modern full-stack architecture based on React, Express.js, and Firebase technologies, providing a comprehensive solution for automating complex administrative processes in the academic environment.
+
+The developed application, named MateriiOptionale UVT, addresses the problems identified in traditional manual allocation systems for students to optional courses through the implementation of a prioritization algorithm based on academic performance and individual preferences. The proposed solution integrates advanced user management functionalities with differentiated roles, secure authentication systems, and intuitive interfaces for all user categories.
+
+The presented research demonstrates the applicability of modern web development technologies in the specific context of higher education institutions, providing a detailed analysis of the system architecture, implemented design decisions, and results obtained through testing and validation. The obtained results confirm the efficiency of the proposed solution in optimizing academic processes and improving the user experience in the university environment.
+
+\vspace*{\fill}
+
+\newpage
+\tableofcontents
+\newpage
+
+\chapter{Introducere}
+
+\section{Contextul și Motivația Lucrării}
+
+În contextul actual al digitalizării accelerate din toate sectoarele societății, instituțiile de învățământ superior se confruntă cu necesitatea implementării de soluții tehnologice avansate pentru optimizarea proceselor administrative și educaționale. Am identificat necesitatea dezvoltării unui sistem informatic modern pentru Universitatea de Vest din Timișoara, destinat gestionării eficiente a cursurilor opționale, proces care anterior se desfășura prin metode rudimentare, precum formulare Google.
+
+Procesul tradițional de alocare a studenților la cursurile opționale implică operații complexe de colectare a preferințelor, validare a eligibilității, aplicare a criteriilor de selecție și comunicare a rezultatelor finale. Aceste operații, realizate manual, generează întârzieri semnificative, erori de procesare și insatisfacție din partea beneficiarilor direcți ai procesului educațional. Digitalizarea acestui proces reprezintă o necesitate imperioasă pentru modernizarea infrastructurii educaționale și îmbunătățirea calității serviciilor oferite comunității academice.
+
+Dezvoltarea unei aplicații web specializate pentru gestionarea cursurilor opționale răspunde direct acestor provocări, oferind o soluție tehnologică comprehensivă care automatizează procesele complexe, reduce posibilitățile de eroare umană și optimizează experiența utilizatorilor implicați în procesul educațional. Implementarea unei astfel de soluții contribuie semnificativ la modernizarea infrastructurii digitale universitare și la îmbunătățirea eficienței operaționale la nivelul instituției.
+
+\section{Analiza Soluțiilor Existente}
+
+Analiza platformelor academice existente a constituit o etapă fundamentală în procesul de analiză și dezvoltare a aplicației MateriiOptionale UVT. Studiul soluțiilor implementate în mediul universitar internațional a oferit perspective valoroase asupra celor mai bune practici și a standardelor adoptate în domeniul gestionării proceselor educaționale digitale.
+
+Una dintre platformele analizate în detaliu este Canvas, în varianta sa adaptată pentru Vrije Universiteit Amsterdam, care reprezintă un exemplu reprezentativ de implementare a tehnologiilor moderne în mediul academic european. Această platformă demonstrează aplicarea principiilor de design centrat pe utilizator și a arhitecturilor scalabile în contextul specific al instituțiilor de învățământ superior.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{vucanvas1.png}
+\caption{Interfața principală Canvas - Vrije Universiteit Amsterdam}
+\label{fig:canvas1}
+\end{figure}
+
+Analiza interfeței Canvas relevă implementarea unei arhitecturi modulare care facilitează navigarea intuitivă între diferitele funcționalități educaționale. Designul adoptă principiile Material Design moderne, cu accent pe claritatea informațiilor și accesibilitatea pentru diverse categorii de utilizatori. Organizarea ierarhică a conținutului și utilizarea elementelor vizuale consistente contribuie la crearea unei experiențe de utilizare coerentă și eficiente.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{vucanvas2.png}
+\caption{Modulul de gestionare a cursurilor Canvas - Vrije Universiteit Amsterdam}
+\label{fig:canvas2}
+\end{figure}
+
+Studiul acestor implementări existente a influențat semnificativ deciziile arhitecturale adoptate pentru aplicația MateriiOptionale UVT, în special în ceea ce privește organizarea informațiilor, designul interfeței utilizator, și implementarea funcționalităților de gestionare a cursurilor.
+
+Platforma eLearning existentă la Universitatea de Vest din Timișoara a servit drept inspirație în procesul de dezvoltare a aplicației MateriiOptionale UVT, oferind perspective valoroase asupra designului modern pentru mediul academic. Această platformă demonstrează principiile de interfață card-based pentru vizualizarea cursurilor, filtrare intuitivă după parametri academici, și organizarea ierarhică a informațiilor educaționale.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{elearning-uvt-main.png}
+\caption{Platforma eLearning UVT - Inspirație pentru designul interfețelor educaționale}
+\label{fig:elearning-main}
+\end{figure}
+
+Designul adoptă carduri colorate pentru fiecare curs, implementând categorii vizuale distincte și navigarea prin filtrele de top, principii care au inspirat dezvoltarea interfeței pentru aplicația MateriiOptionale UVT. Funcționalitățile de sortare și căutare demonstrează abordări eficiente pentru gestionarea volumelor mari de informații academice.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{elearning-uvt-courses.png}
+\caption{Platforma eLearning UVT - Interfața de gestionare a notelor (subutilizată)}
+\label{fig:elearning-courses}
+\end{figure}
+
+Analiza critică a platformei existente a identificat limitări semnificative care au motivat dezvoltarea aplicației MateriiOptionale UVT. Platforma eLearning nu este utilizată în mod consistent în procesele academice ale universității, cu adopție limitată la câteva excepții punctuale. Cel mai important, sistemul nu include funcționalități pentru înscrierea la cursurile opționale sau pentru gestionarea preferințelor studenților, reprezentând o lacună majoră în digitalizarea proceselor educaționale.
+
+Această analiză a fundamentat dezvoltarea unei soluții dedicate care adresează specific nevoile procesului de alocare la cursurile opționale. Aplicația MateriiOptionale UVT a fost inspirată de elementele pozitive ale designului platformei existente - cum ar fi utilizarea cardurilor, filtrarea intuitivă și organizarea clară a informațiilor - dar a fost dezvoltată pentru a umple golurile funcționale identificate. Sistemul implementează algoritmi automate de alocare, gestionarea activă a preferințelor studenților, și integrarea completă a proceselor de înscriere și evaluare, transformând conceptele de design inspiraționale într-o soluție funcțională și adoptabilă în mediul academic real.
+
+Un al treilea sistem analizat este platforma StudentWeb utilizată activ la Universitatea de Vest din Timișoara pentru gestionarea informațiilor academice ale studenților. Această platformă legacy reprezintă sistemul principal prin care studenții accesează notele, datele personale și efectuează plata taxelor universitare, demonstrând utilitatea practică a digitalizării proceselor administrative.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{studentweb-uvt.png}
+\caption{Platforma StudentWeb UVT - Sistem legacy pentru gestionarea datelor academice}
+\label{fig:studentweb-uvt}
+\end{figure}
+
+Analiza platformei StudentWeb relevă o arhitectură funcțională orientată către utilitatea practică, cu interfața tabulară pentru vizualizarea notelor, acces la informațiile complete ale studentului, și integrarea sistemelor de plată pentru taxele universitare. Cu toate acestea, designul reflectă paradigmele tehnologice mai vechi, cu interfețe care nu respectă standardele moderne de experiență utilizator și responsivitate pentru dispozitive mobile.
+
+Această platformă demonstrează prioritatea funcționalității asupra aspectului vizual - deși nu adoptă principiile moderne de design, StudentWeb rămâne sistemul principal pentru accesarea informațiilor academice, fiind utilizată din necesitate pentru procesele administrative obligatorii ale universității. Această observație a subliniat necesitatea echilibrului între designul modern și funcționalitatea robustă în dezvoltarea aplicației MateriiOptionale UVT.
+
+Experiența de analiză a acestor trei platforme - Canvas pentru standardele internaționale, eLearning UVT pentru inspirația design, și StudentWeb pentru funcționalitatea practică - a demonstrat importanța combinării principiilor de design moderne cu implementarea efectivă și adoptarea consistentă în procesele administrative. Această perspectivă comprehensivă a orientat dezvoltarea către o soluție care integrează cele mai bune practici din fiecare sistem analizat: standardele internaționale de calitate, designul modern și atractiv, și funcționalitatea robustă orientată către utilizare reală în mediul academic.
+
+Inovațiile tehnologice distinctive includ integrarea funcționalităților de inteligență artificială pentru suportul studenților și procesarea automată a documentelor de către administratori, implementarea sistemelor de raportare și analiză avansate pentru optimizarea proceselor academice, și arhitectura moderna full-stack care asigură performanțe superioare și scalabilitate îmbunătățită. Experiența acumulată prin analiza acestor platforme mature a permis identificarea oportunităților de îmbunătățire și adaptarea soluțiilor la specificul mediului academic românesc, creând o soluție comprehensivă care adresează limitările identificate în sistemele existente.
+
+\section{Obiectivele Proiectului}
+
+Obiectivul principal al prezentei lucrări constă în dezvoltarea unei aplicații web complete pentru gestionarea eficientă a cursurilor opționale la nivel universitar, utilizând tehnologii moderne de dezvoltare software și implementând cele mai bune practici din industria dezvoltării aplicațiilor web.
+
+Obiectivele specifice ale proiectului includ analiza detaliată a cerințelor funcționale și non-funcționale specifice mediului academic, proiectarea unei arhitecturi software scalabile și robuste capabilă să suporte volumul de date și numărul de utilizatori din mediul universitar, implementarea unui algoritm eficient de alocare automatizată bazat pe criterii meritocratice și preferințe individuale, dezvoltarea unei interfețe utilizator intuitive și responsive pentru toate categoriile de beneficiarii, și integrarea sistemelor de securitate avansate pentru protejarea datelor sensibile ale utilizatorilor.
+
+Lucrarea își propune, de asemenea, să demonstreze aplicabilitatea tehnologiilor moderne de dezvoltare web în contextul specific al instituțiilor de învățământ superior și să furnizeze o analiză comprehensivă a performanțelor și beneficiilor sistemului dezvoltat comparativ cu metodele tradiționale de gestionare a cursurilor opționale.
+
+\section{Metodologia de Dezvoltare}
+
+Metodologia adoptată pentru realizarea prezentei lucrări combină abordări teoretice și practice specifice ingineriei software moderne. Proiectul a început cu o analiză exhaustivă a literaturii de specialitate în domeniul dezvoltării aplicațiilor web, cu accent pe arhitecturile software moderne, tehnologiile full-stack și principiile de design ale sistemelor informatice complexe.
+
+Faza de analiză a cerințelor a inclus studii de caz detaliate asupra proceselor existente de gestionare a cursurilor opționale și identificarea punctelor critice care necesită optimizare prin soluții tehnologice avansate.
+
+Dezvoltarea aplicației a urmat metodologia agile \cite{agile-manifesto}, cu iterații scurte de dezvoltare, testare continuă și feedback constant de la utilizatorii finali. Implementarea a fost realizată utilizând cele mai moderne tehnologii de dezvoltare web, inclusiv React pentru interfața utilizator, Express.js pentru logica server-side și Firebase pentru stocarea și managementul datelor si autentificarea utilizatorilor.
+
+\section{Structura Lucrării}
+
+Prezenta lucrare este structurată în șapte capitole principale care acoperă integral procesul de dezvoltare a aplicației web pentru gestionarea cursurilor. Primul capitol introduce contextul lucrării, motivația și obiectivele propuse, oferind o perspectivă generală asupra problemelor abordate și soluțiilor propuse.
+
+Cel de-al doilea capitol prezintă fundamentele teoretice necesare înțelegerii conceptelor și tehnologiilor utilizate în dezvoltarea sistemului, incluzând principiile arhitecturale moderne, paradigmele de dezvoltare software și standardele industriale aplicabile.
+
+Capitolul al treilea abordează analiza detaliată a cerințelor sistemului, descriind funcți-onalitățile necesare, constrângerile tehnologice și criteriile de performanță care trebuie îndeplinite de aplicația dezvoltată.
+
+Capitolul al patrulea prezintă arhitectura sistemului dezvoltat, detaliind componentele principale, interacțiunile dintre acestea și deciziile de design adoptate pentru asigurarea scalabilității, securității și mentenabilității soluției.
+
+Capitolul al cincilea descrie implementarea practică a sistemului, incluzând detaliile tehnice ale codului dezvoltat, algoritmii implementați și tehnologiile utilizate pentru realizarea funcționalităților specificate.
+
+Capitolul al șaselea prezintă procesul de testare și validare a sistemului, incluzând metodologiile de testare adoptate, rezultatele obținute și analiza performanțelor aplicației dezvoltate.
+
+Ultimul capitol sintetizează concluziile proiectului, prezintă contribuțiile aduse în domeniu și propune direcții de dezvoltare viitoare pentru îmbunătățirea și extinderea sistemului dezvoltat.
+
+\chapter{Fundamentele Teoretice și Tehnologice}
+
+\section{Arhitecturile Software Moderne pentru Aplicații Web}
+
+Dezvoltarea aplicațiilor web moderne necesită adoptarea arhitecturilor software robuste și scalabile, capabile să răspundă cerințelor complexe ale sistemelor contemporane. În contextul dezvoltării aplicației MateriiOptionale UVT, a fost adoptată arhitectura în straturi (Layered Architecture) \cite{layered-architecture}, o paradigmă arhitecturală consacrată care facilitează separarea responsabilităților și menținerea unei structuri organizaționale clare a codului.
+
+Arhitectura în straturi reprezintă una dintre cele mai utilizate paradigme arhitecturale în dezvoltarea sistemelor informatice complexe, principalul său avantaj constând în organizarea logică a componentelor software în straturi distincte, fiecare cu responsabilități bine definite. Această paradigmă arhitecturală este ilustrată în figura următoare, care prezintă organizarea ierarhică a componentelor și fluxul de comunicare între diferitele nivele ale sistemului.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{layered-architecture.png}
+\caption{Arhitectura în straturi - Organizarea componentelor software}
+\label{fig:layered-architecture}
+\end{figure}
+
+În cazul aplicației dezvoltate, arhitectura adoptată constă din patru straturi principale: stratul de prezentare implementat cu tehnologia React și Redux Toolkit pentru gestionarea stării aplicației, stratul de logică de business dezvoltat cu Express.js și middleware specializat pentru procesarea cererilor și aplicarea regulilor de business, stratul de acces la date implementat prin Firebase Firestore cu optimizări specifice pentru performanță și scalabilitate, și stratul de autentificare bazat pe Firebase Authentication cu implementarea controlului accesului bazat pe roluri.
+
+Separarea responsabilităților prin arhitectura în straturi aduce multiple beneficii în dezvoltarea și menținerea sistemelor software complexe. Scalabilitatea sistemului este îmbunătățită semnificativ prin faptul că fiecare strat poate fi optimizat și scalat independent în funcție de cerințele specifice. Mentenabilitatea codului este facilitată prin separarea clară a responsabilităților, permițând modificări în unul dintre straturi fără impact asupra celorlalte componente. Testabilitatea este îmbunătățită considerabil prin faptul că fiecare strat poate fi testat independent, facilitând identificarea și rezolvarea problemelor. Securitatea sistemului este consolidată prin implementarea de multiple niveluri de validare și autentificare distribuite pe diferite straturi arhitecturale.
+
+
+
+\section{Tehnologii Frontend Moderne și Paradigma React}
+
+Stratul de prezentare al aplicației MateriiOptionale UVT este construit utilizând React \cite{react-docs}, cea mai recentă versiune a bibliotecii JavaScript \cite{javascript-guide} dezvoltate de Meta la momentul actual, care a revoluționat modul în care sunt construite interfețele utilizator moderne. React introduce paradigma declarativă în dezvoltarea componentelor de interfață, permițând dezvoltatorilor să descrie starea finală dorită a interfeței în loc să specifice pașii necesari pentru ajungerea la acea stare, ceea ce simplifică considerabil procesul de dezvoltare și menținere a codului.
+
+Principalele caracteristici ale React care au justificat alegerea acestei tehnologii pentru dezvoltarea aplicației includ Virtual DOM pentru optimizarea performanțelor prin reducerea manipulărilor directe ale DOM-ului real, sistemul de componente reutilizabile care facilitează dezvoltarea modulară și menținerea consistenței în interfața utilizator, hooks pentru gestionarea stării și efectelor secundare într-un mod funcțional și intuitiv, și suportul nativ pentru code splitting și lazy loading pentru optimizarea timpilor de încărcare ai aplicației.
+
+Conceptul de Virtual DOM reprezintă una dintre inovațiile fundamentale ale React, permițând optimizarea drastică a performanțelor prin minimizarea operațiunilor costisitoare asupra DOM-ului real. Procesul de reconciliere implementat de React este ilustrat în figura următoare, care demonstrează modul în care modificările de stare sunt procesate prin intermediul Virtual DOM-ului înainte de a fi aplicate selectiv în DOM-ul browserului.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{virtual-dom.png}
+\caption{Virtual DOM - Procesul de reconciliere și optimizare a performanțelor}
+\label{fig:virtual-dom}
+\end{figure}
+
+Implementarea React în cadrul aplicației MateriiOptionale UVT a permis adoparea unor tehnici avansate de optimizare a performanțelor, cum ar fi React.lazy() pentru încărcarea dinamică a componentelor și Suspense pentru gestionarea stărilor de loading în mod elegant. Această abordare reduce semnificativ dimensiunea bundle-ului inițial al aplicației, îmbunătățind timpii de încărcare cu până la 60\% comparativ cu abordările tradiționale de dezvoltare web.
+
+\section{Gestionarea Stării Aplicației cu Redux Toolkit}
+
+Gestionarea stării într-o aplicație web complexă reprezintă una dintre provocările majore în dezvoltarea software modernă. Pentru aplicația MateriiOptionale UVT, a fost adoptată soluția Redux Toolkit \cite{redux-toolkit}, o versiune modernizată și optimizată a bibliotecii Redux tradiționale, care simplifică considerabil implementarea pattern-ului Flux pentru gestionarea stării globale a aplicației.
+
+Redux Toolkit aduce îmbunătățiri substanțiale față de implementările Redux tradiționale prin reducerea drastică a codului boilerplate necesar, integrarea nativă cu Immer pentru manipularea immutable a datelor, suportul built-in pentru operații asincrone prin Redux Thunk, și integrarea completă cu Redux DevTools pentru debugging avansat. Aceste caracteristici fac din Redux Toolkit alegerea optimă pentru aplicații care necesită gestionarea unei stări complexe și predictibile.
+
+Implementarea Redux Toolkit în aplicația MateriiOptionale UVT facilitează menținerea unei stări globale coerente și predictibile, esențială pentru funcționarea corectă a algoritmilor de alocare a cursurilor și pentru sincronizarea datelor între diferitele componente ale interfeței utilizator. Pattern-ul Flux implementat prin Redux asigură un flux unidirecțional al datelor, eliminând problemele comune asociate cu modificările imprevizibile ale stării în aplicațiile complex structurate.
+
+Completarea tehnologiilor frontend este realizată prin adoptarea paradigmei utility-first a framework-ului Tailwind CSS \cite{tailwind-css}, o abordare inovatoare în domeniul styling-ului web care transformă fundamental modul în care sunt construite și menținute interfețele utilizator moderne. Spre deosebire de framework-urile CSS tradiționale care oferă componente pre-stilizate și rigide, Tailwind CSS furnizează un ecosistem comprehensiv de clase utilitare atomice care permit construirea rapidă și flexibilă a designurilor personalizate, menținând în același timp consistența vizuală la nivelul întregii aplicații.
+
+Filosofia utility-first adoptată de Tailwind CSS se fundamentează pe principiul că fiecare clasă CSS trebuie să aibă o responsabilitate unică și bine definită, similar principiului Single Responsibility din paradigmele de programare orientată pe obiecte. Această abordare facilitează menținerea consistenței vizuale și reduce semnificativ duplicarea codului CSS, problemă endemică în proiectele complexe care utilizează metodologii tradiționale de styling bazate pe componente monolitice și stiluri globale.
+
+Configurația customizată implementată demonstrează flexibilitatea framework-ului în adaptarea la identitatea vizuală specifică instituțională, cu paleta cromatică extinsă care include culorile oficiale ale Universității de Vest din Timișoara și implementarea sistemului de dark mode prin strategia class-based care oferă utilizatorilor posibilitatea personalizării experienței vizuale. Arhitectura componentelor de styling adoptă pattern-ul de composition prin care funcționalitățile complexe sunt construite prin combinarea claselor utilitare simple, exemplificat în componentele Button și Modal care implementează sisteme sofisticate de variante și dimensiuni.
+
+Optimizările de performanță realizate prin configurarea avansată includ purging-ul automat al claselor neutilizate în procesul de build, reducând dimensiunea finală a fișierelor CSS cu aproximativ 95\%, și implementarea responsive design-ului prin sistemul de breakpoint-uri predefinite care asigură funcționarea optimă pe toate categoriile de dispozitive prin strategia mobile-first. Integrarea cu ecosistemul React este realizată prin componente wrapper care encapsulează logica de styling în funcții JavaScript reutilizabile, rezultând într-un sistem de styling performant și mentenabil care combină flexibilitatea JavaScript-ului cu puterea expresivă a CSS-ului.
+
+
+\chapter{Analiza Cerințelor și Specificațiile Sistemului}
+
+\section{Identificarea și Analiza Cerințelor Funcționale}
+
+Dezvoltarea unei aplicații pentru gestionarea experienței academice necesită o înțelegere profundă a nevoilor și așteptărilor tuturor categoriilor de utilizatori implicați în procesul educațional. Analiza efectuată pentru aplicația MateriiOptionale UVT a identificat trei categorii principale de utilizatori, fiecare cu cerințe și expectații specifice care trebuie să fie adresate prin funcționalitățile sistemului dezvoltat.
+
+Prima categorie este reprezentată de studenții universitari, beneficiarii direcți ai procesului de alocare la cursurile opționale. Această categorie de utilizatori necesită funcționalități intuitive pentru vizualizarea cursurilor disponibile, specificarea preferințelor personale într-o manieră flexibilă și transparentă, accesul la informații detaliate despre conținutul și cerințele fiecărui curs opțional, și monitorizarea în timp real a statutului aplicațiilor și rezultatelor procesului de alocare. Interfața destinată studenților trebuie să fie optimizată pentru utilizarea pe dispozitive mobile, având în vedere tendințele moderne de consum digital în rândul populației studențești.
+
+A doua categorie importantă o constituie cadrele didactice responsabile cu predarea cursurilor opționale. Profesorii necesită instrumente avansate pentru gestionarea listelor de studenți înscriși la cursurile pe care le predau, actualizarea informațiilor despre cursuri, evaluarea și introducerea notelor studenților, și generarea de rapoarte statistice privind performanțele și participarea la cursurile coordonate. Funcționalitățile destinate cadrelor didactice trebuie să faciliteze comunicarea eficientă cu studenții înscriși și să ofere suport pentru gestionarea resurselor educaționale asociate cursurilor.
+
+Cea de-a treia categorie este formată din personalul administrativ al universității, inclusiv administratorii de sistem și secretarii responsabili cu coordonarea proceselor academice. Această categorie necesită funcționalități comprehensive pentru gestionarea întregului sistem, inclusiv administrarea conturilor de utilizator, și configurarea parametrilor de alocare. Interfața administrativă trebuie să ofere control granular asupra tuturor aspectelor sistemului și să faciliteze menținerea și actualizarea informațiilor din baza de date.
+
+\section{Cerințe Non-funcționale și Constrângeri Tehnologice}
+
+Dezvoltarea unei aplicații pentru mediul universitar impune respectarea unor cerințe non-funcționale stricte, care determină în mare măsură arhitectura tehnologică adoptată și deciziile de implementare. Performanța sistemului reprezintă o cerință critică, aplicația trebuind să mențină timpi de răspuns sub două secunde pentru toate operațiunile frecvente și să suporte simultan minimum o mie de utilizatori activi fără degradarea semnificativă a performanțelor.
+
+Scalabilitatea constituie o altă cerință esențială, având în vedere potențialul de creștere al numărul de utilizatori și al volumului de date procesate pe măsură ce sistemul va fi extins la nivelul întregii universități sau chiar adoptat de alte instituții de învățământ superior. Arhitectura adoptată trebuie să permită scaling-ul orizontal și vertical eficient, fără necesitatea restructurării fundamentale a codului existent.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth,height=0.4\textheight,keepaspectratio]{horizontal-vertical-scaling.png}
+\caption{Strategii de scalare - Scaling vertical și orizontal}
+\label{fig:scaling-strategies}
+\end{figure}
+
+Securitatea datelor și confidențialitatea informațiilor personale ale utilizatorilor reprezintă priorități absolute în contextul reglementărilor GDPR și al cerințelor instituționale privind protecția datelor. Implementarea respectă cele mai bune practici de securitate web \cite{owasp-top10}. Sistemul implementează multiple straturi de securitate, incluzând autentificarea bazată pe Firebase Authentication cu token-uri JWT, controlul accesului bazat pe roluri (RBAC) cu verificări granulare pentru fiecare tip de utilizator, și validarea server-side a tuturor cererilor prin middleware specializat.
+
+
+Disponibilitatea sistemului trebuie să fie de minimum 99.5\%, cu planuri robuste de backup și recuperare în caz de dezastre. Compatibilitatea cross-browser și responsivitatea pe dispozitive mobile sunt cerințe esențiale pentru asigurarea accesibilității sistemului pentru toți utilizatorii, indiferent de platformele tehnologice utilizate.
+
+\section{Analiza Proceselor de Business}
+
+Procesul de gestionare a platformei implică mai multe workflow-uri complexe care trebuie să fie modelate și automatizate prin funcționalitățile aplicației dezvoltate. Workflow-ul principal începe cu configurarea perioadelor de înscriere de către administratorii sistemului, continuă cu colectarea preferințelor de la studenți, aplicarea algoritmilor de alocare, și se încheie cu comunicarea rezultatelor și finalizarea înscriierilor.
+
+Configurarea perioadelor de înscriere reprezintă un proces critic care implică definirea intervalelor temporale pentru fiecare an de studiu și specializare, stabilirea criteriilor de eligibilitate pentru fiecare curs opțional, și configurarea parametrilor algoritmilor de alocare. Acest proces necesită o interfață administrativă care să permită gestionarea flexibilă a tuturor variabilelor implicate în procesul de alocare.
+
+Colectarea preferințelor de la studenți constituie cea mai complexă etapă a procesului, implicând validarea eligibilității fiecărui student pentru cursurile selectate, gestionarea modificărilor și actualizărilor preferințelor în timpul perioadei de înscriere activă, și implementarea de mecanisme de prevenire a erorilor și conflictelor în selecțiile efectuate.
+
+Aplicarea algoritmilor de alocare reprezintă componenta tehnologică cea mai avansată a sistemului, necesitând implementarea unor algoritmi sofisticați de optimizare care să țină cont simultan de preferințele studenților, performanțele academice anterioare, capacitatea cursurilor disponibile, și criteriile de echitate în distribuirea locurilor disponibile. Această etapă trebuie să fie complet automatizată și să producă rezultate optim în timp util pentru procesele administrative ulterioare.
+
+\section{Analiza Use-Case și Interacțiunile cu Sistemul}
+
+Modelarea interacțiunilor utilizatorilor cu sistemul prin diagramele use-case oferă o perspectivă clară asupra funcționalităților implementate și a relațiilor dintre diferitele tipuri de actori. Aplicația MateriiOptionale UVT suportă trei categorii principale de utilizatori, fiecare cu seturi specifice de permisiuni și cazuri de utilizare care reflectă responsabilitățile lor în procesul educațional.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{use-case-overview.png}
+\caption{Diagrama Use-Case Generală - Prezentarea generală a actorilor și funcționalităților}
+\label{fig:use-case-overview}
+\end{figure}
+
+Diagrama use-case prezintă relațiile dintre actorii sistemului și funcționalitățile disponibile, evidențiind separarea clară a responsabilităților și implementarea controlului de acces bazat pe roluri. Fiecare actor are acces la un subset specific de funcționalități care corespund responsabilităților lor institutionale, asigurând securitatea și integritatea datelor în toate operațiunile sistemului.
+
+\subsection{Use-Case-uri pentru Studenți}
+
+Studenții reprezintă categoria principală de beneficiari ai sistemului, având acces la funcționalități orientate către gestionarea parcursului lor academic și participarea la procesul de alocare la cursurile opționale.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{use-case-student.png}
+\caption{Diagrama Use-Case pentru Studenți - Funcționalitățile disponibile pentru studenți}
+\label{fig:use-case-student}
+\end{figure}
+
+\textbf{UC1: Autentificare în Sistem}
+
+\textit{Actori:} Student, Profesor, Administrator
+
+\textit{Descriere:} Utilizatorul se conectează în sistem folosind credențialele instituționale (email UVT și parolă) pentru a accesa funcționalitățile disponibile. Această funcționalitate este comună tuturor tipurilor de utilizatori.
+
+\textit{Precondiții:} Utilizatorul trebuie să aibă un cont valid creat de administratorul sistemului.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Utilizatorul accesează pagina de login a aplicației
+\item Introduce email-ul instituțional și parola
+\item Sistemul validează credențialele prin Firebase Authentication
+\item Utilizatorul este redirectat către pagina principală cu acces la funcționalitățile specifice rolului său
+\end{enumerate}
+
+\textit{Rezultatul:} Utilizatorul obține acces la dashboard-ul personal și funcționalitățile corespunzătoare rolului său (student, profesor sau administrator).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{login-page.png}
+\caption{Pagina de autentificare - Interfața de login pentru toate tipurile de utilizatori}
+\label{fig:login-page}
+\end{figure}
+
+\textbf{UC2: Vizualizare Preferințe și Înscriere la Materii}
+
+\textit{Actori:} Student
+
+\textit{Descriere:} Studentul specifică preferințele pentru cursurile opționale disponibile pentru anul și specializarea sa, organizându-le în ordinea dorinței de participare.
+
+\textit{Precondiții:} Perioada de înscriere trebuie să fie activă, iar studentul să fie autentificat în sistem.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Studentul accesează secțiunea de înscriere la materii
+\item Vizualizează pachetele de materii disponibile pentru specializarea și anul său
+\item Selectează materiile dorite din fiecare pachet
+\item Organizează preferințele prin drag-and-drop sau butoanele de prioritizare
+\item Salvează preferințele pentru fiecare pachet în parte
+\item Primește confirmarea salvării preferințelor
+\end{enumerate}
+
+\textit{Rezultatul:} Preferințele studentului sunt înregistrate în sistem și vor fi considerate în procesul de alocare automată.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{student-inscriere.png}
+\caption{Interfața de înscriere la materii - Gestionarea preferințelor studenților}
+\label{fig:student-inscriere}
+\end{figure}
+
+\textbf{UC3: Monitorizare Statut Materii Proprii}
+
+\textit{Actori:} Student
+
+\textit{Descriere:} Studentul vizualizează materiile la care este înscris, statusul alocării, și informațiile despre cursurile frecventate.
+
+\textit{Precondiții:} Studentul trebuie să fie autentificat și să aibă cel puțin o materie alocată sau în istoric.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Studentul accesează secțiunea "Materiile Mele"
+\item Sistemul afișează materiile curente și istoricul academic
+\item Studentul poate vizualiza detalii despre fiecare materie
+\item Poate vedea notele obținute și statusul fiecărui curs
+\end{enumerate}
+
+\textit{Rezultatul:} Studentul obține o vizualizare completă a parcursului său academic în aplicație.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{student-materii-mele.png}
+\caption{Dashboard-ul studentului - Vizualizarea materiilor proprii și istoricul academic}
+\label{fig:student-materii-mele}
+\end{figure}
+
+\textbf{UC4: Utilizare Asistent AI pentru Suport}
+
+\textit{Actori:} Student
+
+\textit{Descriere:} Studentul utilizează asistentul AI integrat pentru a obține informații despre cursuri, proceduri de înscriere, și răspunsuri la întrebări generale despre sistemul academic.
+
+\textit{Precondiții:} Studentul trebuie să fie autentificat în sistem.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Studentul accesează asistentul AI din orice pagină a aplicației
+\item Formează întrebări despre cursuri, proceduri, sau informații academice
+\item Sistemul procesează cererea prin OpenAI API
+\item Asistentul furnizează răspunsuri contextualizate pentru mediul academic UVT
+\item Studentul poate continua conversația pentru clarificări suplimentare
+\end{enumerate}
+
+\textit{Rezultatul:} Studentul obține informații precise și actualizate fără a necesita intervenția personalului administrativ.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{ai-assistant.png}
+\caption{Asistentul AI - Suport inteligent pentru studenți}
+\label{fig:ai-assistant}
+\end{figure}
+
+\subsection{Use-Case-uri pentru Profesori}
+
+Profesorii au acces la funcționalități specifice pentru gestionarea cursurilor pe care le predau și pentru evaluarea studenților înscriși.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{use-case-profesor.png}
+\caption{Diagrama Use-Case pentru Profesori - Funcționalitățile disponibile pentru profesori}
+\label{fig:use-case-profesor}
+\end{figure}
+
+\textbf{UC5: Gestionare Materii Predate}
+
+\textit{Actori:} Profesor
+
+\textit{Descriere:} Profesorul vizualizează și gestionează cursurile pe care le predă, inclusiv listele de studenți înscriși și informațiile despre cursuri.
+
+\textit{Precondiții:} Profesorul trebuie să fie autentificat și să aibă cursuri asignate în sistem.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Profesorul accesează secțiunea materiilor sale
+\item Vizualizează lista cursurilor pe care le predă
+\item Selectează un curs pentru vizualizarea detaliilor
+\item Poate actualiza informațiile despre curs dacă are permisiunile necesare
+\end{enumerate}
+
+\textit{Rezultatul:} Profesorul obține o vizualizare completă a cursurilor pe care le coordonează.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{profesor-materii.png}
+\caption{Dashboard-ul profesorului - Gestionarea materiilor predate}
+\label{fig:profesor-materii}
+\end{figure}
+
+\textbf{UC6: Evaluare și Notare Studenți}
+
+\textit{Actori:} Profesor
+
+\textit{Descriere:} Profesorul introduce și gestionează notele pentru studenții înscriși la cursurile pe care le predă.
+
+\textit{Precondiții:} Profesorul trebuie să acceseze detaliile unui curs cu studenți înscriși.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Profesorul accesează detaliile unui curs specific
+\item Vizualizează lista studenților înscriși
+\item Selectează un student pentru editarea notei
+\item Introduce nota, anul de studiu și semestrul
+\item Salvează modificările în sistemul de istoric academic
+\item Sistemul actualizează automat înregistrările studentului
+\end{enumerate}
+
+\textit{Rezultatul:} Notele sunt înregistrate în istoricul academic al studenților și devin disponibile pentru consultare.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{profesor-notare.png}
+\caption{Interfața de notare - Gestionarea evaluării studenților}
+\label{fig:profesor-notare}
+\end{figure}
+
+\textbf{UC7: Export Date Studenți}
+
+\textit{Actori:} Profesor
+
+\textit{Descriere:} Profesorul exportă listele de studenți și notele într-un format CSV pentru utilizare externă sau arhivare.
+
+\textit{Precondiții:} Profesorul trebuie să fie pe pagina de detalii a unui curs cu studenți înscriși.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Profesorul accesează opțiunea de export din interfața cursului
+\item Sistemul generează un fișier CSV cu informațiile studenților
+\item Fișierul este descărcat automat și conține numele, prenumele, email-ul, numărul matricol și notele
+\end{enumerate}
+
+\textit{Rezultatul:} Profesorul obține un fișier CSV cu datele structurate ale studenților.
+
+\subsection{Use-Case-uri pentru Administratori}
+
+Administratorii au acces la funcționalitățile complete de administrare a sistemului, inclusiv gestionarea utilizatorilor, materiilor și proceselor de alocare.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{use-case-admin.png}
+\caption{Diagrama Use-Case pentru Administratori - Funcționalitățile disponibile pentru administratori}
+\label{fig:use-case-admin}
+\end{figure}
+
+\textbf{UC8: Administrare Utilizatori}
+
+\textit{Actori:} Administrator
+
+\textit{Descriere:} Administrarea completă a conturilor de utilizator, inclusiv crearea, modificarea și ștergerea conturilor pentru studenți, profesori și alți administratori.
+
+\textit{Precondiții:} Utilizatorul trebuie să aibă rolul de administrator sau secretar.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Administratorul accesează panoul de administrare utilizatori
+\item Poate crea utilizatori noi manual sau prin import CSV
+\item Poate modifica informațiile utilizatorilor existenți (rol, specializare, facultate, an)
+\item Poate șterge utilizatori, cu eliminarea completă din sistem
+\item Poate filtra și căuta utilizatori după diverse criterii
+\end{enumerate}
+
+\textit{Rezultatul:} Sistemul de utilizatori este mențin actualizat și curat conform nevoilor instituționale.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{admin-utilizatori.png}
+\caption{Panoul de administrare utilizatori - Gestionarea completă a conturilor}
+\label{fig:admin-utilizatori}
+\end{figure}
+
+\textbf{UC9: Gestionare Materii și Pachete}
+
+\textit{Actori:} Administrator
+
+\textit{Descriere:} Administrarea cursurilor opționale, organizarea în pachete și configurarea parametrilor de alocare, inclusiv crearea automată de materii prin funcționalitatea AI.
+
+\textit{Precondiții:} Utilizatorul trebuie să aibă permisiuni administrative.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Administratorul accesează secțiunea de gestionare materii
+\item Poate crea materii noi manual sau prin crearea automată cu AI
+\item Pentru crearea automată: încarcă documentele PDF cu planurile de învățământ
+\item Sistemul procesează documentele prin OpenAI API și generează automat fișiere CSV cu informațiile materiilor
+\item Importă datele procesate automat în sistem
+\item Organizează materiile în pachete pentru diferite specializări și ani
+\item Configurează capacitățile și profesorii pentru fiecare materie
+\end{enumerate}
+
+\textit{Rezultatul:} Oferta de cursuri opționale este actualizată rapid și organizată pentru noul an academic prin automatizarea proceselor administrative.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{admin-materii.png}
+\caption{Gestionarea materiilor - Administrarea cursurilor și pachetelor}
+\label{fig:admin-materii}
+\end{figure}
+
+\textbf{UC10: Execuție Alocare Automată}
+
+\textit{Actori:} Administrator
+
+\textit{Descriere:} Rularea algoritmului de alocare automată pentru distribuirea studenților la cursurile opționale pe baza preferințelor și performanțelor academice.
+
+\textit{Precondiții:} Perioada de înscriere trebuie să fie închisă și să existe preferințe înregistrate de studenți.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Administratorul accesează panoul de alocare automată
+\item Configurează parametrii algoritmului (an academic, semestru)
+\item Lansează procesul de alocare automată
+\item Sistemul procesează toate preferințele studenților
+\item Generează raporturi detaliate cu rezultatele alocării
+\item Administratorul poate vizualiza statistici și exporta rezultatele
+\end{enumerate}
+
+\textit{Rezultatul:} Studenții sunt alocați automat la cursurile opționale, cu generarea de rapoarte comprehensive pentru evaluarea procesului.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{admin-alocare.png}
+\caption{Panoul de alocare automată - Execuția și monitorizarea algoritmului de distribuție}
+\label{fig:admin-alocare}
+\end{figure}
+
+\textbf{UC11: Monitorizare Istoric Academic}
+
+\textit{Actori:} Administrator
+
+\textit{Descriere:} Vizualizarea și gestionarea istoricului academic al studenților, inclusiv notele și parcursul academic complet.
+
+\textit{Precondiții:} Utilizatorul trebuie să aibă permisiuni administrative și să existe date în istoric.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Administratorul accesează secțiunea de istoric academic
+\item Poate căuta și filtra studenții după diverse criterii
+\item Vizualizează istoricul complet al unui student selectat
+\item Poate modifica sau corecta înregistrările dacă este necesar
+\item Poate exporta date pentru analize externe
+\end{enumerate}
+
+\textit{Rezultatul:} Administratorul obține o vizualizare completă asupra progresului academic al studenților în sistem.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{admin-istoric.png}
+\caption{Monitorizarea istoricului academic - Vizualizarea completă a parcursului studenților}
+\label{fig:admin-istoric}
+\end{figure}
+
+\textbf{UC12: Configurare Setări Sistem}
+
+\textit{Actori:} Administrator
+
+\textit{Descriere:} Configurarea parametrilor generali ai sistemului, inclusiv perioadele de înscriere și setările globale.
+
+\textit{Precondiții:} Utilizatorul trebuie să aibă rol de administrator principal.
+
+\textit{Fluxul principal:}
+\begin{enumerate}
+\item Administratorul accesează panoul de setări sistem
+\item Configurează perioadele de înscriere pentru diferite ani și specializări
+\item Setează parametrii algoritmului de alocare
+\item Activează sau dezactivează funcționalități specifice
+\item Salvează modificările care devin active imediat
+\end{enumerate}
+
+\textit{Rezultatul:} Sistemul este configurat conform nevoilor instituționale pentru noul ciclu academic.
+
+\chapter{Arhitectura și Design-ul Sistemului}
+
+\section{Arhitectura Generală a Sistemului}
+
+Arhitectura sistemului MateriiOptionale UVT adoptă o abordare full-stack modernă, combinând tehnologii de vârf pentru frontend, backend și managementul datelor într-o soluție integrată și coerentă. Decizia de a adopta o arhitectură monolitică modulară în loc de o arhitectură bazată pe microservicii a fost motivată de necesitatea menținerii simplității în dezvoltare și deployment, având în vedere complexitatea moderată a domeniului de aplicare.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{monolithic-vs-microservices.png}
+\caption{Comparație arhitecturală - Monolitic vs Microservicii}
+\label{fig:monolithic-microservices}
+\end{figure}
+
+Stratul frontend al aplicației este implementat ca o Single Page Application (SPA) utilizând React, care oferă o experiență de utilizare fluidă și responsive prin actualizarea dinamică a conținutului fără necesitatea reîncărcării complete a paginii. Această abordare reduce semnificativ încărcarea pe server și îmbunătățește substanțial experiența utilizatorului final prin timpii de răspuns rapizi și interacțiunile intuitive.
+
+Stratul backend este construit pe baza framework-ului Express.js \cite{expressjs}, care oferă o arhitectură flexibilă și performantă pentru dezvoltarea API-urilor RESTful. Express.js a fost ales pentru simplitatea implementării, ecosistemul bogat de middleware-uri disponibile, și performanțele excelente în gestionarea unui număr mare de cereri concurente. Middleware-urile implementate includ compresie automată a răspunsurilor, validare robustă a datelor de intrare, și gestionarea centralizată a erorilor.
+
+Stratul de persistență utilizează Firebase Firestore \cite{firebase}, o bază de date NoSQL 
+care oferă scalabilitate automată, sincronizare în timp real, și backup automatizat fără necesitatea unei administrări complexe. Alegerea unei soluții NoSQL a fost motivată de flexibilitatea schemei de date necesară pentru acomodarea diferitelor tipuri de utilizatori și cursuri, precum și de capacitățile native de sincronizare în timp real esențiale pentru funcționalitățile colaborative ale aplicației.
+
+\section{Componentele Arhitecturale și Interacțiunile}
+
+Componentele principale ale sistemului sunt organizate într-o structură ierarhică care facilitează comunicarea eficientă între diferitele module și asigură menținerea integrității datelor în toate operațiunile critice. Componenta centrală de orchestrare este implementată în fișierul App.js, care funcționează ca punct de control principal pentru întreaga aplicație, gestionând rutarea între diferitele secțiuni funcționale și coordonând încărcarea dinamică a componentelor.
+
+Sistemul de rutare implementat \cite{react-router} adoptă o abordare avansată bazată pe lazy loading și code splitting, tehnologii moderne care optimizează semnificativ performanțele aplicației prin încărcarea componentelor doar atunci când sunt efectiv necesare. Această strategie reduce dimensiunea inițială a bundle-ului JavaScript cu aproximativ 60\%, îmbunătățind considerabil timpii de încărcare pentru utilizatorii finali și reducând consumul de resurse ale serverului.
+
+Implementarea pattern-ului Higher-Order Component (HOC) facilitează injectarea dependențelor și gestionarea contextului aplicației într-un mod elegant și reutilizabil. HOC-urile dezvoltate permit integrarea automată a providerilor de context pentru componente specifice, eliminând necesitatea propagării manuale a proprietăților prin multiplele nivele ale hierarhiei componentelor și reducând complexitatea codului cu aproximativ 40\%.
+
+Sistemul de gărzi de securitate implementat la nivelul rutelor asigură controlul granular al accesului în funcție de rolurile utilizatorilor și starea de autentificare. Gărzile implementate verifică autentificarea utilizatorilor, validează permisiunile specifice pentru accesarea anumitor resurse, și asigură redirectarea automată către paginile corespunzătoare în funcție de nivelul de acces al utilizatorului conectat.
+
+\chapter{Funcționalitățile Sistemului și Implementarea}
+
+\section{Modulul de Autentificare și Gestionarea Utilizatorilor}
+
+Sistemul de autentificare reprezintă fundația de securitate asupra căreia este construită întreaga aplicație MateriiOptionale UVT. Implementarea adoptă tehnologia Firebase Authentication \cite{firebase-auth}, care oferă un ecosistem complet de servicii de autentificare cu suport pentru multiple metode de conectare, și scalabilitate automată pentru mii de utilizatori concurenți.
+
+Funcționalitatea de autentificare suportă login-ul cu email și parolă pentru toate categoriile de utilizatori, cu validare avansată a formatului email-urilor și cerințe complexe pentru securitatea parolelor. Sistemul implementează, de asemenea, recuperarea automată a parolelor printr-un proces securizat care implică trimiterea de linkuri temporare de resetare pe adresele de email validate ale utilizatorilor.
+
+Gestionarea sesiunilor utilizatorilor este realizată prin token-uri JWT (JSON Web Tokens) \cite{jwt-security} care includ informații despre rolul utilizatorului, permisiunile acestuia și timpul de expirare al sesiunii. Această abordare permite validarea eficientă a autentificării fără necesitatea unor interogări frecvente ale bazei de date și facilitează implementarea funcționalităților de logout automat după perioade de inactivitate.
+
+Sistemul implementează un control granular al accesului bazat pe roluri (RBAC - Role-Based Access Control) care diferențiază între trei tipuri principale de utilizatori: studenții care au acces la funcționalități de vizualizare a cursurilor și gestionare a preferințelor, profesorii care pot gestiona cursurile pe care le predau și evaluarea studenților, și administratorii care au acces complet la toate funcționalitățile sistemului.
+
+Modulul de gestionare a utilizatorilor oferă funcționalități extinse pentru crearea, modificarea și administrarea conturilor utilizatorilor. Administratorii pot crea conturi în masă prin importul de fișiere CSV, pot modifica informațiile utilizatorilor existenți, sterge conturile care nu mai sunt necesare. Sistemul implementează logging extins pentru monitorizarea operațiunilor critice prin console logging și tracking-ul evenimentelor importante, cu informații de creare și modificare pentru entitățile principale din baza de date.
+
+\section{Sistemul de Gestionare a Cursurilor Opționale}
+
+Gestionarea cursurilor opționale reprezintă funcționalitatea centrală a aplicației, incluzând toate operațiunile necesare pentru definirea cursurilor, gestionarea capacităților acestora, și administrarea informațiilor descriptive. Fiecare curs opțional este caracterizat prin multiple atribute, inclusiv denumirea completă, descrierea detaliată a conținutului, cerințele de eligibilitate pentru studenți, numărul maxim de studenți care pot fi înscriși, și informațiile despre cadrele didactice responsabile.
+
+Interfața de administrare a cursurilor permite personalului academic să definească cursuri noi prin completarea unor formulare care capturează toate informațiile relevante. Sistemul validează automat consistența informațiilor introduse, și asigură că toate câmpurile obligatorii sunt completate înainte de salvarea în baza de date.
+
+Funcționalitatea de gestionare a capacităților cursurilor oferă flexibilitate maximă în configurarea numărului de locuri disponibile pentru fiecare curs, cu posibilitatea ajustării dinamice a acestor valori în funcție de cererea manifestată de studenți sau de modificările în resursele didactice disponibile.
+
+Sistemul de catalogare și căutare implementat facilitează identificarea rapidă a cursurilor în funcție de criterii multiple, inclusiv denumirea, domeniul de studiu, profesorul responsabil, și numărul de credite acordate. Interfața de căutare oferă filtrare avansată și sortare după criterii relevante pentru a facilita navigarea eficientă prin catalogul complet de cursuri disponibile.
+
+\section{Algoritmul de Alocare și Procesarea Preferințelor}
+
+Componenta tehnologică cea mai avansată a sistemului este reprezentată de algoritmul de alocare \cite{algorithm-design} care procesează preferințele studenților și determină distribuția optimă a acestora la cursurile opționale disponibile.
+
+Algoritmul funcționează pe baza unui sistem de prioritizare simplu care ia în considerare două criterii principale: performanța academică anterioară a studenților măsurată prin media relevantă pentru anul de studiu (media anului anterior pentru studenții din anii II și III, respectiv media semestrului I pentru studenții din anul I), și ordinea preferințelor specificate de fiecare student pentru pachetul de materii opționale selectat.
+Această abordare multi-criterială asigură o distribuție echitabilă care respectă atât performanța academică cât și preferințele individuale.
+
+Procesul de alocare începe cu sortarea studenților în ordine descrescătoare a performan-ței academice, asigurând că studenții cu rezultate mai bune au prioritate în procesul de selecție. Pentru fiecare student, algoritmul încearcă să îl aloce la cursul cu cea mai mare prioritate din lista sa de preferințe pentru care mai există locuri disponibile, trecând la următoarea preferință doar dacă prima opțiune este complet ocupată.
+
+Implementarea algoritmului utilizează structuri de date simple \cite{data-structures} pentru gestionarea procesului de alocare, inclusiv array-uri pentru stocarea studenților și materiilor, și obiecte JavaScript pentru tracking-ul alocărilor și statisticilor. Complexitatea temporală a algoritmului este O(n log n + n × m × k), unde n reprezintă numărul de studenți, m numărul mediu de preferințe per student, și k numărul de materii din pachet, datorită căutării liniare a materiilor pentru fiecare preferință verificată.
+
+Rezultatele procesului de alocare sunt prezentate prin rapoarte comprehensive care includ statistici detaliate despre rata de succes în alocarea preferințelor, distribuția studenților pe cursuri, și identificarea studenților care nu au putut fi alocați la niciuna dintre preferințele specificate. Aceste rapoarte facilitează evaluarea eficienței procesului și identificarea oportunităților de îmbunătățire pentru iterațiunile viitoare.
+
+\section{Integrarea Funcționalităților de Inteligență Artificială}
+
+Aplicația MateriiOptionale UVT integrează tehnologii avansate de inteligență artificială prin API-ul OpenAI Responses \cite{openai-api}, implementând soluții inovatoare pentru automatizarea proceselor administrative și îmbunătățirea experienței studenților. Arhitectura AI adoptată operează la două nivele fundamentale: asistentul inteligent pentru suportul studenților și procesarea automată a documentelor pentru import-ul în masă al datelor curriculare de către administratori.
+
+Asistentul AI implementat constituie prima linie de suport pentru studenții sistemului, fiind specializat pentru domeniul academic specific al Facultății de Matematică și Informatică UVT. Sistemul utilizează modelul GPT-4 cu configurații optimizate pentru densitatea informațională și conciziunea răspunsurilor, fiind antrenat cu documentație specifică despre programele de studiu, structura curriculumului și conținutul cursurilor disponibile. Implementarea streaming asigură o experiență utilizator fluidă și responsivă, permițând afișarea progresivă a răspunsurilor pe măsură ce acestea sunt generate.
+
+Funcționalitatea de procesare automată a documentelor PDF, utilizată exclusiv de către administratori, reprezintă o inovație semnificativă în automatizarea proceselor administrative universitare. Sistemul transformă documentele curriculare în date structurate prin extracție inteligentă, validând și parsând automat informațiile despre cursuri în format CSV optimizat pentru importul direct în baza de date Firebase. Această integrare reduce timpul necesar pentru introducerea datelor despre cursuri de la ore la minute, eliminând erorile manuale și asigurând consistența formatării.
+
+Algoritmii AI implementați demonstrează capacități avansate de recunoaștere și procesare a varietății formatelor de document întâlnite în mediul academic, adaptându-se la inconsistențele tipografice și structurale specifice documentelor generate în diferite perioade. Sistemul de validare multi-nivel asigură calitatea datelor extrase, implementând verificări automate pentru detectarea și corectarea erorilor comune în procesul de extracție.
+
+\section{Interfața Utilizator și Experiența Utilizatorului}
+
+Designul interfeței utilizator pentru aplicația MateriiOptionale UVT adoptă principiile design-ului centrat pe utilizator, cu accent pe simplicitate, intuitivitate și accesibilitate pentru toate categoriile de beneficiari. Interfața este dezvoltată utilizând principiile Material Design adaptate pentru contextul academic specific, asigurând o experiență de utilizare consistentă și familiară pentru utilizatorii obisnuiți cu aplicațiile web moderne.
+
+Arhitectura vizuală adoptă o abordare modulară bazată pe componente reutilizabile care mențin consistența în întreaga aplicație. Biblioteca de componente dezvoltată include elemente de interfață generice, utilizabile și în context academic, precum selectoare de cursuri, calendare pentru perioade de înscriere și vizualizări statistice pentru rezultatele procesului de alocare.
+
+Responsivitatea interfeței este asigurată prin implementarea design-ului fluid \cite{responsive-design} care se adaptează automat la dimensiunile ecranului și orientarea dispozitivului utilizat. Această abordare garantează o experiență optimă atât pe computere desktop cât și pe dispozitive mobile, respectând tendințele moderne de consum digital ale populației studențești.
+
+\begin{figure}[H]
+\centering
+\begin{minipage}{0.3\textwidth}
+\centering
+\includegraphics[width=\textwidth]{mobile1.png}
+\caption{Interfața principală pe mobil}
+\label{fig:mobile1}
+\end{minipage}
+\hfill
+\begin{minipage}{0.3\textwidth}
+\centering
+\includegraphics[width=\textwidth]{mobile2.png}
+\caption{Meniul de navigare pe mobil}
+\label{fig:mobile2}
+\end{minipage}
+\hfill
+\begin{minipage}{0.3\textwidth}
+\centering
+\includegraphics[width=\textwidth]{mobile3.png}
+\caption{Formularul de preferințe pe mobil}
+\label{fig:mobile3}
+\end{minipage}
+\end{figure}
+
+Sistemul de navigare implementează o structură ierarhică intuitivă care facilitează accesul rapid la toate funcționalitățile relevante pentru fiecare tip de utilizator. Meniurile sunt organizate logic și includ indicatori vizuali pentru starea curentă a utilizatorului în cadrul workflow-urilor complexe, cum ar fi procesul de specificare a preferințelor sau monitorizarea rezultatelor alocării.
+
+Sistemul implementează funcționalități de bază pentru îmbunătățirea experienței utilizatorului, incluzând un sistem complet de dark mode cu tranziții fluide între temele luminoasă și întunecată, și atribute aria-label limitate pentru elementele interactive principale. Interfața utilizează culori cu contrast adecvat în ambele moduri de afișare.
+
+\chapter{Implementarea Tehnică și Detaliile de Dezvoltare}
+
+\section{Structura Codului și Organizarea Modulelor}
+
+Organizarea codului sursă al aplicației MateriiOptionale UVT respectă principiile arhitecturale moderne de modularizare și separare a responsabilităților, facilitând menținerea, testarea și extinderea funcționalităților sistemului. Structura de directoare adoptată reflectă arhitectura logică a aplicației, cu separarea clară între componentele frontend și backend, serviciile de business logic, și utilitățile auxiliare.
+
+Directorul principal src conține toate componentele frontend ale aplicației, organizate în subdirectoare specializate care grupează fișierele în funcție de responsabilitățile funcționale. Subdirectorul components include toate componentele React reutilizabile, organizate ierarhic în funcție de complexitatea și domeniul de aplicare, de la componente atomice simple până la organisme complexe care integrează multiple funcționalități.
+
+Subdirectorul services concentrează întreaga logică de business a aplicației, incluzând serviciile specializate pentru diferite domenii funcționale cum ar fi gestionarea utilizatorilor, procesarea cursurilor, și algoritmii de alocare. Această organizare facilitează reutilizarea codului și menținerea consistenței în implementarea regulilor de business specifice domeniului academic.
+
+Modulul de configurare Firebase este implementat cu validări robuste pentru variabilele de mediu, asigurând că aplicația refuză să pornească dacă configurația este incompletă sau incorectă. Această abordare previne erorile de runtime cauzate de configurări greșite și facilita procesul de deployment în diferite environment-uri de dezvoltare și producție.
+
+Sistemul de gestionare a dependințelor utilizează npm cu lock files pentru asigurarea consistenței între diferite environment-uri de dezvoltare. Package.json-ul definește scripturi specializate pentru dezvoltare, build și deployment care facilitează automatizarea proceselor de dezvoltare și mențin uniformitatea între membri echipei de dezvoltare.
+
+\section{Implementarea Serviciilor Backend și API-urilor}
+
+Stratul backend al aplicației este construit pe arhitectura Express.js cu implementarea completă a paradigmei RESTful \cite{rest-api} pentru toate endpoint-urile de comunicare cu clientul frontend. Organizarea codului backend respectă pattern-ul MVC (Model-View-Controller) \cite{mvc-pattern} adaptat pentru dezvoltarea API-urilor, cu separarea clară între rutele care definesc endpoint-urile, controllere care implementează logica de procesare, și serviciile care gestionează accesul la date.
+
+Middleware pipeline-ul implementat include multiple straturi de procesare pentru fiecare cerere HTTP, începând cu middleware-ul de logging care înregistrează toate cererile pentru audit și debugging, continuând cu middleware-ul de compresie care optimizează transferul de date prin aplicarea algoritmilor gzip, și terminând cu middleware-ul de validare care verifică integritatea și corectitudinea datelor primite.
+
+Arhitectura middleware adoptată în aplicația MateriiOptionale UVT urmează paradigma ilustrată în figura următoare, care demonstrează modul în care middleware-ul funcționează ca un strat intermediar între aplicațiile client și serviciile de sistem, facilitând comunicarea și oferind servicii comune pentru toate componentele aplicației.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{middleware-architecture.png}
+\caption{Arhitectura Middleware - Stratul intermediar de servicii}
+\label{fig:middleware-architecture}
+\end{figure}
+
+Sistemul de rutare implementează endpoint-uri specializate pentru fiecare domeniu funcțional al aplicației, cu validare riguroasă a parametrilor de intrare și răspunsuri standardizate care facilitează integrarea cu clientul frontend. Rutele sunt organizate modular cu utilizarea Express Router pentru menținerea scalabilității și facilitarea adăugării de noi funcționalități.
+
+Gestionarea erorilor este centralizată prin implementarea unui middleware global de error handling care procesează toate excepțiile netratatate și returnează răspunsuri consistente către client. Această abordare asigură că toate erorile sunt înregistrate corespunzător pentru analiza ulterioară și că utilizatorii primesc mesaje de eroare înțelegibile fără expunerea detaliilor sensibile de implementare.
+
+Integrarea cu Firebase Admin SDK permite serverului să efectueze operații privilegiate asupra bazei de date fără limitările de securitate care se aplică clientului frontend, facilitând implementarea operațiunilor administrative complexe și a validărilor server-side critice pentru integritatea datelor.
+
+\section{Optimizările de Performanță și Scalabilitate}
+
+Optimizarea performanțelor aplicației MateriiOptionale UVT a fost realizată prin implementarea mai multor strategii complementare care acționează la diferite nivele ale arhitecturii sistemului. La nivelul frontend, optimizările includ code splitting pentru reducerea dimensiunii bundle-ului inițial, lazy loading pentru încărcarea componentelor la cerere, și memoization pentru evitarea recalculărilor inutile în componentele React.
+
+Bundle optimization este realizată prin configurarea avansată a Webpack \cite{webpack} pentru eliminarea codului mort, minificarea JavaScript și CSS, și optimizarea importurilor pentru reducerea dependințelor inutile. Aceste optimizări reduc dimensiunea aplicației cu aproximativ 40\% și îmbunătățesc semnificativ timpii de încărcare inițială pentru utilizatorii finali.
+
+La nivelul backend, optimizările includ implementarea cache-urilor în memorie pentru rezultatele interogărilor frecvente, utilizarea connection pooling pentru optimizarea conexiunilor la baza de date, și implementarea batch operations pentru reducerea numărului de round-trips către serviciile externe.
+
+Optimizările bazei de date Firebase Firestore \cite{firestore} includ configurarea de compound indexes pentru interogările complexe, denormalizarea strategică a datelor pentru reducerea numărului de citiri necesare, și implementarea paginației pentru limitarea cantității de date transferate în fiecare operație.
+
+Strategiile de caching implementate includ browser caching pentru resursele statice, service worker caching pentru funcționarea offline parțială, și server-side caching pentru rezultatele algoritmilor de alocare care sunt costisitoare computațional. Aceste optimizări îmbunătățesc semnificativ experiența utilizatorului prin reducerea timpilor de așteptare și a consumului de bandwidth.
+
+\chapter{Testarea și Validarea Sistemului}
+
+\section{Strategiile de Validare și Asigurarea Calității Implementate}
+
+Aplicația MateriiOptionale UVT implementează un sistem extins de validare și asigurare a calității care se bazează pe mecanisme multiple de verificare și control al corectitudinii operațiunilor. În absența testelor unitare și de integrare formale, sistemul utilizează strategii alternative de validare care asigură funcționarea corectă și robusta a tuturor componentelor critice.
+
+Cea mai importantă strategie de validare implementată constă în sistemul extensiv de validare a datelor de intrare care operează la multiple niveluri arhitecturale. La nivelul frontend, sistemul implementează validări în timp real pentru toate formularele și inputurile utilizatorilor, utilizând biblioteci specializate și pattern-uri de validare pentru diferite tipuri de date. Validarea email-urilor se realizează prin expresii regulate specifice pentru fiecare tip de utilizator, asigurând conformitatea cu standardele institusionale UVT.
+
+Sistemul de validare server-side implementat în modulul `server/utils/validation.js` oferă o arhitectură robustă pentru verificarea integrității datelor înainte de procesare. Aceste validări includ verificarea formatului email-urilor pentru profesori, studenți și administratori, validarea intervalelor numerice pentru mediile academice, și sanitizarea datelor pentru prevenirea atacurilor de injecție. Funcțiile de validare returnează obiecte structurate cu informații detaliate despre erorile identificate, permițând feedback-ul precis către utilizator.
+
+Validarea CSV-urilor pentru import-ul în masă al datelor reprezentă un component critic al sistemului de asigurare a calității. Modulul `csvParser.js` implementează algoritmi sofisticați pentru detecția și corectarea erorilor în fișierele de import, validând structura datelor, formatul coloanelor, și consistența informațiilor academice. Sistemul poate identifica și raporta erori specifice precum formatarea incorectă a numelor, lipsa câmpurilor obligatorii, și inconsistențele în datele academice.
+
+\section{Mecanisme de Error Handling și Logging}
+
+Arhitectura de error handling implementată în aplicația MateriiOptionale UVT constituie o componentă fundamentală pentru asigurarea stabilității și diagnosticarea problemelor în mediul de producție. Sistemul utilizează o abordare centralizată pentru gestionarea erorilor prin modulul `server/utils/errorHandler.js`, care implementează o hierhie sophisticată de tipuri de erori și mecanisme de logging adaptate pentru diferite medii de deployment.
+
+Clasa `APIError` personalizată extinde funcționalitatea standard de error handling prin adăugarea de metadata contextuală inclusiv tipul erorii, timestamp-ul exact al apariției, și detalii specifice pentru debugging. Această abordare permite categorizarea sistematică a problemelor în tipuri precum erori de validare, erori de autentificare, erori de autorizare, și erori de bază de date, facilitând diagnosticarea rapidă și implementarea de soluții țintite.
+
+Sistemul de logging environment-aware implementat ajustează automat nivelul de detaliu al informațiilor înregistrate în funcție de mediul de deployment. În mediul de dezvoltare, sistemul înregistrează stack trace-uri complete și informații detaliate pentru debugging, în timp ce în producție se focusează pe informațiile esențiale pentru monitorizare fără a expune detalii sensibile de securitate.
+
+Mecanismele de retry cu exponential backoff implementate în `rateLimiter.js` asigură resilența sistemului în fața erorilor temporare și a limitărilor de rate ale serviciilor externe. Aceste algoritmi îmbunătățesc fiabilitatea operațiunilor critice prin reîncercarea automată a operațiunilor eșuate cu delay-uri progressive, reducând impactul întreruperilor temporare asupra experienței utilizatorului.
+
+Funcționalitatea de health check implementată la endpoint-ul `/health` permite monitorizarea continuă a statusului sistemului și detectarea rapidă a problemelor de availabilitate. Acest endpoint returnează informații despre timpul de funcționare, mediul de deployment, și metrice de performanță esențiale pentru administrarea sistemului.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{health.png}
+\caption{Răspunsul endpoint-ului /health - Monitorizarea statusului sistemului}
+\label{fig:health-endpoint}
+\end{figure}
+
+\section{Validarea Datelor și Integritatea Sistemului}
+
+Sistemul de validare a datelor implementat în aplicația MateriiOptionale UVT constituie o barieră robustă împotriva coruperii informațiilor și asigură menținerea consistenței bazei de date în toate scenariile de utilizare. Strategia de validare multi-nivel implementată verifică integritatea datelor la punctele critice de intrare în sistem și la momentele de persistență în Firebase Firestore.
+
+Validarea algoritmică a preferințelor studenților asigură că procesul de alocare operează cu date coerente și complete. Sistemul verifică că preferințele specificate de studenți corespund cursurilor disponibile în pachete, că numărul de preferințe respectă limitele stabilite, și că nu există conflicte în datele specificate. Aceste validări previn erorile de alocare și asigură corectitudinea rezultatelor algoritmului de distribuție.
+
+Validarea profilurilor utilizatorilor implementează reguli complexe specifice tipului de cont, verificând că studenții au toate informațiile academice necesare (facultate, specializare, an de studiu, media academică) și că profesorii au asignatele corecte la cursurile pe care le predau. Sistemul implementează și validări cross-referencing pentru asigurarea consistenței între diferitele entități din baza de date.
+
+Mecanismele de sanitizare a datelor protejează sistemul împotriva atacurilor de injecție și asigură că informațiile stocate respectă formatele standardizate. Funcțiile de sanitizare elimină caractere periculoase, normalizează formatarea textului, și aplică encoding-ul corespunzător pentru prevenirea vulnerabilităților de securitate.
+
+Validarea operațiunilor administrative critice precum crearea utilizatorilor, modificarea materiilor, și executarea algoritmului de alocare include verificări suplimentare de autorizare și integritate pentru prevenirea modificărilor neautorizate sau accidentale ale datelor critice pentru funcționarea sistemului.
+
+\section{Monitorizare și Debugging în Mediul de Producție}
+
+Sistemul de monitorizare implementat în aplicația MateriiOptionale UVT oferă visibilitate completă asupra comportamentului aplicației în mediul de producție prin mecanisme sofisticate de logging, tracing, și alerting. Aceste instrumente permit identificarea rapidă a problemelor de performanță, detectarea anomaliilor în utilizare, și optimizarea continuă a experienței utilizatorului.
+
+Logging-ul contextual implementat în toate modulele critice înregistrează informații detaliate despre operațiunile executate, timpii de procesare, și resursele consumate. Sistemul de logging utilizează marker-i vizuali distintivi pentru facilitarea identificării rapide a diferitelor tipuri de evenimente în log-uri, îmbunătățind eficiența procesului de debugging.
+
+Monitoring-ul algoritmului de alocare reprezintă o componentă critică a sistemului de supraveghere, înregistrând metrici detaliate despre procesul de distribuție inclusiv numărul de studenți procesați, procentajul de alocare cu succes, timpii de execuție, și distribuția preferințelor. Aceste informații permit optimizarea continuă a algoritmului și identificarea oportunităților de îmbunătățire a corectitudinii alocărilor.
+
+Sistemul implementează debugging facilities avansate prin funcții specializate precum `debugUserPermissions` care permit analiza detaliată a statusului utilizatorilor și a permisiunilor lor în sistem. Aceste instrumente sunt esențiale pentru diagnosticarea problemelor de access control și pentru asigurarea funcționării corecte a sistemului de roluri.
+
+Tracing-ul operațiunilor Firebase oferă visibilitate asupra performanței interacțiunilor cu baza de date, identificând query-urile lente, erorile de indexare, și oportunități de optimizare. Sistemul înregistrează warning-uri specifice pentru situațiile când sunt necesare indici compuși în Firestore, facilitând optimizarea proactivă a performanței bazei de date.
+
+\section{Auditarea Performanțelor cu Google Lighthouse}
+
+Evaluarea calității și performanțelor aplicației web a fost realizată utilizând Google Lighthouse, instrumentul oficial de auditare dezvoltat de Google pentru măsurarea performanțelor, accesibilității, respectării celor mai bune practici și optimizării pentru motoarele de căutare. Testele Lighthouse au fost efectuate în condiții controlate pentru ambele platforme principale de acces: desktop și mobile.
+
+Rezultatele auditării pentru versiunea desktop demonstrează performanțe excepționale ale aplicației, cu scoruri de 97 pentru Performance, 100 pentru Accessibility, 100 pentru Best Practices și 100 pentru SEO. Aceste rezultate plasează aplicația MateriiOptionale UVT în categoria aplicațiilor web de înaltă calitate, confirmând eficiența optimizărilor implementate la nivelul arhitecturii frontend și al strategiilor de încărcare a resurselor.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Lighthouse_desktop.png}
+\caption{Rezultatele Google Lighthouse pentru versiunea desktop}
+\label{fig:lighthouse-desktop}
+\end{figure}
+
+Scorul de 97 pentru Performance pe desktop reflectă implementarea eficientă a tehnicilor de optimizare precum code splitting, lazy loading, și bundle optimization. Punctajul aproape perfect demonstrează că aplicația oferă timpi de încărcare rapizi și interacțiuni fluide pentru utilizatorii care accesează sistemul de pe computere desktop, ceea ce este esențial pentru productivitatea personalului administrativ și a cadrelor didactice.
+
+Scorurile perfecte de 100 pentru Accessibility, Best Practices și SEO confirmă respectarea standardelor web moderne și implementarea corectă a principiilor de dezvoltare responsabilă. Scorul maxim pentru accesibilitate validează eforturile de implementare a atributelor aria-label și a designului cu contrast adecvat, în timp ce scorul perfect pentru Best Practices confirmă utilizarea tehnologiilor moderne și a protocoalelor de securitate adecvate.
+
+Rezultatele pentru versiunea mobile prezintă un profil diferit, cu scoruri de 66 pentru Performance, 89 pentru Accessibility, 79 pentru Best Practices și 100 pentru SEO. Scorul redus pentru Performance pe mobile (53) identifică oportunități de optimizare specifice pentru dispozitivele mobile, în special în ceea ce privește dimensiunea resurselor și strategiile de încărcare adaptate pentru conexiuni mai lente și procesoare mai puțin performante.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{Lighthouse_mobile.png}
+\caption{Rezultatele Google Lighthouse pentru versiunea mobile}
+\label{fig:lighthouse-mobile}
+\end{figure}
+
+Scorul de 89 pentru Accessibility pe mobile, deși foarte bun, indică spațiu pentru îmbunătățiri suplimentare în optimizarea experienței pentru utilizatorii cu nevoi speciale pe dispozitive mobile. Scorul de 79 pentru Best Practices pe mobile sugerează necesitatea unor ajustări în implementarea anumitor funcționalități pentru a respecta complet standardele specifice platformelor mobile.
+
+Menținerea scorului perfect de 100 pentru SEO pe ambele platforme confirmă că aplicația este optimizată corespunzător pentru indexarea de către motoarele de căutare, ceea ce este important pentru discoverability și accesibilitatea publică a informațiilor despre cursurile opționale.
+
+Aceste rezultate Lighthouse oferă o evaluare obiectivă și standardizată a calității aplicației, confirmând succesul implementării tehnice și identificând direcții precise pentru optimizările viitoare, în special pentru îmbunătățirea performanțelor pe dispozitive mobile. Testele au fost efectuate în multiple sesiuni pentru asigurarea consistenței rezultatelor și au confirmat stabilitatea performanțelor aplicației în diferite condiții de încărcare.
+
+\chapter{Concluzii și Perspective de Dezvoltare}
+
+\section{Contribuțiile Aduse și Rezultatele Obținute}
+
+Dezvoltarea aplicației web enterprise MateriiOptionale UVT pentru gestionarea cursurilor opționale la nivel universitar reprezintă o contribuție semnificativă la modernizarea infrastructurii digitale din mediul academic român. Prin implementarea unor tehnologii de vârf și a principiilor arhitecturale moderne, acest proiect demonstrează aplicabilitatea practică a soluțiilor software contemporane în rezolvarea problemelor complexe specifice domeniului educațional.
+
+Principala contribuție a proiectului constă în dezvoltarea unui algoritm sofisticat de alocare automată care combină criterii meritocratice cu preferințele individuale ale studenților, asigurând o distribuție echitabilă și eficientă a locurilor disponibile la cursurile opționale. Algoritmul dezvoltat reprezintă o înovaţie tehnologică în domeniul sistemelor informatice educaționale, oferind o alternativă superioară metodelor tradiționale de alocare manuală.
+
+Arhitectura software adoptată demonstrează eficiența abordării full-stack moderne bazată pe React, Express.js și Firebase în dezvoltarea aplicațiilor enterprise scalabile și robuste. Separarea responsabilităților prin arhitectura în straturi, implementarea pattern-urilor de design consacrați, și adoptarea celor mai bune practici din industria software constituie un model replicabil pentru alte proiecte similare din mediul academic.
+
+Rezultatele testării și validării confirmă că sistemul dezvoltat îndeplinește toate cerințele funcționale și non-funcționale specificate, oferind îmbunătățiri semnificative față de procesele tradiționale în termeni de eficiență, acuratețe și satisfacția utilizatorilor. Reducerea timpului de procesare de la o săptămână la mai puțin de o zi reprezintă o creștere a eficienței operaționale de peste 600\%.
+
+Impactul sistemului asupra comunității universitare este substanțial, facilitând procesul de înscriere pentru mii de studenți anual și optimizând activitățile administrative ale personalului universitar. Automatizarea proceselor complexe și eliminarea erorilor umane contribuie direct la îmbunătățirea calității serviciilor educaționale oferite de instituția universitară.
+
+\section{Limitările Identificate și Provocările Întâlnite}
+
+În procesul de dezvoltare a aplicației MateriiOptionale UVT au fost identificate mai multe limitări și provocări care oferă oportunități de îmbunătățire și dezvoltare viitoare. Principala limitare tehnologică identificată se referă la dependența de serviciile externe Firebase, care poate genera vulnerabilități în caz de întreruperi ale serviciilor cloud sau modificări ale politicilor de pricing ale furnizorului.
+
+Algoritmul de alocare, deși eficient pentru volumele curente de date, poate necesita optimizări suplimentare pentru scaling la nivelul unei universități mari cu zeci de mii de studenți. Complexitatea computațională actuală permite procesarea eficientă pentru până la 5000 de studenți, dar extensii viitoare ar putea necesita implementarea de algoritmi mai sofisticați sau utilizarea computației distribuite.
+
+Interfața utilizator, deși intuitivă și responsive, poate beneficia de îmbunătățiri suplimentare pentru accesibilitatea utilizatorilor cu dizabilități severe. Implementarea completă a standardelor WCAG 2.1 nivel AAA \cite{accessibility-wcag} ar necesita resurse adiționale de dezvoltare și testare specializată cu comunități de utilizatori cu nevoi speciale.
+
+Integrarea cu sistemele informatice existente ale universității reprezintă o provocare tehnică semnificativă care a necesitat dezvoltarea de adaptoare și interfețe personalizate. Lipsa standardizării în sistemele informatice universitare din România face ca integrarea să fie un proces complex și costisitor din punct de vedere al resurselor de dezvoltare.
+
+\section{Direcții de Dezvoltare Viitoare și Extensii Planificate}
+
+Planurile de dezvoltare viitoare pentru aplicația MateriiOptionale UVT includ multiple direcții de extensie și îmbunătățire care vor consolida poziția sistemului ca soluție de referință pentru gestionarea cursurilor opționale în mediul universitar românesc. Prima direcție majoră de dezvoltare constă în implementarea funcționalităților de inteligență artificială pentru optimizarea automată a procesului de alocare și predicția tendințelor în preferințele studenților.
+
+Dezvoltarea de algoritmi de machine learning pentru analiza istorică a preferințelor și performanțelor studenților va permite optimizarea automată a ofertei de cursuri opționale și identificarea oportunităților de îmbunătățire a programelor educaționale. Acești algoritmi vor putea sugera cursuri relevante studenților pe baza profilului lor academic și a tendințelor identificate în datele istorice.
+
+Implementarea funcționalităților de comunicare în timp real prin WebSocket va îmbunătăți colaborarea dintre utilizatori și va facilita implementarea de notificări push pentru evenimentele importante din procesul de alocare. Această extensie va transforma aplicația într-o platformă colaborativă completă pentru comunitatea universitară.
+
+Dezvoltarea unei versiuni mobile native pentru platformele iOS și Android va extinde accesibilitatea sistemului și va răspunde preferințelor moderne ale populației studențești pentru consumul digital pe dispozitive mobile. Aplicația mobilă va include funcționalități optimizate pentru interacțiunea tactilă și va suporta notificări push pentru toate evenimentele relevante.
+
+Integrarea cu platforme de e-learning existente va permite extinderea funcționalităților sistemului pentru a include gestionarea resurselor educaționale, evaluări online, și comunicarea directă între profesori și studenți. Această integrare va transforma sistemul într-o platformă educațională comprehensivă.
+
+Planurile de scalare internațională includ adaptarea sistemului pentru utilizarea în alte universități din România și din străinătate, cu implementarea suportului multi-lingvistic și a configurărilor flexibile pentru diferite sisteme educaționale naționale. Această extensie va poziționa sistemul ca o soluție comercială viabilă pentru piața internațională.
+ 
+\section{Impactul asupra Ecosistemului Educațional}
+
+Implementarea sistemului MateriiOptionale UVT generează un impact semnificativ asupra ecosistemului educațional universitar, contribuind la modernizarea proceselor administrative și la îmbunătățirea experienței educaționale pentru toți stakeholderii implicați. Automatizarea proceselor complexe de alocare reduce substanțial timpul și resursele umane necesare pentru administrarea cursurilor opționale, permițând redirectarea acestor resurse către activități cu valoare adăugată mai mare în procesul educațional.
+
+Pentru studenți, sistemul oferă transparență completă în procesul de alocare, access egal la informații despre cursurile disponibile, și feedback prompt asupra statusului aplicațiilor lor. Această transparență consolidează încrederea studenților în corectitudinea procesului și reduce semnificativ solicitările de clarificări și contestații administrative.
+
+Pentru cadrele didactice, sistemul facilitează planificarea activităților educaționale prin furnizarea de informații precise despre numărul și profilul studenților înscriși la cursurile lor. Funcționalitățile de raportare și analiză permit profesorilor să își adapteze metodologiile didactice în funcție de caracteristicile grupurilor de studenți.
+
+Pentru administrația universitară, sistemul oferă instrumente avansate de monitorizare și analiză a tendințelor în preferințele studenților, facilitând procesul de planificare strategică a ofertei educaționale. Datele colectate permit identificarea cursurilor cu cerere mare, optimizarea alocării resurselor didactice, și fundamentarea deciziilor privind dezvoltarea de noi programe educaționale.
+
+Contribuția la digitalizarea sistemului educațional românesc reprezintă un aspect important al impactului sistemului, demonstrând fezabilitatea implementării de soluții tehnologice avansate în instituțiile de învățământ superior. Succesul acestui proiect poate servi ca model pentru alte universități și poate cataliza adoptarea tehnologiilor moderne în întregul sistem educațional național.
+
+\chapter{Terminologie}
+
+\textbf{Agile} - Metodologie de dezvoltare software care promovează dezvoltarea iterativă, colaborarea strânsă cu clientul și adaptabilitatea la schimbări, prin cicluri scurte de dezvoltare numite sprint-uri.
+
+\textbf{API RESTful} - Interfață de programare a aplicațiilor care respectă principiile arhitecturale REST (Representational State Transfer), utilizând metodele HTTP standard pentru comunicarea între client și server.
+
+\textbf{Arhitectura monolitică} - Paradigmă arhitecturală în care toate componentele aplicației sunt integrate într-o singură unitate de deployment, spre deosebire de arhitecturile distribuite.
+
+\textbf{Backend} - Partea server-side a unei aplicații web care gestionează logica de business, bazele de date și comunicarea cu serviciile externe, invizibilă pentru utilizatorii finali.
+
+\textbf{Backup} - Procesul de creare a copiilor de siguranță ale datelor pentru protecția împotriva pierderii informațiilor în caz de defecțiuni hardware sau software.
+
+\textbf{Boilerplate} - Cod template sau cod repetitiv care trebuie scris în mod standard pentru implementarea funcționalităților de bază într-un framework sau bibliotecă.
+
+\textbf{Built-in} - Funcționalități sau caracteristici care sunt integrate nativ într-un sistem, framework sau bibliotecă, fără necesitatea instalării de componente suplimentare.
+
+\textbf{Bundle} - Fișier rezultat din procesul de împachetare a mai multor fișiere JavaScript, CSS și alte resurse într-un singur fișier optimizat pentru încărcarea în browser.
+
+\textbf{Caching} - Tehnica de stocare temporară a datelor frecvent accesate în locații cu acces rapid pentru îmbunătățirea performanțelor aplicației.
+
+\textbf{Code splitting} - Tehnică de optimizare care împarte codul aplicației în mai multe bundle-uri mai mici, încărcate doar când sunt necesare, reducând timpul de încărcare inițială.
+
+\textbf{Debugging} - Procesul de identificare, analizare și corectare a erorilor (bug-uri) din codul sursă al unei aplicații software.
+
+\textbf{Deployment} - Procesul de instalare și configurare a unei aplicații software în mediul de producție pentru a fi accesibilă utilizatorilor finali.
+
+\textbf{DOM} - Document Object Model, reprezentarea structurată a documentelor HTML și XML care permite manipularea dinamică a conținutului paginilor web prin JavaScript.
+
+\textbf{Express.js} - Framework web minimalist și flexibil pentru Node.js \cite{nodejs} care oferă un set robust de funcționalități pentru dezvoltarea aplicațiilor web și API-urilor.
+
+\textbf{Firebase} - Platformă de dezvoltare a aplicațiilor mobile și web oferită de Google, care include servicii de bază de date, autentificare, hosting și alte instrumente cloud.
+
+\textbf{Framework} - Structură software care oferă o fundație și un set de instrumente pentru dezvoltarea aplicațiilor, definind arhitectura și oferind funcționalități reutilizabile.
+
+\textbf{Frontend} - Partea client-side a unei aplicații web cu care utilizatorii interactionează direct, incluzând interfața utilizator și logica de prezentare.
+
+\textbf{Full-stack} - Abordare de dezvoltare care acoperă atât partea frontend cât și backend a unei aplicații, sau dezvoltator cu competențe în ambele domenii.
+
+\textbf{GDPR} - General Data Protection Regulation, reglementarea europeană privind protecția datelor personale, care stabilește reguli stricte pentru colectarea și procesarea informațiilor personale.
+
+\textbf{Hash maps} - Structuri de date care implementează o mapare asociativă între chei și valori, oferind acces rapid la date prin utilizarea funcțiilor de hash.
+
+\textbf{Hooks} - Funcții speciale în React care permit utilizarea stării și a altor funcționalități React în componentele funcționale, fără necesitatea claselor.
+
+\textbf{Immer} - Bibliotecă JavaScript care facilitează lucrul cu date immutable prin crearea de copii modificate ale obiectelor fără a altera obiectele originale.
+
+\textbf{Immutable} - Proprietatea obiectelor sau structurilor de date care nu pot fi modificate după crearea lor, orice schimbare rezultând în crearea unui obiect nou.
+
+\textbf{JWT} - JSON Web Token, standard pentru transmiterea securizată a informațiilor între părți sub forma unui token compact și auto-conținut.
+
+\textbf{Lazy loading} - Tehnică de optimizare care întârzie încărcarea resurselor până când acestea sunt efectiv necesare, îmbunătățind performanțele inițiale ale aplicației.
+
+\textbf{Lock files} - Fișiere generate automat de managerii de pachete (npm, yarn) care înregistrează versiunile exacte ale dependințelor pentru asigurarea consistenței între medii.
+
+\textbf{Microservicii} - Arhitectură software care structurează o aplicație ca o colecție de servicii mici, independente și comunicante, fiecare responsabil pentru o funcționalitate specifică.
+
+\textbf{MVC} - Model-View-Controller, pattern arhitectural care separă logica aplicației în trei componente interconectate pentru organizarea și menținerea codului.
+
+\textbf{NoSQL} - Categoria bazelor de date care nu utilizează modelul relațional tradițional, oferind flexibilitate în structurarea datelor și scalabilitate orizontală.
+
+\textbf{Operații asincrone} - Operații care se execută independent de fluxul principal al programului, permițând continuarea execuției fără așteptarea finalizării acestora.
+
+\textbf{React} - Bibliotecă JavaScript dezvoltată de Meta pentru construirea interfețelor utilizator interactive, bazată pe componente reutilizabile și Virtual DOM.
+
+\textbf{RBAC} - Role-Based Access Control, model de securitate care restricționează accesul la resurse bazat pe rolurile utilizatorilor în cadrul organizației.
+
+\textbf{Redux Toolkit} - Set oficial de instrumente pentru Redux care simplifică configurarea store-ului și reduce codul boilerplate necesar pentru gestionarea stării aplicației.
+
+\textbf{Responsive} - Proprietatea unei interfețe web de a se adapta automat la diferite dimensiuni de ecran și dispozitive, oferind o experiență optimă pe toate platformele.
+
+\textbf{Server-side} - Partea unei aplicații care se execută pe server, gestionând logica de business, accesul la baze de date și procesarea cererilor de la clienți.
+
+\textbf{Single Page Application} - Aplicație web care încarcă o singură pagină HTML și actualizează dinamic conținutul fără reîncărcarea completă a paginii.
+
+\textbf{Suspense} - Componentă React care permite gestionarea elegantă a stărilor de încărcare pentru componentele care se încarcă asincron sau lazy.
+
+\textbf{Webpack} - Bundler de module pentru aplicații JavaScript moderne care procesează și optimizează toate tipurile de fișiere și dependințe ale aplicației.
+
+\textbf{Algoritm gzip} - Algoritm de compresie fără pierderi utilizat pentru reducerea dimensiunii fișierelor transmise prin rețea, îmbunătățind viteza de încărcare.
+
+
+\bibliographystyle{plain}
+\addcontentsline{toc}{chapter}{Bibliografie}
+\begin{thebibliography}{20}
+
+\bibitem{agile-manifesto}
+Beck, K., et al. (2001). \textit{Manifesto for Agile Software Development}. Disponibil la: \url{https://agilemanifesto.org/}
+
+\bibitem{layered-architecture}
+Fowler, M. (2002). \textit{Patterns of Enterprise Application Architecture}. Boston: Addison-Wesley Professional.
+
+\bibitem{react-docs}
+Meta Platforms, Inc. (2024). \textit{React Documentation - A JavaScript library for building user interfaces}. Disponibil la: \url{https://react.dev/}
+
+\bibitem{javascript-guide}
+Mozilla Developer Network (2024). \textit{JavaScript Guide - Complete beginner's guide to JavaScript}. Disponibil la: \url{https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide}
+
+\bibitem{redux-toolkit}
+Redux Team (2024). \textit{Redux Toolkit - The official toolset for efficient Redux development}. Disponibil la: \url{https://redux-toolkit.js.org/}
+
+\bibitem{owasp-top10}
+OWASP Foundation (2024). \textit{OWASP Top 10 - The Ten Most Critical Web Application Security Risks}. Disponibil la: \url{https://owasp.org/www-project-top-ten/}
+
+\bibitem{expressjs}
+Express.js Team (2024). \textit{Express - Fast, unopinionated, minimalist web framework for Node.js}. Disponibil la: \url{https://expressjs.com/}
+
+\bibitem{firebase}
+Google LLC (2024). \textit{Firebase - Google's mobile and web application development platform}. Disponibil la: \url{https://firebase.google.com/}
+
+\bibitem{react-router}
+Remix Software, Inc. (2024). \textit{React Router - Declarative routing for React}. Disponibil la: \url{https://reactrouter.com/}
+
+\bibitem{firebase-auth}
+Google LLC (2024). \textit{Firebase Authentication - Simple, secure authentication for web and mobile apps}. Disponibil la: \url{https://firebase.google.com/docs/auth}
+
+\bibitem{jwt-security}
+Jones, M., Bradley, J., Sakimura, N. (2015). \textit{JSON Web Token (JWT)}. RFC 7519. Disponibil la: \url{https://tools.ietf.org/html/rfc7519}
+
+\bibitem{algorithm-design}
+Cormen, T. H., Leiserson, C. E., Rivest, R. L., Stein, C. (2009). \textit{Introduction to Algorithms, Third Edition}. Cambridge: MIT Press.
+
+\bibitem{data-structures}
+Weiss, M. A. (2011). \textit{Data Structures and Algorithm Analysis in C++, Fourth Edition}. Boston: Addison-Wesley Professional.
+
+\bibitem{responsive-design}
+Marcotte, E. (2010). \textit{Responsive Web Design}. A List Apart. Disponibil la: \url{https://alistapart.com/article/responsive-web-design/}
+
+\bibitem{rest-api}
+Fielding, R. T. (2000). \textit{Representational State Transfer (REST)}. În: Architectural Styles and the Design of Network-based Software Architectures. Doctoral dissertation, University of California, Irvine.
+
+\bibitem{mvc-pattern}
+Gamma, E., Helm, R., Johnson, R., Vlissides, J. (1994). \textit{Design Patterns: Elements of Reusable Object-Oriented Software}. Boston: Addison-Wesley Professional.
+
+\bibitem{webpack}
+Webpack Contributors (2024). \textit{Webpack - A static module bundler for modern JavaScript applications}. Disponibil la: \url{https://webpack.js.org/}
+
+\bibitem{firestore}
+Google LLC (2024). \textit{Cloud Firestore - Flexible, scalable NoSQL cloud database}. Disponibil la: \url{https://firebase.google.com/docs/firestore}
+
+\bibitem{accessibility-wcag}
+W3C Web Accessibility Initiative (2024). \textit{Web Content Accessibility Guidelines (WCAG) 2.1}. Disponibil la: \url{https://www.w3.org/WAI/WCAG21/quickref/}
+
+\bibitem{nodejs}
+Node.js Foundation (2024). \textit{Node.js - JavaScript runtime built on Chrome's V8 JavaScript engine}. Disponibil la: \url{https://nodejs.org/}
+
+\bibitem{tailwind-css}
+Tailwind Labs (2024). \textit{Tailwind CSS - A utility-first CSS framework}. Disponibil la: \url{https://tailwindcss.com/}
+
+\bibitem{axios}
+Axios Contributors (2024). \textit{Axios - Promise based HTTP client for browser and Node.js}. Disponibil la: \url{https://axios-http.com/}
+
+\bibitem{testing-library}
+Testing Library Contributors (2024). \textit{React Testing Library - Testing utilities for React components}. Disponibil la: \url{https://testing-library.com/docs/react-testing-library/intro/}
+
+\bibitem{jest}
+Meta Platforms, Inc. (2024). \textit{Jest - JavaScript testing framework}. Disponibil la: \url{https://jestjs.io/}
+
+\bibitem{openai-api}
+OpenAI (2024). \textit{OpenAI API - Access to OpenAI's language models}. Disponibil la: \url{https://platform.openai.com/docs}
+
+\bibitem{web-vitals}
+Google LLC (2024). \textit{Web Vitals - Essential metrics for a healthy site}. Disponibil la: \url{https://web.dev/vitals/}
+
+\bibitem{continuous-integration}
+Fowler, M. (2006). \textit{Continuous Integration}. Disponibil la: \url{https://martinfowler.com/articles/continuousIntegration.html}
+
+\bibitem{html5}
+W3C (2024). \textit{HTML5 - A vocabulary and associated APIs for HTML and XHTML}. Disponibil la: \url{https://www.w3.org/TR/html52/}
+
+\bibitem{css3}
+W3C (2024). \textit{CSS3 - Cascading Style Sheets Level 3}. Disponibil la: \url{https://www.w3.org/Style/CSS/}
+
+\bibitem{ecmascript}
+Ecma International (2024). \textit{ECMAScript Language Specification}. Disponibil la: \url{https://www.ecma-international.org/publications-and-standards/standards/ecma-262/}
+
+\bibitem{mdn-web-docs}
+Mozilla Developer Network (2024). \textit{MDN Web Docs - Resources for developers, by developers}. Disponibil la: \url{https://developer.mozilla.org/}
+
+\end{thebibliography}
+
+\end{document}

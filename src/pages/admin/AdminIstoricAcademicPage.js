@@ -746,12 +746,20 @@ const AdminIstoricAcademicPage = () => {
     
     if (activeYear === 'toate') {
       return selectedStudentData.istoric.istoricAnual
-        .sort((a, b) => a.anUniversitar.localeCompare(b.anUniversitar) || a.semestru - b.semestru);
+        .sort((a, b) => {
+          const aYear = a.anUniversitar || '';
+          const bYear = b.anUniversitar || '';
+          return aYear.localeCompare(bYear) || (a.semestru || 0) - (b.semestru || 0);
+        });
     }
     
     return selectedStudentData.istoric.istoricAnual
       .filter(anual => anual.anStudiu === activeYear)
-      .sort((a, b) => a.anUniversitar.localeCompare(b.anUniversitar) || a.semestru - b.semestru);
+      .sort((a, b) => {
+        const aYear = a.anUniversitar || '';
+        const bYear = b.anUniversitar || '';
+        return aYear.localeCompare(bYear) || (a.semestru || 0) - (b.semestru || 0);
+      });
   };
 
   // Obține toate cursurile pentru afișare într-un tabel unic
@@ -786,10 +794,12 @@ const AdminIstoricAcademicPage = () => {
     
     // Sortează semestrele după an de studiu și semestru
     return Object.values(cursuriBySemestru).sort((a, b) => {
-      if (a.anStudiu !== b.anStudiu) {
-        return a.anStudiu.localeCompare(b.anStudiu);
+      const aStudiu = a.anStudiu || '';
+      const bStudiu = b.anStudiu || '';
+      if (aStudiu !== bStudiu) {
+        return aStudiu.localeCompare(bStudiu);
       }
-      return a.semestru - b.semestru;
+      return (a.semestru || 0) - (b.semestru || 0);
     });
   };
 

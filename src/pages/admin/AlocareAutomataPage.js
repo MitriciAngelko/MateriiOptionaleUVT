@@ -484,21 +484,26 @@ const AlocareAutomataPage = () => {
         
         // Dacă studentul are preferințe, îl adăugăm la lista
         if (preferinteGasite) {
+          // Calculează automat media generală dacă lipsește (prima verificare rapid)
+          let medieGeneralaRapida = userData.medieGenerala;
+          let medieAnulIRapida = userData.medieAnulI;
+          let medieAnulIIRapida = userData.medieAnulII;
+          
           // Obține media relevantă în funcție de anul academic
           let media = 0;
           const anStudiu = userData.an;
           
           if (anStudiu === 'II') {
             // Pentru studenții din anul II, folosim media din anul I
-            media = userData.medieAnulI || 0;
+            media = parseFloat(medieAnulIRapida) || 0;
             console.log(`Student anul II - folosim medieAnulI: ${media}`);
           } else if (anStudiu === 'III') {
             // Pentru studenții din anul III, folosim media din anul II
-            media = userData.medieAnulII || 0;
+            media = parseFloat(medieAnulIIRapida) || 0;
             console.log(`Student anul III - folosim medieAnulII: ${media}`);
           } else {
             // Pentru alte cazuri, încercăm să folosim media generală sau media din userData
-            media = userData.medieGenerala || userData.media || 0;
+            media = parseFloat(medieGeneralaRapida) || parseFloat(userData.media) || 0;
             console.log(`Student anul ${anStudiu || 'necunoscut'} - folosim media generală: ${media}`);
           }
           
@@ -510,9 +515,9 @@ const AlocareAutomataPage = () => {
             email: userData.email || '',
             media: media,
             anStudiu: anStudiu,
-            medieAnulI: userData.medieAnulI,
-            medieAnulII: userData.medieAnulII,
-            medieGenerala: userData.medieGenerala,
+            medieAnulI: medieAnulIRapida,
+            medieAnulII: medieAnulIIRapida,
+            medieGenerala: medieGeneralaRapida,
             preferinte: preferinteLista
           });
           
@@ -688,29 +693,115 @@ const AlocareAutomataPage = () => {
             preferinteMateriiOptionale: userData.preferinteMateriiOptionale
           });
           
+          // Calculează automat media generală dacă lipsește
+          let medieGeneralaCalculata = userData.medieGenerala;
+          let medieAnulICalculata = userData.medieAnulI;
+          let medieAnulIICalculata = userData.medieAnulII;
+          
+          if (!medieGeneralaCalculata || !medieAnulICalculata || !medieAnulIICalculata) {
+            try {
+              console.log(`📊 Calculez automat mediile pentru ${userData.nume} ${userData.prenume}...`);
+              
+              // Obține istoricul academic
+              const istoricRef = doc(db, 'istoricAcademic', student.id);
+              const istoricDoc = await getDoc(istoricRef);
+              
+              if (istoricDoc.exists()) {
+                const istoricData = istoricDoc.data();
+                
+                if (istoricData.istoricAnual && Array.isArray(istoricData.istoricAnual)) {
+                  const cursurilePromovateTotal = [];
+                  const cursurileAnulI = [];
+                  const cursurileAnulII = [];
+                  
+                  // Colectează toate cursurile promovate și grupează pe ani
+                  istoricData.istoricAnual.forEach(anual => {
+                    if (anual.cursuri && Array.isArray(anual.cursuri)) {
+                      anual.cursuri.forEach(curs => {
+                        const nota = parseFloat(curs.nota) || 0;
+                        if (nota >= 5) {
+                          cursurilePromovateTotal.push(curs);
+                          
+                          if (anual.anStudiu === 'I') {
+                            cursurileAnulI.push(curs);
+                          } else if (anual.anStudiu === 'II') {
+                            cursurileAnulII.push(curs);
+                          }
+                        }
+                      });
+                    }
+                  });
+                  
+                  // Calculează media generală
+                  if (!medieGeneralaCalculata && cursurilePromovateTotal.length > 0) {
+                    const sumaNoteTotal = cursurilePromovateTotal.reduce((acc, curs) => acc + parseFloat(curs.nota), 0);
+                    medieGeneralaCalculata = parseFloat((sumaNoteTotal / cursurilePromovateTotal.length).toFixed(2)).toString();
+                    console.log(`📈 Media generală calculată: ${medieGeneralaCalculata}`);
+                  }
+                  
+                  // Calculează media anul I
+                  if (!medieAnulICalculata && cursurileAnulI.length > 0) {
+                    const sumaNoteAnulI = cursurileAnulI.reduce((acc, curs) => acc + parseFloat(curs.nota), 0);
+                    medieAnulICalculata = parseFloat((sumaNoteAnulI / cursurileAnulI.length).toFixed(2)).toString();
+                    console.log(`📈 Media anul I calculată: ${medieAnulICalculata}`);
+                  }
+                  
+                  // Calculează media anul II
+                  if (!medieAnulIICalculata && cursurileAnulII.length > 0) {
+                    const sumaNoteAnulII = cursurileAnulII.reduce((acc, curs) => acc + parseFloat(curs.nota), 0);
+                    medieAnulIICalculata = parseFloat((sumaNoteAnulII / cursurileAnulII.length).toFixed(2)).toString();
+                    console.log(`📈 Media anul II calculată: ${medieAnulIICalculata}`);
+                  }
+                  
+                  // Actualizează documentul utilizatorului cu mediile calculate
+                  const updateData = {};
+                  if (medieGeneralaCalculata && medieGeneralaCalculata !== userData.medieGenerala) {
+                    updateData.medieGenerala = medieGeneralaCalculata;
+                  }
+                  if (medieAnulICalculata && medieAnulICalculata !== userData.medieAnulI) {
+                    updateData.medieAnulI = medieAnulICalculata;
+                  }
+                  if (medieAnulIICalculata && medieAnulIICalculata !== userData.medieAnulII) {
+                    updateData.medieAnulII = medieAnulIICalculata;
+                  }
+                  
+                  if (Object.keys(updateData).length > 0) {
+                    await setDoc(doc(db, 'users', student.id), {
+                      ...userData,
+                      ...updateData
+                    });
+                    console.log(`✅ Mediile actualizate pentru ${userData.nume} ${userData.prenume}:`, updateData);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(`❌ Eroare la calcularea mediilor pentru ${userData.nume} ${userData.prenume}:`, error);
+            }
+          }
+          
           // Folosim media relevantă în funcție de anul academic
           const anStudiu = userData.an || anPachet;
           let mediaFolosita = 0;
           
           if (anStudiu === 'II') {
             // Pentru studenții din anul II, folosim media din anul I
-            mediaFolosita = userData.medieAnulI || 0;
+            mediaFolosita = parseFloat(medieAnulICalculata) || 0;
             console.log(`Student anul II - folosim medieAnulI: ${mediaFolosita}`);
           } else if (anStudiu === 'III') {
             // Pentru studenții din anul III, folosim media din anul II
-            mediaFolosita = userData.medieAnulII || 0;
+            mediaFolosita = parseFloat(medieAnulIICalculata) || 0;
             console.log(`Student anul III - folosim medieAnulII: ${mediaFolosita}`);
           } else {
             // Pentru alte cazuri, încercăm să folosim media generală
-            mediaFolosita = userData.medieGenerala || userData.media || 0;
+            mediaFolosita = parseFloat(medieGeneralaCalculata) || parseFloat(userData.media) || 0;
             console.log(`Student anul ${anStudiu} - folosim media generală: ${mediaFolosita}`);
           }
           
           student.media = mediaFolosita;
           student.anStudiu = anStudiu;
-          student.medieAnulI = userData.medieAnulI;
-          student.medieAnulII = userData.medieAnulII;
-          student.medieGenerala = userData.medieGenerala;
+          student.medieAnulI = medieAnulICalculata;
+          student.medieAnulII = medieAnulIICalculata;
+          student.medieGenerala = medieGeneralaCalculata;
           
           console.log(`Media folosită pentru alocare: ${student.media}, An studiu: ${student.anStudiu}`);
           
